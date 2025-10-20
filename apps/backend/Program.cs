@@ -16,6 +16,8 @@ var app = builder.Build();
 
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
+
+// Add global route prefix for julekalender API
 app.MapControllers();
 
 var summaries = new[]
