@@ -1,12 +1,18 @@
 :80 {
-    # Route API requests to backend
+    # Route API requests to backend with specific headers
     handle /api/* {
         reverse_proxy julekalender-backend:5000 {
             header_up Host {host}
             header_up X-Real-IP {remote}
             header_up X-Forwarded-For {remote}
             header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host {host}
         }
+        
+        # Add cache control headers to prevent Cloudflare caching
+        header Cache-Control "no-cache, no-store, must-revalidate"
+        header Pragma "no-cache"
+        header Expires "0"
     }
     
     # Route all other requests to frontend
@@ -16,6 +22,7 @@
             header_up X-Real-IP {remote}
             header_up X-Forwarded-For {remote}
             header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host {host}
         }
     }
     
