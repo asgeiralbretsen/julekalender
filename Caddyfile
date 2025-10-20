@@ -4,10 +4,6 @@ julekalender.albretsen.no {
         reverse_proxy julekalender-backend:5000
     }
     
-    # Route health endpoint to backend
-    handle /health {
-        reverse_proxy julekalender-backend:5000
-    }
     
     # Route all other requests to frontend
     handle /* {
