@@ -1,4 +1,4 @@
-http://julekalender.albretsen.no {
+julekalender.albretsen.no {
     # Route API requests to backend
     handle /api/* {
         reverse_proxy julekalender-backend:5000
