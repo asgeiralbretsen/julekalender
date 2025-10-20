@@ -13,7 +13,7 @@ function App() {
   useEffect(() => {
     const fetchHealth = async () => {
       try {
-        const response = await fetch('http://localhost:5001/health');
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/health`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

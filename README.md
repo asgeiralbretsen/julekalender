@@ -80,9 +80,60 @@ julekalender/
 
 The frontend automatically polls the backend health endpoint every 5 seconds and displays the status with a modern, responsive UI built with Tailwind CSS.
 
+## Production Deployment
+
+### Automated CI/CD with GitHub Actions
+
+The repository includes automated deployment via GitHub Actions. Every push to the `main` branch will automatically deploy to your VPS.
+
+#### Required GitHub Secrets
+
+Set up these secrets in your GitHub repository settings:
+
+- `VPS_HOST`: Your VPS IP address or domain
+- `VPS_USERNAME`: SSH username for your VPS
+- `VPS_SSH_KEY`: Private SSH key for authentication
+
+#### VPS Setup
+
+1. Clone the repository on your VPS:
+   ```bash
+   git clone https://github.com/yourusername/julekalender.git
+   cd julekalender
+   ```
+
+2. Update the deployment path in `.github/workflows/deploy.yml`:
+   ```yaml
+   script: |
+     cd /path/to/julekalender  # Update this path
+   ```
+
+3. Ensure Docker and Docker Compose are installed on your VPS
+
+#### Manual Deployment
+
+You can also deploy manually using the deployment script:
+
+```bash
+./deploy.sh
+```
+
+### Production Configuration
+
+- **Frontend**: Available on port 3001
+- **Backend**: Available on port 5002
+- **Health Endpoint**: `http://your-vps:5002/health`
+
+### Cloudflare Tunnel Setup
+
+1. Point your Cloudflare tunnel to port 3001 (frontend)
+2. The frontend will automatically communicate with the backend on port 5002
+
 ## Technologies Used
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
 - **Backend**: .NET 8, ASP.NET Core Web API
 - **Containerization**: Docker, Docker Compose
 - **Development**: Concurrently for running multiple processes
+- **CI/CD**: GitHub Actions
+- **Deployment**: Automated VPS deployment
