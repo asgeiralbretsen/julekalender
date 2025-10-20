@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BackendApi.Controllers;
 
 [ApiController]
-[Route("julekalender/api/[controller]")]
+[Route("[controller]")]
 public class HealthController : ControllerBase
 {
     [HttpGet]
