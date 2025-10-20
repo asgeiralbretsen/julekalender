@@ -4,7 +4,7 @@ services:
       context: ./apps/frontend
       dockerfile: Dockerfile.prod
       args:
-        - VITE_API_URL=http://localhost:5002
+        - VITE_API_URL=http://91.98.23.184:5002
     ports:
       - "3001:5173"
     depends_on:
