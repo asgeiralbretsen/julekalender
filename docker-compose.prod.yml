@@ -3,10 +3,10 @@ services:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://backend:5000
     ports:
       - "3001:5173"
-    environment:
-      - VITE_API_URL=http://backend:5000
     restart: unless-stopped
     networks:
       - app-network
