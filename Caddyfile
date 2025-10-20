@@ -1,12 +1,22 @@
-julekalender.albretsen.no {
+:80 {
     # Route API requests to backend
     handle /api/* {
-        reverse_proxy julekalender-backend:5000
+        reverse_proxy julekalender-backend:5000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+        }
     }
     
     # Route all other requests to frontend
     handle /* {
-        reverse_proxy julekalender-frontend:5173
+        reverse_proxy julekalender-frontend:5173 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+        }
     }
     
     # Enable compression
