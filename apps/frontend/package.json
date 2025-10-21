@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.53.2",
+    "@sanity/client": "^7.12.0",
+    "@sanity/image-url": "^1.2.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
