@@ -178,8 +178,12 @@ export default function AdventCalendar() {
     }))
   }, [sanityDays])
 
-  // Only show days that exist in Sanity
-  const days = useMemo(() => sanityDays.map(day => day.dayNumber).sort((a, b) => a - b), [sanityDays])
+  // Only show days that exist in Sanity, removing duplicates
+  const days = useMemo(() => {
+    const dayNumbers = sanityDays.map(day => day.dayNumber)
+    const uniqueDays = [...new Set(dayNumbers)].sort((a, b) => a - b)
+    return uniqueDays
+  }, [sanityDays])
 
   useEffect(() => {
     if (containerRef.current) {
