@@ -1,7 +1,11 @@
-import { SignedIn, SignedOut } from '@clerk/clerk-react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
-import LandingPage from './components/LandingPage'
-import AdventCalendar from './components/AdventCalendar'
+import HomePage from './pages/HomePage'
+import CalendarPage from './pages/CalendarPage'
+import HealthPage from './pages/HealthPage'
+import PostsPage from './pages/PostsPage'
+import NotFoundPage from './pages/NotFoundPage'
+import ProtectedRoute from './components/layout/ProtectedRoute'
 import { useUserSync } from './hooks/useUserSync'
 import { svgCursorUrl } from "./components/cursor"; 
 import { useEffect, useMemo } from 'react'
@@ -25,17 +29,40 @@ function App() {
   }, [cursor]);
 
   return (
-    <div className="min-h-screen">
-      <Header />
-      
-      <SignedOut>
-        <LandingPage />
-      </SignedOut>
-      
-      <SignedIn>
-        <AdventCalendar />
-      </SignedIn>
-    </div>
+    <Router>
+      <div className="min-h-screen">
+        <Header />
+        
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route 
+            path="/calendar" 
+            element={
+              <ProtectedRoute>
+                <CalendarPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/posts" 
+            element={
+              <ProtectedRoute>
+                <PostsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/health" 
+            element={
+              <ProtectedRoute>
+                <HealthPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </div>
+    </Router>
   )
 }
 
