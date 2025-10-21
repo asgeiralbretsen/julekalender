@@ -1,9 +1,10 @@
-import {defineField, defineType} from 'sanity'
+import {defineField} from 'sanity'
 
-export const colorMatchType = defineType({
-  name: 'colorMatch',
-  title: 'Color Match Game',
-  type: 'document',
+export const colorMatchGameFields = defineField({
+  name: 'colorMatchGameData',
+  title: 'Color Match Game Data',
+  type: 'object',
+  hidden: ({parent}) => parent?.gameType !== 'colorMatchGame',
   fields: [
     defineField({
       name: 'title',
@@ -95,32 +96,5 @@ export const colorMatchType = defineType({
       ],
       description: 'Configure how scoring works for this game',
     }),
-  ],
-  preview: {
-    select: {
-      title: 'title',
-      description: 'description',
-      media: 'previewImage',
-    },
-    prepare(selection) {
-      const {title, description, media} = selection
-      return {
-        title: title || 'Untitled Color Match Game',
-        subtitle: description || 'No description',
-        media: media,
-      }
-    },
-  },
-  orderings: [
-    {
-      title: 'Title, A-Z',
-      name: 'titleAsc',
-      by: [{field: 'title', direction: 'asc'}],
-    },
-    {
-      title: 'Created Date',
-      name: 'createdDesc',
-      by: [{field: '_createdAt', direction: 'desc'}],
-    },
   ],
 })
