@@ -1,6 +1,7 @@
 import Stocking from "./Stocking";
 import { useState, useEffect } from "react";
 import ColorPickerNoEyedropper from "./ColorPicker";
+import { createClient } from "@sanity/client";
 
 interface Colors {
   topColor: string;
@@ -15,11 +16,48 @@ interface ColorScore {
   percentage: number;
 }
 
-export function StockingColorMatchGame() {
+interface SanityColorData {
+  hex: string;
+  hsl: { h: number; s: number; l: number };
+  hsv: { h: number; s: number; v: number };
+  rgb: { r: number; g: number; b: number };
+}
+
+interface GameData {
+  title: string;
+  description: string;
+  stockingColors: {
+    topColor: SanityColorData;
+    topStripesColor: SanityColorData;
+    mainColor: SanityColorData;
+    heelColor: SanityColorData;
+    stripesColor: SanityColorData;
+  };
+  scoringSettings: {
+    perfectMatchBonus: number;
+    closeMatchThreshold: number;
+    timeBonus: number;
+  };
+}
+
+// Initialize Sanity client
+const client = createClient({
+  projectId: "54fixmwv",
+  dataset: "production",
+  useCdn: true,
+  apiVersion: "2024-01-01",
+});
+
+export function ColorMatchGame() {
   const [colorPickerColor, setColorPickerColor] = useState("gray");
   const [showResults, setShowResults] = useState(false);
   const [colorScores, setColorScores] = useState<ColorScore[]>([]);
   const [overallScore, setOverallScore] = useState(0);
+  const [gameData, setGameData] = useState<GameData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
+    null
+  );
 
   const [originalColors, setOriginalColors] = useState<Colors>({
     topColor: "blue",
@@ -36,15 +74,101 @@ export function StockingColorMatchGame() {
     stripesColor: "white",
   });
 
+  // Load game data from Sanity
   useEffect(() => {
-    const originalColors = {
-      topColor: "red",
-      topStripesColor: "purple",
-      mainColor: "green",
-      heelColor: "yellow",
-      stripesColor: "purple",
+    const loadGameData = async () => {
+      try {
+        // First, try to get data from sessionStorage (passed from calendar)
+        const gameDataStr = sessionStorage.getItem("currentGameData");
+        const dayInfoStr = sessionStorage.getItem("currentDayInfo");
+
+        if (gameDataStr) {
+          const parsedData = JSON.parse(gameDataStr);
+          if (parsedData.colorMatchGameData) {
+            const data = parsedData.colorMatchGameData;
+
+            // Convert Sanity color data to hex strings
+            const stockingColors = {
+              topColor: data.stockingColors?.topColor?.hex || "#ff0000",
+              topStripesColor:
+                data.stockingColors?.topStripesColor?.hex || "#800080",
+              mainColor: data.stockingColors?.mainColor?.hex || "#008000",
+              heelColor: data.stockingColors?.heelColor?.hex || "#ffff00",
+              stripesColor: data.stockingColors?.stripesColor?.hex || "#800080",
+            };
+
+            setOriginalColors(stockingColors);
+            setGameData({
+              title: data.title || "Color Match Game",
+              description: data.description || "",
+              stockingColors: data.stockingColors,
+              scoringSettings: data.scoringSettings || {
+                perfectMatchBonus: 50,
+                closeMatchThreshold: 80,
+                timeBonus: 1.5,
+              },
+            });
+          }
+        } else {
+          // Fallback: fetch from Sanity directly
+          const query = `*[_type == "day" && gameType == "colorMatchGame" && isUnlocked == true][0]{
+            title,
+            colorMatchGameData {
+              title,
+              description,
+              stockingColors {
+                topColor,
+                topStripesColor,
+                mainColor,
+                heelColor,
+                stripesColor
+              },
+              scoringSettings {
+                perfectMatchBonus,
+                closeMatchThreshold,
+                timeBonus
+              }
+            }
+          }`;
+
+          const result = await client.fetch(query);
+          if (result?.colorMatchGameData) {
+            const data = result.colorMatchGameData;
+            const stockingColors = {
+              topColor: data.stockingColors?.topColor?.hex || "#ff0000",
+              topStripesColor:
+                data.stockingColors?.topStripesColor?.hex || "#800080",
+              mainColor: data.stockingColors?.mainColor?.hex || "#008000",
+              heelColor: data.stockingColors?.heelColor?.hex || "#ffff00",
+              stripesColor: data.stockingColors?.stripesColor?.hex || "#800080",
+            };
+
+            setOriginalColors(stockingColors);
+            setGameData({
+              title: data.title || "Color Match Game",
+              description: data.description || "",
+              stockingColors: data.stockingColors,
+              scoringSettings: data.scoringSettings || {
+                perfectMatchBonus: 50,
+                closeMatchThreshold: 80,
+                timeBonus: 1.5,
+              },
+            });
+          }
+        }
+
+        if (dayInfoStr) {
+          setDayInfo(JSON.parse(dayInfoStr));
+        }
+      } catch (error) {
+        console.error("Error loading game data:", error);
+        // Keep default colors as fallback
+      } finally {
+        setLoading(false);
+      }
     };
-    setOriginalColors(originalColors);
+
+    loadGameData();
   }, []);
 
   const setSingleColor = (
@@ -120,9 +244,18 @@ export function StockingColorMatchGame() {
         originalColors[section.key as keyof Colors],
         currentColors[section.key as keyof Colors]
       );
+
+      // Apply perfect match bonus if available
+      const perfectMatchBonus =
+        gameData?.scoringSettings?.perfectMatchBonus || 0;
+      const adjustedPercentage =
+        percentage === 100
+          ? Math.min(100, percentage + perfectMatchBonus / 10)
+          : percentage;
+
       return {
         section: section.name,
-        percentage: Math.round(percentage),
+        percentage: Math.round(adjustedPercentage),
       };
     });
 
@@ -135,16 +268,36 @@ export function StockingColorMatchGame() {
     setShowResults(true);
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className=" p-8 max-w-md w-full text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            Loading Game...
+          </h1>
+          <p className="text-white/80">
+            Preparing your color matching challenge!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-900 via-green-900 to-blue-900 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
-            🎨 Stocking Color Match
+            {dayInfo
+              ? `Day ${dayInfo.day}: ${dayInfo.title}`
+              : gameData?.title || "🎨 Stocking Color Match"}
           </h1>
           <p className="text-white/80 text-lg">
-            Click on the stocking sections to color them!
+            {gameData?.description ||
+              "Click on the stocking sections to color them!"}
           </p>
         </div>
 
@@ -159,7 +312,7 @@ export function StockingColorMatchGame() {
                   Target Stocking
                 </h2>
                 <div className="flex justify-center">
-                  <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4">
+                  <div className="rounded-2xl p-4">
                     <Stocking
                       topColor={originalColors.topColor}
                       topStripesColor={originalColors.topStripesColor}
@@ -177,7 +330,7 @@ export function StockingColorMatchGame() {
                   Your Stocking
                 </h2>
                 <div className="flex justify-center">
-                  <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4">
+                  <div className=" rounded-2xl p-4">
                     <Stocking
                       topColor={currentColors.topColor}
                       topStripesColor={currentColors.topStripesColor}
@@ -208,7 +361,7 @@ export function StockingColorMatchGame() {
 
           {/* Right Side - Control Panel */}
           <div className="lg:col-span-1">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 sticky top-4">
+            <div className="p-6 sticky top-4">
               {/* Color Picker Section */}
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-white mb-4">

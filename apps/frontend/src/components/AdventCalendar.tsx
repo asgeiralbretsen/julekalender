@@ -1,51 +1,73 @@
-import { useMemo, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { client } from '../lib/sanity'
-import { animate } from 'animejs'
-import { Timer } from './Timer'
+import { useMemo, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { client } from "../lib/sanity";
+import { animate } from "animejs";
+import { Timer } from "./Timer";
 
 interface DayCellProps {
-  day: number
-  isUnlocked: boolean
-  isToday: boolean
-  thumbnail?: string
-  onDayClick?: (day: number) => void
+  day: number;
+  isUnlocked: boolean;
+  isToday: boolean;
+  thumbnail?: string;
+  onDayClick?: (day: number) => void;
 }
 
 interface DayData {
-  day: number
-  thumbnail?: string
-  title?: string
-  description?: string
+  day: number;
+  thumbnail?: string;
+  title?: string;
+  description?: string;
 }
 
 interface SanityDay {
-  _id: string
-  dayNumber: number
-  date: string
-  title: string
+  _id: string;
+  dayNumber: number;
+  date: string;
+  title: string;
   image?: {
     asset: {
-      _ref: string
-    }
-    alt?: string
-  }
-  gameType?: 'none' | 'blurGuessGame'
+      _ref: string;
+    };
+    alt?: string;
+  };
+  gameType?: "none" | "blurGuessGame" | "colorMatchGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
         asset: {
-          _ref: string
-        }
-      }
-      answer: string
-    }>
-  }
-  isUnlocked: boolean
+          _ref: string;
+        };
+      };
+      answer: string;
+    }>;
+  };
+  colorMatchGameData?: {
+    title: string;
+    description: string;
+    stockingColors: {
+      topColor: { hex: string };
+      topStripesColor: { hex: string };
+      mainColor: { hex: string };
+      heelColor: { hex: string };
+      stripesColor: { hex: string };
+    };
+    scoringSettings: {
+      perfectMatchBonus: number;
+      closeMatchThreshold: number;
+      timeBonus: number;
+    };
+  };
+  isUnlocked: boolean;
 }
 
-function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellProps) {
-  const cellRef = useRef<HTMLDivElement>(null)
+function DayCell({
+  day,
+  isUnlocked,
+  isToday,
+  thumbnail,
+  onDayClick,
+}: DayCellProps) {
+  const cellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isUnlocked && cellRef.current) {
@@ -54,21 +76,21 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
         opacity: [0, 1],
         duration: 600,
         delay: day * 50,
-        easing: 'easeOutElastic(1, .8)'
-      })
+        easing: "easeOutElastic(1, .8)",
+      });
     }
-  }, [isUnlocked, day])
+  }, [isUnlocked, day]);
 
   const handleClick = () => {
     if (isUnlocked && onDayClick && cellRef.current) {
       animate(cellRef.current, {
         scale: [1, 0.95, 1],
         duration: 200,
-        easing: 'easeInOutQuad'
-      })
-      onDayClick(day)
+        easing: "easeInOutQuad",
+      });
+      onDayClick(day);
     }
-  }
+  };
 
   return (
     <div
@@ -76,8 +98,8 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
       onClick={handleClick}
       className={
         `relative aspect-square rounded-xl border-2 transition-all duration-300 cursor-pointer` +
-        ` ${isUnlocked ? 'bg-white/95 hover:-translate-y-2 shadow-xl hover:shadow-2xl' : 'bg-gray-200/70 cursor-not-allowed'} ` +
-        ` ${isToday ? 'ring-4 ring-yellow-400 shadow-yellow-200 bg-gradient-to-br from-yellow-50 to-red-50' : ''}`
+        ` ${isUnlocked ? "bg-white/95 hover:-translate-y-2 shadow-xl hover:shadow-2xl" : "bg-gray-200/70 cursor-not-allowed"} ` +
+        ` ${isToday ? "ring-4 ring-yellow-400 shadow-yellow-200 bg-gradient-to-br from-yellow-50 to-red-50" : ""}`
       }
     >
       <div className="absolute inset-0 overflow-hidden rounded-xl">
@@ -86,13 +108,19 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
       </div>
 
       <div className="absolute top-2 left-2 z-10">
-        <span className={`inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full ${
-          isUnlocked ? (isToday ? 'bg-yellow-500 text-white shadow-lg' : 'bg-red-600 text-white shadow-lg') : 'bg-gray-400 text-white'
-        }`}>
+        <span
+          className={`inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full ${
+            isUnlocked
+              ? isToday
+                ? "bg-yellow-500 text-white shadow-lg"
+                : "bg-red-600 text-white shadow-lg"
+              : "bg-gray-400 text-white"
+          }`}
+        >
           {day}
         </span>
       </div>
-      
+
       {isToday && (
         <div className="absolute top-2 right-2 z-10">
           <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full bg-yellow-500 text-white shadow-lg">
@@ -104,8 +132,8 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
       <div className="h-full w-full flex items-center justify-center relative z-10">
         {isUnlocked ? (
           thumbnail ? (
-            <img 
-              src={thumbnail} 
+            <img
+              src={thumbnail}
               alt={`Day ${day}`}
               className="w-12 h-12 object-cover rounded-lg shadow-md"
             />
@@ -127,18 +155,18 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
         <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-red-600/10 rounded-xl" />
       )}
     </div>
-  )
+  );
 }
 
 export default function AdventCalendar() {
-  const navigate = useNavigate()
-  const today = new Date()
-  const currentDay = today.getMonth() === 11 ? today.getDate() : 1 // December only; otherwise start at 1
-  const containerRef = useRef<HTMLDivElement>(null)
-  
-  const [sanityDays, setSanityDays] = useState<SanityDay[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const today = new Date();
+  const currentDay = today.getMonth() === 11 ? today.getDate() : 1; // December only; otherwise start at 1
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [sanityDays, setSanityDays] = useState<SanityDay[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch days from Sanity
   useEffect(() => {
@@ -152,34 +180,40 @@ export default function AdventCalendar() {
           image,
           gameType,
           blurGuessGameData,
+          colorMatchGameData,
           isUnlocked
-        }`
-        const data = await client.fetch(query)
-        setSanityDays(data)
+        }`;
+        const data = await client.fetch(query);
+        setSanityDays(data);
       } catch (err) {
-        setError('Failed to fetch advent days')
-        console.error('Error fetching days:', err)
+        setError("Failed to fetch advent days");
+        console.error("Error fetching days:", err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchDays()
-  }, [])
+    fetchDays();
+  }, []);
 
   // Convert Sanity days to the format expected by the component
   const dayData: DayData[] = useMemo(() => {
     // Only use Sanity data - no fallbacks
-    return sanityDays.map(sanityDay => ({
+    return sanityDays.map((sanityDay) => ({
       day: sanityDay.dayNumber,
-      thumbnail: sanityDay.image ? `https://cdn.sanity.io/images/54fixmwv/production/${sanityDay.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}` : undefined,
+      thumbnail: sanityDay.image
+        ? `https://cdn.sanity.io/images/54fixmwv/production/${sanityDay.image.asset._ref.replace("image-", "").replace("-jpg", ".jpg").replace("-png", ".png").replace("-webp", ".webp")}`
+        : undefined,
       title: sanityDay.title,
-      description: `Day ${sanityDay.dayNumber} of advent!`
-    }))
-  }, [sanityDays])
+      description: `Day ${sanityDay.dayNumber} of advent!`,
+    }));
+  }, [sanityDays]);
 
   // Only show days that exist in Sanity
-  const days = useMemo(() => sanityDays.map(day => day.dayNumber).sort((a, b) => a - b), [sanityDays])
+  const days = useMemo(
+    () => sanityDays.map((day) => day.dayNumber).sort((a, b) => a - b),
+    [sanityDays]
+  );
 
   useEffect(() => {
     if (containerRef.current) {
@@ -187,54 +221,90 @@ export default function AdventCalendar() {
         opacity: [0, 1],
         translateY: [50, 0],
         duration: 1000,
-        easing: 'easeOutExpo'
-      })
+        easing: "easeOutExpo",
+      });
     }
-  }, [])
+  }, []);
 
   const handleDayClick = (day: number) => {
-    const dayInfo = dayData.find(d => d.day === day)
-    const sanityDay = sanityDays.find(d => d.dayNumber === day)
-    
+    const dayInfo = dayData.find((d) => d.day === day);
+    const sanityDay = sanityDays.find((d) => d.dayNumber === day);
+
     // Debug logging
-    console.log('Day clicked:', day)
-    console.log('Sanity day data:', sanityDay)
-    console.log('Game type:', sanityDay?.gameType)
-    console.log('Game data:', sanityDay?.blurGuessGameData)
-    
+    console.log("Day clicked:", day);
+    console.log("Sanity day data:", sanityDay);
+    console.log("Game type:", sanityDay?.gameType);
+    console.log("Game data:", sanityDay?.blurGuessGameData);
+
     // Check if this day has a game and navigate to it
-    if (sanityDay?.gameType && sanityDay.gameType !== 'none') {
-      console.log('Game type found:', sanityDay.gameType)
-      
-      // Store game data in sessionStorage for the game component to access
-      if (sanityDay.gameType === 'blurGuessGame' && sanityDay.blurGuessGameData) {
-        console.log('Navigating to BlurGuessGame with data:', sanityDay.blurGuessGameData)
-        
-        sessionStorage.setItem('currentGameData', JSON.stringify({
-          blurGuessGame: sanityDay.blurGuessGameData
-        }))
-        sessionStorage.setItem('currentGameType', sanityDay.gameType)
-        sessionStorage.setItem('currentDayInfo', JSON.stringify({
-          day: sanityDay.dayNumber,
-          title: sanityDay.title
-        }))
-        
+    if (sanityDay?.gameType && sanityDay.gameType !== "none") {
+      console.log("Game type found:", sanityDay.gameType);
+
+      // Handle Blur Guess Game
+      if (
+        sanityDay.gameType === "blurGuessGame" &&
+        sanityDay.blurGuessGameData
+      ) {
+        console.log(
+          "Navigating to BlurGuessGame with data:",
+          sanityDay.blurGuessGameData
+        );
+
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            blurGuessGame: sanityDay.blurGuessGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+
         // Navigate to the appropriate game route
-        navigate('/game/blurGuessGame')
-        return
+        navigate("/game/blurGuessGame");
+        return;
+      } else if (
+        sanityDay.gameType === "colorMatchGame" &&
+        sanityDay.colorMatchGameData
+      ) {
+        console.log(
+          "Navigating to StockingColorMatchGame with data:",
+          sanityDay.colorMatchGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            colorMatchGameData: sanityDay.colorMatchGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/colorMatchGame");
+        return;
       } else {
-        console.log('Game type is blurGuessGame but no game data found')
+        console.log("Game type found but no game data available");
       }
     } else {
-      console.log('No game type or game type is none')
+      console.log("No game type or game type is none");
     }
-    
+
     // Fallback to showing alert for days without games
     if (dayInfo) {
-      let message = `${dayInfo.title}\n\n${dayInfo.description}`
-      alert(message)
+      let message = `${dayInfo.title}\n\n${dayInfo.description}`;
+      alert(message);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900">
@@ -247,7 +317,17 @@ export default function AdventCalendar() {
           <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow">
             🎄 Advent Calendar
           </h1>
-          <Timer mode="up" durationMs={10000} startFromMs={1000} running={true} isFinished={false} onFinished={() => {console.log('finished')}} className="text-red-100" />
+          <Timer
+            mode="up"
+            durationMs={10000}
+            startFromMs={1000}
+            running={true}
+            isFinished={false}
+            onFinished={() => {
+              console.log("finished");
+            }}
+            className="text-red-100"
+          />
           <p className="mt-3 text-red-100">
             Countdown to Christmas with daily surprises
           </p>
@@ -260,7 +340,9 @@ export default function AdventCalendar() {
           {error && (
             <div className="mt-4 text-red-200 bg-red-800/20 rounded-lg p-3 max-w-md mx-auto">
               <p className="text-sm">{error}</p>
-              <p className="text-xs mt-1">Please check your Sanity configuration</p>
+              <p className="text-xs mt-1">
+                Please check your Sanity configuration
+              </p>
             </div>
           )}
         </div>
@@ -269,12 +351,14 @@ export default function AdventCalendar() {
           {!loading && !error && sanityDays.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📅</div>
-              <h3 className="text-xl font-semibold text-white mb-2">No Advent Days Found</h3>
+              <h3 className="text-xl font-semibold text-white mb-2">
+                No Advent Days Found
+              </h3>
               <p className="text-red-100 mb-4">
                 Create your first advent day in Sanity Studio to get started!
               </p>
-              <a 
-                href="/studio/" 
+              <a
+                href="/studio/"
                 className="inline-block bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -285,19 +369,19 @@ export default function AdventCalendar() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
               {days.map((day) => {
-                const isUnlocked = true // All days are always unlocked/visible
-                const isToday = day === currentDay && today.getMonth() === 11
-                const dayInfo = dayData.find(d => d.day === day)
+                const isUnlocked = true; // All days are always unlocked/visible
+                const isToday = day === currentDay && today.getMonth() === 11;
+                const dayInfo = dayData.find((d) => d.day === day);
                 return (
-                  <DayCell 
-                    key={day} 
-                    day={day} 
-                    isUnlocked={isUnlocked} 
+                  <DayCell
+                    key={day}
+                    day={day}
+                    isUnlocked={isUnlocked}
                     isToday={isToday}
                     thumbnail={dayInfo?.thumbnail}
                     onDayClick={handleDayClick}
                   />
-                )
+                );
               })}
             </div>
           )}
@@ -307,10 +391,11 @@ export default function AdventCalendar() {
               <p>
                 {today.getMonth() === 11
                   ? `Today is December ${currentDay}. All advent days are visible! 🎄`
-                  : 'All advent days are visible! The calendar is always open! 🎄'}
+                  : "All advent days are visible! The calendar is always open! 🎄"}
               </p>
               <p className="text-sm mt-2 text-red-200">
-                Showing {sanityDays.length} advent day{sanityDays.length !== 1 ? 's' : ''} from Sanity
+                Showing {sanityDays.length} advent day
+                {sanityDays.length !== 1 ? "s" : ""} from Sanity
               </p>
             </div>
           )}
@@ -319,7 +404,5 @@ export default function AdventCalendar() {
 
       <div className="pointer-events-none select-none fixed inset-x-0 bottom-0 h-24 bg-gradient-to-t from-red-900 to-transparent" />
     </div>
-  )
+  );
 }
-
-
