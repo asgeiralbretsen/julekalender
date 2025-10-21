@@ -1,0 +1,126 @@
+import {defineField, defineType} from 'sanity'
+
+export const colorMatchType = defineType({
+  name: 'colorMatch',
+  title: 'Color Match Game',
+  type: 'document',
+  fields: [
+    defineField({
+      name: 'title',
+      title: 'Game Title',
+      type: 'string',
+      validation: (rule) => rule.required().max(100),
+      description: 'The title of this color match game',
+    }),
+    defineField({
+      name: 'description',
+      title: 'Description',
+      type: 'text',
+      rows: 3,
+      description: 'Brief description of the game',
+    }),
+    defineField({
+      name: 'stockingColors',
+      title: 'Stocking Colors',
+      type: 'object',
+      fields: [
+        defineField({
+          name: 'topColor',
+          title: 'Top Color',
+          type: 'color',
+          validation: (rule) => rule.required(),
+          description: 'The color of the top section of the stocking',
+        }),
+        defineField({
+          name: 'topStripesColor',
+          title: 'Top Stripes Color',
+          type: 'color',
+          validation: (rule) => rule.required(),
+          description: 'The color of the stripes in the top section',
+        }),
+        defineField({
+          name: 'mainColor',
+          title: 'Main Body Color',
+          type: 'color',
+          validation: (rule) => rule.required(),
+          description: 'The primary color of the stocking body',
+        }),
+        defineField({
+          name: 'heelColor',
+          title: 'Heel Color',
+          type: 'color',
+          validation: (rule) => rule.required(),
+          description: 'The color of the heel section',
+        }),
+        defineField({
+          name: 'stripesColor',
+          title: 'Stripes Color',
+          type: 'color',
+          validation: (rule) => rule.required(),
+          description: 'The color of the decorative stripes',
+        }),
+      ],
+      validation: (rule) => rule.required(),
+      description: 'Define the colors for the target stocking that players need to match',
+    }),
+    defineField({
+      name: 'scoringSettings',
+      title: 'Scoring Settings',
+      type: 'object',
+      fields: [
+        defineField({
+          name: 'perfectMatchBonus',
+          title: 'Perfect Match Bonus',
+          type: 'number',
+          initialValue: 50,
+          validation: (rule) => rule.required().min(0).max(1000),
+          description: 'Bonus points for perfect color matches',
+        }),
+        defineField({
+          name: 'closeMatchThreshold',
+          title: 'Close Match Threshold',
+          type: 'number',
+          initialValue: 80,
+          validation: (rule) => rule.required().min(0).max(100),
+          description: 'Percentage threshold for considering a match "close"',
+        }),
+        defineField({
+          name: 'timeBonus',
+          title: 'Time Bonus Multiplier',
+          type: 'number',
+          initialValue: 1.5,
+          validation: (rule) => rule.required().min(0).max(5),
+          description: 'Multiplier for time-based bonuses',
+        }),
+      ],
+      description: 'Configure how scoring works for this game',
+    }),
+  ],
+  preview: {
+    select: {
+      title: 'title',
+      description: 'description',
+      media: 'previewImage',
+    },
+    prepare(selection) {
+      const {title, description, media} = selection
+      return {
+        title: title || 'Untitled Color Match Game',
+        subtitle: description || 'No description',
+        media: media,
+      }
+    },
+  },
+  orderings: [
+    {
+      title: 'Title, A-Z',
+      name: 'titleAsc',
+      by: [{field: 'title', direction: 'asc'}],
+    },
+    {
+      title: 'Created Date',
+      name: 'createdDesc',
+      by: [{field: '_createdAt', direction: 'desc'}],
+    },
+  ],
+})
