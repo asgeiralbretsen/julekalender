@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root { --app-cursor: auto; }
+
+/* Apply to whole app */
+html, body, #root { height: 100%; }
+html, body, #root { cursor: var(--app-cursor); }
+
+/* Make children inherit it */
+#root * { cursor: inherit; }
+
+/* (Optional) keep I-beam for typing areas */
+input, textarea, [contenteditable="true"] { cursor: text; }
