@@ -1,5 +1,5 @@
-import { useMemo, useEffect, useRef } from 'react'
-import { animate } from 'animejs'
+import { useMemo, useEffect, useRef, useState } from 'react'
+import { client } from '../lib/sanity'
 
 interface DayCellProps {
   day: number
@@ -14,6 +14,26 @@ interface DayData {
   thumbnail?: string
   title?: string
   description?: string
+}
+
+interface SanityDay {
+  _id: string
+  dayNumber: number
+  date: string
+  title: string
+  image?: {
+    asset: {
+      _ref: string
+    }
+    alt?: string
+  }
+  game?: {
+    title: string
+    description?: string
+    difficulty?: 'easy' | 'medium' | 'hard'
+    estimatedTime?: string
+  }
+  isUnlocked: boolean
 }
 
 function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellProps) {
@@ -49,7 +69,7 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
       className={
         `relative aspect-square rounded-xl border-2 transition-all duration-300 cursor-pointer` +
         ` ${isUnlocked ? 'bg-white/95 hover:-translate-y-2 shadow-xl hover:shadow-2xl' : 'bg-gray-200/70 cursor-not-allowed'} ` +
-        ` ${isToday ? 'ring-4 ring-red-400 shadow-red-200' : ''}`
+        ` ${isToday ? 'ring-4 ring-yellow-400 shadow-yellow-200 bg-gradient-to-br from-yellow-50 to-red-50' : ''}`
       }
     >
       <div className="absolute inset-0 overflow-hidden rounded-xl">
@@ -59,11 +79,19 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
 
       <div className="absolute top-2 left-2 z-10">
         <span className={`inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full ${
-          isUnlocked ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-400 text-white'
+          isUnlocked ? (isToday ? 'bg-yellow-500 text-white shadow-lg' : 'bg-red-600 text-white shadow-lg') : 'bg-gray-400 text-white'
         }`}>
           {day}
         </span>
       </div>
+      
+      {isToday && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full bg-yellow-500 text-white shadow-lg">
+            TODAY
+          </span>
+        </div>
+      )}
 
       <div className="h-full w-full flex items-center justify-center relative z-10">
         {isUnlocked ? (
@@ -83,7 +111,7 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
 
       {isToday && (
         <div className="absolute -top-3 -right-3 z-10">
-          <span className="text-2xl animate-pulse">⭐</span>
+          <span className="text-3xl animate-bounce">🌟</span>
         </div>
       )}
 
@@ -98,36 +126,50 @@ export default function AdventCalendar() {
   const today = new Date()
   const currentDay = today.getMonth() === 11 ? today.getDate() : 1 // December only; otherwise start at 1
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  const [sanityDays, setSanityDays] = useState<SanityDay[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Sample day data with thumbnails - you can replace these with your own images
-  const dayData: DayData[] = useMemo(() => [
-    { day: 1, thumbnail: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=200&h=200&fit=crop&crop=center', title: 'Christmas Tree', description: 'The first day of advent!' },
-    { day: 2, thumbnail: 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=200&h=200&fit=crop&crop=center', title: 'Snowflakes', description: 'Beautiful winter crystals' },
-    { day: 3, thumbnail: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=200&fit=crop&crop=center', title: 'Gingerbread', description: 'Sweet holiday treats' },
-    { day: 4, thumbnail: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&h=200&fit=crop&crop=center', title: 'Candles', description: 'Warm holiday glow' },
-    { day: 5, thumbnail: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=200&h=200&fit=crop&crop=center', title: 'Ornaments', description: 'Shiny decorations' },
-    { day: 6, thumbnail: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=200&h=200&fit=crop&crop=center', title: 'Hot Chocolate', description: 'Warm winter drink' },
-    { day: 7, thumbnail: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=200&fit=crop&crop=center', title: 'Cookies', description: 'Holiday baking' },
-    { day: 8, thumbnail: 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=200&h=200&fit=crop&crop=center', title: 'Winter Scene', description: 'Peaceful snow' },
-    { day: 9, thumbnail: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=200&h=200&fit=crop&crop=center', title: 'Presents', description: 'Gift giving' },
-    { day: 10, thumbnail: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&h=200&fit=crop&crop=center', title: 'Fireplace', description: 'Cozy warmth' },
-    { day: 11, thumbnail: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=200&h=200&fit=crop&crop=center', title: 'Stockings', description: 'Hanging by the fire' },
-    { day: 12, thumbnail: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=200&h=200&fit=crop&crop=center', title: 'Winter Wonderland', description: 'Magical snow' },
-    { day: 13, thumbnail: 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=200&h=200&fit=crop&crop=center', title: 'Ice Skating', description: 'Winter fun' },
-    { day: 14, thumbnail: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=200&h=200&fit=crop&crop=center', title: 'Christmas Lights', description: 'Twinkling magic' },
-    { day: 15, thumbnail: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=200&fit=crop&crop=center', title: 'Holiday Feast', description: 'Delicious food' },
-    { day: 16, thumbnail: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&h=200&fit=crop&crop=center', title: 'Warm Blanket', description: 'Cozy comfort' },
-    { day: 17, thumbnail: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=200&h=200&fit=crop&crop=center', title: 'Holiday Music', description: 'Joyful sounds' },
-    { day: 18, thumbnail: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=200&h=200&fit=crop&crop=center', title: 'Winter Walk', description: 'Fresh air' },
-    { day: 19, thumbnail: 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=200&h=200&fit=crop&crop=center', title: 'Snow Angels', description: 'Childhood fun' },
-    { day: 20, thumbnail: 'https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=200&h=200&fit=crop&crop=center', title: 'Family Time', description: 'Togetherness' },
-    { day: 21, thumbnail: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=200&fit=crop&crop=center', title: 'Holiday Cards', description: 'Season\'s greetings' },
-    { day: 22, thumbnail: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&h=200&fit=crop&crop=center', title: 'Winter Solstice', description: 'Longest night' },
-    { day: 23, thumbnail: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=200&h=200&fit=crop&crop=center', title: 'Christmas Eve Eve', description: 'Almost here!' },
-    { day: 24, thumbnail: 'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=200&h=200&fit=crop&crop=center', title: 'Christmas Eve', description: 'The magic begins!' }
-  ], [])
+  // Fetch days from Sanity
+  useEffect(() => {
+    const fetchDays = async () => {
+      try {
+        const query = `*[_type == "day"] | order(dayNumber asc) {
+          _id,
+          dayNumber,
+          date,
+          title,
+          image,
+          game,
+          isUnlocked
+        }`
+        const data = await client.fetch(query)
+        setSanityDays(data)
+      } catch (err) {
+        setError('Failed to fetch advent days')
+        console.error('Error fetching days:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const days = useMemo(() => Array.from({ length: 24 }, (_, i) => i + 1), [])
+    fetchDays()
+  }, [])
+
+  // Convert Sanity days to the format expected by the component
+  const dayData: DayData[] = useMemo(() => {
+    // Only use Sanity data - no fallbacks
+    return sanityDays.map(sanityDay => ({
+      day: sanityDay.dayNumber,
+      thumbnail: sanityDay.image ? `https://cdn.sanity.io/images/54fixmwv/production/${sanityDay.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}` : undefined,
+      title: sanityDay.title,
+      description: sanityDay.game?.description || `Day ${sanityDay.dayNumber} of advent!`
+    }))
+  }, [sanityDays])
+
+  // Only show days that exist in Sanity
+  const days = useMemo(() => sanityDays.map(day => day.dayNumber).sort((a, b) => a - b), [sanityDays])
 
   useEffect(() => {
     if (containerRef.current) {
@@ -142,8 +184,22 @@ export default function AdventCalendar() {
 
   const handleDayClick = (day: number) => {
     const dayInfo = dayData.find(d => d.day === day)
+    const sanityDay = sanityDays.find(d => d.dayNumber === day)
+    
     if (dayInfo) {
-      alert(`${dayInfo.title}\n\n${dayInfo.description}`)
+      let message = `${dayInfo.title}\n\n${dayInfo.description}`
+      
+      if (sanityDay?.game) {
+        message += `\n\n🎮 Game: ${sanityDay.game.title}`
+        if (sanityDay.game.difficulty) {
+          message += `\n📊 Difficulty: ${sanityDay.game.difficulty}`
+        }
+        if (sanityDay.game.estimatedTime) {
+          message += `\n⏱️ Time: ${sanityDay.game.estimatedTime}`
+        }
+      }
+      
+      alert(message)
     }
   }
 
@@ -161,34 +217,69 @@ export default function AdventCalendar() {
           <p className="mt-3 text-red-100">
             Countdown to Christmas with daily surprises
           </p>
+          {loading && (
+            <div className="mt-4 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              <span className="ml-2 text-red-100">Loading advent days...</span>
+            </div>
+          )}
+          {error && (
+            <div className="mt-4 text-red-200 bg-red-800/20 rounded-lg p-3 max-w-md mx-auto">
+              <p className="text-sm">{error}</p>
+              <p className="text-xs mt-1">Please check your Sanity configuration</p>
+            </div>
+          )}
         </div>
 
         <div className="bg-white/10 backdrop-blur rounded-2xl p-6 md:p-8 shadow-xl border border-white/10">
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 md:gap-6">
-            {days.map((day) => {
-              const isUnlocked = day <= currentDay
-              const isToday = day === currentDay && today.getMonth() === 11
-              const dayInfo = dayData.find(d => d.day === day)
-              return (
-                <DayCell 
-                  key={day} 
-                  day={day} 
-                  isUnlocked={isUnlocked} 
-                  isToday={isToday}
-                  thumbnail={dayInfo?.thumbnail}
-                  onDayClick={handleDayClick}
-                />
-              )
-            })}
-          </div>
+          {!loading && !error && sanityDays.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📅</div>
+              <h3 className="text-xl font-semibold text-white mb-2">No Advent Days Found</h3>
+              <p className="text-red-100 mb-4">
+                Create your first advent day in Sanity Studio to get started!
+              </p>
+              <a 
+                href="/studio/" 
+                className="inline-block bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open Sanity Studio
+              </a>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+              {days.map((day) => {
+                const isUnlocked = true // All days are always unlocked/visible
+                const isToday = day === currentDay && today.getMonth() === 11
+                const dayInfo = dayData.find(d => d.day === day)
+                return (
+                  <DayCell 
+                    key={day} 
+                    day={day} 
+                    isUnlocked={isUnlocked} 
+                    isToday={isToday}
+                    thumbnail={dayInfo?.thumbnail}
+                    onDayClick={handleDayClick}
+                  />
+                )
+              })}
+            </div>
+          )}
 
-          <div className="mt-8 text-center text-red-100">
-            <p>
-              {today.getMonth() === 11
-                ? `Today is December ${currentDay}. ${currentDay < 24 ? 'Come back tomorrow for more!' : 'Merry Christmas! 🎅'}`
-                : 'It is not December yet. The calendar unlocks in December!'}
-            </p>
-          </div>
+          {sanityDays.length > 0 && (
+            <div className="mt-8 text-center text-red-100">
+              <p>
+                {today.getMonth() === 11
+                  ? `Today is December ${currentDay}. All advent days are visible! 🎄`
+                  : 'All advent days are visible! The calendar is always open! 🎄'}
+              </p>
+              <p className="text-sm mt-2 text-red-200">
+                Showing {sanityDays.length} advent day{sanityDays.length !== 1 ? 's' : ''} from Sanity
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

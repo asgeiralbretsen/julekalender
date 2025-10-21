@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import Posts from './Posts'
+import Days from './Days'
 
 interface HealthStatus {
   status: string;
@@ -89,8 +89,8 @@ export default function HealthMonitor() {
             </div>
           </div>
 
-          {/* Posts */}
-          <Posts />
+          {/* Advent Calendar Days */}
+          <Days />
         </div>
       </div>
     </div>
