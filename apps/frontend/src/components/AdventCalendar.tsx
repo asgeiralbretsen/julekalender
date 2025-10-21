@@ -71,7 +71,7 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
       className={
         `relative aspect-square rounded-xl border-2 transition-all duration-300 cursor-pointer` +
         ` ${isUnlocked ? 'bg-white/95 hover:-translate-y-2 shadow-xl hover:shadow-2xl' : 'bg-gray-200/70 cursor-not-allowed'} ` +
-        ` ${isToday ? 'ring-4 ring-red-400 shadow-red-200' : ''}`
+        ` ${isToday ? 'ring-4 ring-yellow-400 shadow-yellow-200 bg-gradient-to-br from-yellow-50 to-red-50' : ''}`
       }
     >
       <div className="absolute inset-0 overflow-hidden rounded-xl">
@@ -81,11 +81,19 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
 
       <div className="absolute top-2 left-2 z-10">
         <span className={`inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full ${
-          isUnlocked ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-400 text-white'
+          isUnlocked ? (isToday ? 'bg-yellow-500 text-white shadow-lg' : 'bg-red-600 text-white shadow-lg') : 'bg-gray-400 text-white'
         }`}>
           {day}
         </span>
       </div>
+      
+      {isToday && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full bg-yellow-500 text-white shadow-lg">
+            TODAY
+          </span>
+        </div>
+      )}
 
       <div className="h-full w-full flex items-center justify-center relative z-10">
         {isUnlocked ? (
@@ -105,7 +113,7 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
 
       {isToday && (
         <div className="absolute -top-3 -right-3 z-10">
-          <span className="text-2xl animate-pulse">⭐</span>
+          <span className="text-3xl animate-bounce">🌟</span>
         </div>
       )}
 
@@ -162,7 +170,8 @@ export default function AdventCalendar() {
     }))
   }, [sanityDays])
 
-  const days = useMemo(() => Array.from({ length: 24 }, (_, i) => i + 1), [])
+  // Only show days that exist in Sanity
+  const days = useMemo(() => sanityDays.map(day => day.dayNumber).sort((a, b) => a - b), [sanityDays])
 
   useEffect(() => {
     // if (containerRef.current) {
@@ -243,9 +252,9 @@ export default function AdventCalendar() {
               </a>
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
               {days.map((day) => {
-                const isUnlocked = day <= currentDay
+                const isUnlocked = true // All days are always unlocked/visible
                 const isToday = day === currentDay && today.getMonth() === 11
                 const dayInfo = dayData.find(d => d.day === day)
                 return (
@@ -266,8 +275,11 @@ export default function AdventCalendar() {
             <div className="mt-8 text-center text-red-100">
               <p>
                 {today.getMonth() === 11
-                  ? `Today is December ${currentDay}. ${currentDay < 24 ? 'Come back tomorrow for more!' : 'Merry Christmas! 🎅'}`
-                  : 'It is not December yet. The calendar unlocks in December!'}
+                  ? `Today is December ${currentDay}. All advent days are visible! 🎄`
+                  : 'All advent days are visible! The calendar is always open! 🎄'}
+              </p>
+              <p className="text-sm mt-2 text-red-200">
+                Showing {sanityDays.length} advent day{sanityDays.length !== 1 ? 's' : ''} from Sanity
               </p>
             </div>
           )}
