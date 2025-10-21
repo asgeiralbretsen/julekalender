@@ -19,16 +19,10 @@ services:
   frontend:
     build:
       context: ./apps/frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: julekalender-frontend
     ports:
-      - "3001:5173"
-    volumes:
-      - ./apps/frontend:/app
-      - /app/node_modules
-    environment:
-      - VITE_API_URL=http://localhost:5002
-      - VITE_CLERK_PUBLISHABLE_KEY=pk_test_cHJvbXB0LWRvbHBoaW4tMzguY2xlcmsuYWNjb3VudHMuZGV2JA
+      - "3001:80"
     depends_on:
       - backend
     networks:
@@ -42,7 +36,7 @@ services:
     ports:
       - "5002:5000"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=julekalender;Username=postgres;Password=postgres
     depends_on:

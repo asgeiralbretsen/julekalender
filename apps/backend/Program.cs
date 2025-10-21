@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using BackendApi.Data;
+using BackendApi.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -12,10 +16,29 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Add Entity Framework
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Add services
+builder.Services.AddScoped<IUserService, UserService>();
+
+// Add JWT Authentication for Clerk
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.Authority = "https://clerk.julekalender.albretsen.no";
+        options.Audience = "https://clerk.julekalender.albretsen.no";
+        options.RequireHttpsMetadata = false; // Set to true in production
+    });
+
 var app = builder.Build();
 
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Add global route prefix for julekalender API
 app.MapControllers();
