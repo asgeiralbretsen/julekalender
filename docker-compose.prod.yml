@@ -84,7 +84,7 @@ services:
     container_name: julekalender-pgadmin
     restart: unless-stopped
     environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@julekalender.local
+      - PGADMIN_DEFAULT_EMAIL=admin@julekalender.com
       - PGADMIN_DEFAULT_PASSWORD=admin
     ports:
       - "8081:80"
