@@ -13,6 +13,7 @@ services:
     depends_on:
       - frontend
       - backend
+      - studio
     networks:
       - julekalender-network
 
@@ -41,6 +42,18 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
+    networks:
+      - julekalender-network
+
+  studio:
+    build:
+      context: ./apps/studio
+      dockerfile: Dockerfile
+    container_name: julekalender-studio
+    ports:
+      - "3333:3333"
+    environment:
+      - NODE_ENV=production
     networks:
       - julekalender-network
 

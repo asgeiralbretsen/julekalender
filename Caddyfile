@@ -15,6 +15,17 @@
         header Expires "0"
     }
     
+    # Route studio requests to Sanity Studio
+    handle /studio/* {
+        reverse_proxy julekalender-studio:3333 {
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host {host}
+        }
+    }
+    
     # Route all other requests to frontend
     handle /* {
         reverse_proxy julekalender-frontend:5173 {

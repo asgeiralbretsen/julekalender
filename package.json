@@ -1,22 +1,24 @@
 {
   "name": "julekalender-monorepo",
   "version": "1.0.0",
-  "description": "Monorepo containing React frontend and .NET backend",
+  "description": "Monorepo containing React frontend, .NET backend, and Sanity Studio",
   "private": true,
   "workspaces": [
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:studio\"",
     "dev:frontend": "cd apps/frontend && npm run dev",
     "dev:backend": "cd apps/backend && dotnet run",
-    "build": "npm run build:frontend && npm run build:backend",
+    "dev:studio": "cd apps/studio && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend && npm run build:studio",
     "build:frontend": "cd apps/frontend && npm run build",
     "build:backend": "cd apps/backend && dotnet build",
+    "build:studio": "cd apps/studio && npm run build",
     "docker:up": "docker-compose up --build",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-    "install:all": "npm install && cd apps/frontend && npm install"
+    "install:all": "npm install && cd apps/frontend && npm install && cd ../studio && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
