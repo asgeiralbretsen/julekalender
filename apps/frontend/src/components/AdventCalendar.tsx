@@ -1,7 +1,10 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
 import { client } from '../lib/sanity'
+import imageUrlBuilder from '@sanity/image-url'
 import { animate } from 'animejs'
 import { Timer } from './Timer'
+
+const builder = imageUrlBuilder(client)
 
 interface DayCellProps {
   day: number
@@ -40,27 +43,57 @@ interface SanityDay {
 
 function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellProps) {
   const cellRef = useRef<HTMLDivElement>(null)
+  const doorRef = useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false)
 
+  // Initial entrance animation
   useEffect(() => {
-    if (isUnlocked && cellRef.current) {
+    if (cellRef.current) {
       animate(cellRef.current, {
-        scale: [0.8, 1],
+        scale: [0, 1],
         opacity: [0, 1],
-        duration: 600,
-        delay: day * 50,
-        easing: 'easeOutElastic(1, .8)'
+        rotate: [180, 0],
+        duration: 800,
+        delay: day * 80,
+        easing: 'easeOutElastic(1, .6)'
       })
     }
-  }, [isUnlocked, day])
+  }, [day])
 
   const handleClick = () => {
-    if (isUnlocked && onDayClick && cellRef.current) {
-      animate(cellRef.current, {
-        scale: [1, 0.95, 1],
-        duration: 200,
-        easing: 'easeInOutQuad'
+    if (isUnlocked && onDayClick && doorRef.current) {
+      // Door opening animation
+      setIsOpen(true)
+      animate(doorRef.current, {
+        rotateY: [0, -180],
+        duration: 800,
+        easing: 'easeInOutQuad',
+        complete: () => {
+          onDayClick(day)
+        }
       })
-      onDayClick(day)
+    }
+  }
+
+  const handleMouseEnter = () => {
+    if (isUnlocked && cellRef.current && !isOpen) {
+      animate(cellRef.current, {
+        scale: 1.05,
+        translateY: -8,
+        duration: 300,
+        easing: 'easeOutQuad'
+      })
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (isUnlocked && cellRef.current && !isOpen) {
+      animate(cellRef.current, {
+        scale: 1,
+        translateY: 0,
+        duration: 300,
+        easing: 'easeOutQuad'
+      })
     }
   }
 
@@ -68,60 +101,268 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
     <div
       ref={cellRef}
       onClick={handleClick}
-      className={
-        `relative aspect-square rounded-xl border-2 transition-all duration-300 cursor-pointer` +
-        ` ${isUnlocked ? 'bg-white/95 hover:-translate-y-2 shadow-xl hover:shadow-2xl' : 'bg-gray-200/70 cursor-not-allowed'} ` +
-        ` ${isToday ? 'ring-4 ring-yellow-400 shadow-yellow-200 bg-gradient-to-br from-yellow-50 to-red-50' : ''}`
-      }
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`relative aspect-square cursor-pointer ${isUnlocked ? '' : 'cursor-not-allowed'}`}
+      style={{ perspective: '1000px' }}
     >
-      <div className="absolute inset-0 overflow-hidden rounded-xl">
-        <div className="absolute -top-10 -left-10 w-32 h-32 bg-red-500/20 rounded-full blur-2xl" />
-        <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-red-400/20 rounded-full blur-2xl" />
-      </div>
+      {/* Container that rotates */}
+      <div
+        ref={doorRef}
+        className="absolute inset-0"
+        style={{
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        {/* Door front */}
+        <div
+          className={`absolute inset-0 rounded-2xl shadow-2xl transition-all duration-300 ${
+            isUnlocked 
+              ? 'bg-gradient-to-br from-red-600 via-red-700 to-red-800' 
+              : 'bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600'
+          }`}
+          style={{
+            transformStyle: 'preserve-3d',
+            backfaceVisibility: 'hidden'
+          }}
+        >
+          {/* Ornamental border */}
+          <div className="absolute inset-2 rounded-xl border-4 border-yellow-400/30">
+            <div className="absolute inset-2 rounded-lg border-2 border-yellow-300/20" />
+          </div>
 
-      <div className="absolute top-2 left-2 z-10">
-        <span className={`inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full ${
-          isUnlocked ? (isToday ? 'bg-yellow-500 text-white shadow-lg' : 'bg-red-600 text-white shadow-lg') : 'bg-gray-400 text-white'
-        }`}>
-          {day}
-        </span>
-      </div>
-      
-      {isToday && (
-        <div className="absolute top-2 right-2 z-10">
-          <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full bg-yellow-500 text-white shadow-lg">
-            TODAY
-          </span>
+          {/* Snow effect on top */}
+          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/40 to-transparent rounded-t-2xl" />
+          
+          {/* Snowflake decorations */}
+          <div className="absolute top-3 left-3 text-white/30 text-xl">❄</div>
+          <div className="absolute top-3 right-3 text-white/30 text-xl">❄</div>
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/30 text-xl">❄</div>
+
+          {/* Day number */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className={`text-5xl font-bold ${
+              isUnlocked ? 'text-yellow-300' : 'text-gray-300'
+            } drop-shadow-lg`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+              {day}
+            </div>
+          </div>
+
+          {/* Door handle */}
+          {isUnlocked && (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-8 bg-yellow-500 rounded-full shadow-lg" />
+          )}
+
+          {/* Lock icon for locked days */}
+          {!isUnlocked && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+              <span className="text-3xl drop-shadow-lg">🔒</span>
+            </div>
+          )}
+
+          {/* Today badge */}
+          {isToday && (
+            <>
+              <div className="absolute -top-2 -right-2 animate-pulse">
+                <div className="bg-yellow-400 text-red-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg border-2 border-white">
+                  TODAY
+                </div>
+              </div>
+              <div className="absolute -top-4 -left-4 animate-bounce">
+                <span className="text-4xl drop-shadow-xl">⭐</span>
+              </div>
+            </>
+          )}
+
+          {/* Sparkle effects for unlocked days */}
+          {isUnlocked && (
+            <>
+              <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-ping" style={{ animationDelay: '0s' }} />
+              <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-ping" style={{ animationDelay: '0.5s' }} />
+            </>
+          )}
         </div>
-      )}
 
-      <div className="h-full w-full flex items-center justify-center relative z-10">
-        {isUnlocked ? (
-          thumbnail ? (
-            <img 
-              src={thumbnail} 
-              alt={`Day ${day}`}
-              className="w-12 h-12 object-cover rounded-lg shadow-md"
-            />
-          ) : (
-            <span className="text-3xl select-none">🎁</span>
-          )
-        ) : (
-          <span className="text-2xl select-none text-gray-400">🔒</span>
-        )}
-      </div>
-
-      {isToday && (
-        <div className="absolute -top-3 -right-3 z-10">
-          <span className="text-3xl animate-bounce">🌟</span>
+        {/* Door back (revealed content) */}
+        <div
+          className="absolute inset-0 rounded-2xl shadow-2xl bg-gradient-to-br from-green-600 via-green-700 to-green-800"
+          style={{
+            transformStyle: 'preserve-3d',
+            backfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)'
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            {thumbnail ? (
+              <img 
+                src={thumbnail} 
+                alt={`Day ${day}`}
+                className="w-full h-full object-cover rounded-xl shadow-lg"
+              />
+            ) : (
+              <span className="text-6xl drop-shadow-xl">🎁</span>
+            )}
+          </div>
         </div>
-      )}
-
-      {isUnlocked && (
-        <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-red-600/10 rounded-xl" />
-      )}
+      </div>
     </div>
   )
+}
+
+function DoorCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellProps) {
+  const cellRef = useRef<HTMLDivElement>(null);
+  const doorWrapRef = useRef<HTMLDivElement>(null); // NEW
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (cellRef.current) {
+      animate(cellRef.current, {
+        scale: [0, 1],
+        opacity: [0, 1],
+        rotate: [180, 0],
+        duration: 800,
+        delay: day * 80,
+        easing: 'easeOutElastic(1, .6)'
+      });
+    }
+  }, [day]);
+
+  const handleClick = () => {
+    if (isUnlocked && onDayClick && doorWrapRef.current) {
+      setIsOpen(true);
+      // Rotate the WRAPPER, not the front panel
+      animate(doorWrapRef.current, {
+        rotateY: [0, -180],
+        duration: 800,
+        easing: 'easeInOutQuad',
+        complete: () => onDayClick(day),
+      });
+    }
+  };
+
+  const handleMouseEnter = () => {
+    if (isUnlocked && cellRef.current && !isOpen) {
+      animate(cellRef.current, { scale: 1.05, translateY: -8, duration: 300, easing: 'easeOutQuad' });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (isUnlocked && cellRef.current && !isOpen) {
+      animate(cellRef.current, { scale: 1, translateY: 0, duration: 300, easing: 'easeOutQuad' });
+    }
+  };
+
+  return (
+    <div
+      ref={cellRef}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`relative aspect-square ${isUnlocked ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+      style={{ perspective: '1000px' }}
+    >
+      {/* Flip wrapper holds both faces */}
+      <div
+        ref={doorWrapRef}
+        className="absolute inset-0"
+        style={{
+          transformStyle: 'preserve-3d',
+          transformOrigin: 'left center',     // nice door hinge feel
+          willChange: 'transform',
+        }}
+      >
+        {/* Door front */}
+        <div
+          className={`absolute inset-0 rounded-2xl shadow-2xl transition-all duration-300 ${
+            isUnlocked 
+              ? 'bg-gradient-to-br from-red-600 via-red-700 to-red-800' 
+              : 'bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600'
+          }`}
+          style={{
+            backfaceVisibility: 'hidden',
+          }}
+        >
+          {/* Ornamental border */}
+          <div className="absolute inset-2 rounded-xl border-4 border-yellow-400/30">
+            <div className="absolute inset-2 rounded-lg border-2 border-yellow-300/20" />
+          </div>
+
+          {/* Snow effect on top */}
+          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/40 to-transparent rounded-t-2xl" />
+          
+          {/* Snowflake decorations */}
+          <div className="absolute top-3 left-3 text-white/30 text-xl">❄</div>
+          <div className="absolute top-3 right-3 text-white/30 text-xl">❄</div>
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/30 text-xl">❄</div>
+
+          {/* Day number */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className={`text-5xl font-bold ${isUnlocked ? 'text-yellow-300' : 'text-gray-300'} drop-shadow-lg`}
+              style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
+            >
+              {day}
+            </div>
+          </div>
+
+          {/* Door handle */}
+          {isUnlocked && (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-8 bg-yellow-500 rounded-full shadow-lg" />
+          )}
+
+          {/* Lock icon for locked days */}
+          {!isUnlocked && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+              <span className="text-3xl drop-shadow-lg">🔒</span>
+            </div>
+          )}
+
+          {/* Today badge */}
+          {isToday && (
+            <>
+              <div className="absolute -top-2 -right-2 animate-pulse">
+                <div className="bg-yellow-400 text-red-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg border-2 border-white">
+                  TODAY
+                </div>
+              </div>
+              <div className="absolute -top-4 -left-4 animate-bounce">
+                <span className="text-4xl drop-shadow-xl">⭐</span>
+              </div>
+            </>
+          )}
+
+          {/* Sparkles */}
+          {isUnlocked && (
+            <>
+              <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-ping" style={{ animationDelay: '0s' }} />
+              <div className="absolute top-3/4 right-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-ping" style={{ animationDelay: '0.5s' }} />
+            </>
+          )}
+        </div>
+
+        {/* Door back (revealed content) */}
+        <div
+          className="absolute inset-0 rounded-2xl shadow-2xl bg-gradient-to-br from-green-600 via-green-700 to-green-800"
+          style={{
+            backfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',   // pre-rotated so it faces viewer after wrapper flips
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            {thumbnail ? (
+              <img 
+                src={thumbnail} 
+                alt={`Day ${day}`}
+                className="w-full h-full object-cover rounded-xl shadow-lg"
+              />
+            ) : (
+              <span className="text-6xl drop-shadow-xl">🎁</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function AdventCalendar() {
@@ -164,7 +405,7 @@ export default function AdventCalendar() {
     // Only use Sanity data - no fallbacks
     return sanityDays.map(sanityDay => ({
       day: sanityDay.dayNumber,
-      thumbnail: sanityDay.image ? `https://cdn.sanity.io/images/54fixmwv/production/${sanityDay.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}` : undefined,
+      thumbnail: sanityDay.image?.asset ? builder.image(sanityDay.image).width(400).height(400).url() : undefined,
       title: sanityDay.title,
       description: sanityDay.game?.description || `Day ${sanityDay.dayNumber} of advent!`
     }))
@@ -201,17 +442,24 @@ export default function AdventCalendar() {
         }
       }
       
-      alert(message)
+      console.log(message)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900">
-      <div className="relative">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
+    <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden">
+      {/* Animated snow background */}
+      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
+      
+      {/* Floating snowflakes */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '0s' }}>❄</div>
+        <div className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse" style={{ animationDelay: '1s' }}>❄</div>
+        <div className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse" style={{ animationDelay: '2s' }}>❄</div>
+        <div className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '1.5s' }}>❄</div>
       </div>
 
-      <div ref={containerRef} className="max-w-6xl mx-auto px-4 py-10">
+      <div ref={containerRef} className="max-w-7xl mx-auto px-4 py-10 relative z-10">
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow">
             🎄 Advent Calendar
@@ -234,7 +482,7 @@ export default function AdventCalendar() {
           )}
         </div>
 
-        <div className="bg-white/10 backdrop-blur rounded-2xl p-6 md:p-8 shadow-xl border border-white/10">
+        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl border-2 border-white/20">
           {!loading && !error && sanityDays.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📅</div>
@@ -252,7 +500,7 @@ export default function AdventCalendar() {
               </a>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
               {days.map((day) => {
                 const isUnlocked = true // All days are always unlocked/visible
                 const isToday = day === currentDay && today.getMonth() === 11
