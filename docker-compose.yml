@@ -13,7 +13,6 @@ services:
     depends_on:
       - frontend
       - backend
-      - studio
     networks:
       - julekalender-network
 
@@ -56,6 +55,8 @@ services:
       - NODE_ENV=production
     networks:
       - julekalender-network
+    restart: unless-stopped
+
 
 volumes:
   caddy_data:

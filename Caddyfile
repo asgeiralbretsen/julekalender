@@ -15,7 +15,7 @@
         header Expires "0"
     }
     
-    # Route studio requests to Sanity Studio
+    # Route studio requests to Sanity Studio (optional - won't break if studio is down)
     handle /studio/* {
         reverse_proxy julekalender-studio:3333 {
             header_up Host {host}
