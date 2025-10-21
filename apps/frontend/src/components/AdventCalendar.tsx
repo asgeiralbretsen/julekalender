@@ -1,5 +1,7 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
 import { client } from '../lib/sanity'
+import { animate } from 'animejs'
+import { Timer } from './Timer'
 
 interface DayCellProps {
   day: number
@@ -214,6 +216,7 @@ export default function AdventCalendar() {
           <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow">
             🎄 Advent Calendar
           </h1>
+          <Timer mode="up" durationMs={10000} startFromMs={1000} running={true} isFinished={false} onFinished={() => {console.log('finished')}} className="text-red-100" />
           <p className="mt-3 text-red-100">
             Countdown to Christmas with daily surprises
           </p>
