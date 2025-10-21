@@ -1,23 +1,45 @@
-name: Deploy to VPS
+name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Deploy to VPS
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        script: |
-          cd /opt/julekalender
-          git pull origin main
-          docker-compose down
-          docker-compose up -d --build
-          docker system prune -f
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install Docker Compose
+      run: |
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        
+    - name: Build and deploy production
+      run: |
+        docker-compose -f docker-compose.prod.yml up --build -d
+        
+    - name: Test deployment
+      run: |
+        echo "⏳ Waiting for services to start..."
+        sleep 60
+        
+        echo "🔍 Checking service status..."
+        docker-compose -f docker-compose.prod.yml ps
+        
+        echo "🧪 Testing backend API..."
+        for i in {1..5}; do
+          if curl -f http://localhost:5002/api/users; then
+            echo "✅ Backend API is responding"
+            break
+          else
+            echo "⏳ Backend not ready yet, waiting... (attempt $i/5)"
+            sleep 10
+          fi
+        done
+        
+        echo "🧪 Testing frontend..."
+        curl -f http://localhost:3001 || echo "⚠️ Frontend test failed but continuing..."

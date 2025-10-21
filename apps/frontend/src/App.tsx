@@ -1,10 +1,14 @@
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import Header from "./components/Header";
 import LandingPage from "./components/LandingPage";
-import HealthMonitor from "./components/HealthMonitor";
+import AdventCalendar from "./components/AdventCalendar'
+import { useUserSync } from './hooks/useUserSync";
 import BlurGuessGame from "./components/BlurGuessGame";
 
 function App() {
+  // This will automatically sync users when they log in
+  useUserSync();
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -15,7 +19,7 @@ function App() {
 
       <SignedIn>
         <div className="space-y-8">
-          <HealthMonitor />
+          <AdventCalendar />
           <BlurGuessGame />
         </div>
       </SignedIn>

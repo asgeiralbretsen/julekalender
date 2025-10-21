@@ -28,7 +28,7 @@
     
     # Route all other requests to frontend
     handle /* {
-        reverse_proxy julekalender-frontend:5173 {
+        reverse_proxy julekalender-frontend:80 {
             header_up Host {host}
             header_up X-Real-IP {remote}
             header_up X-Forwarded-For {remote}
