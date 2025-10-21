@@ -20,28 +20,26 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
   const cellRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // if (isUnlocked && cellRef.current) {
-    //   animate({
-    //     targets: cellRef.current,
-    //     scale: [0.8, 1],
-    //     opacity: [0, 1],
-    //     duration: 600,
-    //     delay: day * 50,
-    //     easing: 'easeOutElastic(1, .8)'
-    //   })
-    // }
+    if (isUnlocked && cellRef.current) {
+      animate(cellRef.current, {
+        scale: [0.8, 1],
+        opacity: [0, 1],
+        duration: 600,
+        delay: day * 50,
+        easing: 'easeOutElastic(1, .8)'
+      })
+    }
   }, [isUnlocked, day])
 
   const handleClick = () => {
-    // if (isUnlocked && onDayClick) {
-    //   animate({
-    //     targets: cellRef.current,
-    //     scale: [1, 0.95, 1],
-    //     duration: 200,
-    //     easing: 'easeInOutQuad'
-    //   })
-    //   onDayClick(day)
-    // }
+    if (isUnlocked && onDayClick && cellRef.current) {
+      animate(cellRef.current, {
+        scale: [1, 0.95, 1],
+        duration: 200,
+        easing: 'easeInOutQuad'
+      })
+      onDayClick(day)
+    }
   }
 
   return (
@@ -132,15 +130,14 @@ export default function AdventCalendar() {
   const days = useMemo(() => Array.from({ length: 24 }, (_, i) => i + 1), [])
 
   useEffect(() => {
-    // if (containerRef.current) {
-    //   anime({
-    //     targets: containerRef.current,
-    //     opacity: [0, 1],
-    //     translateY: [50, 0],
-    //     duration: 1000,
-    //     easing: 'easeOutExpo'
-    //   })
-    // }
+    if (containerRef.current) {
+      animate(containerRef.current, {
+        opacity: [0, 1],
+        translateY: [50, 0],
+        duration: 1000,
+        easing: 'easeOutExpo'
+      })
+    }
   }, [])
 
   const handleDayClick = (day: number) => {
