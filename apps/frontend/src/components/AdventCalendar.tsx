@@ -1,4 +1,5 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { client } from '../lib/sanity'
 import imageUrlBuilder from '@sanity/image-url'
 import { animate } from 'animejs'
@@ -32,11 +33,16 @@ interface SanityDay {
     }
     alt?: string
   }
-  game?: {
-    title: string
-    description?: string
-    difficulty?: 'easy' | 'medium' | 'hard'
-    estimatedTime?: string
+  gameType?: 'none' | 'blurGuessGame'
+  blurGuessGameData?: {
+    images: Array<{
+      image: {
+        asset: {
+          _ref: string
+        }
+      }
+      answer: string
+    }>
   }
   isUnlocked: boolean
 }
@@ -366,6 +372,7 @@ function DoorCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPr
 }
 
 export default function AdventCalendar() {
+  const navigate = useNavigate()
   const today = new Date()
   const currentDay = today.getMonth() === 11 ? today.getDate() : 1 // December only; otherwise start at 1
   const containerRef = useRef<HTMLDivElement>(null)
@@ -384,7 +391,8 @@ export default function AdventCalendar() {
           date,
           title,
           image,
-          game,
+          gameType,
+          blurGuessGameData,
           isUnlocked
         }`
         const data = await client.fetch(query)
@@ -407,12 +415,16 @@ export default function AdventCalendar() {
       day: sanityDay.dayNumber,
       thumbnail: sanityDay.image?.asset ? builder.image(sanityDay.image).width(400).height(400).url() : undefined,
       title: sanityDay.title,
-      description: sanityDay.game?.description || `Day ${sanityDay.dayNumber} of advent!`
+      description: `Day ${sanityDay.dayNumber} of advent!`
     }))
   }, [sanityDays])
 
-  // Only show days that exist in Sanity
-  const days = useMemo(() => sanityDays.map(day => day.dayNumber).sort((a, b) => a - b), [sanityDays])
+  // Only show days that exist in Sanity, removing duplicates
+  const days = useMemo(() => {
+    const dayNumbers = sanityDays.map(day => day.dayNumber)
+    const uniqueDays = [...new Set(dayNumbers)].sort((a, b) => a - b)
+    return uniqueDays
+  }, [sanityDays])
 
   useEffect(() => {
     if (containerRef.current) {
@@ -429,19 +441,43 @@ export default function AdventCalendar() {
     const dayInfo = dayData.find(d => d.day === day)
     const sanityDay = sanityDays.find(d => d.dayNumber === day)
     
-    if (dayInfo) {
-      let message = `${dayInfo.title}\n\n${dayInfo.description}`
+    // Debug logging
+    console.log('Day clicked:', day)
+    console.log('Sanity day data:', sanityDay)
+    console.log('Game type:', sanityDay?.gameType)
+    console.log('Game data:', sanityDay?.blurGuessGameData)
+    
+    // Check if this day has a game and navigate to it
+    if (sanityDay?.gameType && sanityDay.gameType !== 'none') {
+      console.log('Game type found:', sanityDay.gameType)
       
-      if (sanityDay?.game) {
-        message += `\n\n🎮 Game: ${sanityDay.game.title}`
-        if (sanityDay.game.difficulty) {
-          message += `\n📊 Difficulty: ${sanityDay.game.difficulty}`
-        }
-        if (sanityDay.game.estimatedTime) {
-          message += `\n⏱️ Time: ${sanityDay.game.estimatedTime}`
-        }
+      // Store game data in sessionStorage for the game component to access
+      if (sanityDay.gameType === 'blurGuessGame' && sanityDay.blurGuessGameData) {
+        console.log('Navigating to BlurGuessGame with data:', sanityDay.blurGuessGameData)
+        
+        sessionStorage.setItem('currentGameData', JSON.stringify({
+          blurGuessGame: sanityDay.blurGuessGameData
+        }))
+        sessionStorage.setItem('currentGameType', sanityDay.gameType)
+        sessionStorage.setItem('currentDayInfo', JSON.stringify({
+          day: sanityDay.dayNumber,
+          title: sanityDay.title
+        }))
+        
+        // Navigate to the appropriate game route
+        navigate('/game/blurGuessGame')
+        return
+      } else {
+        console.log('Game type is blurGuessGame but no game data found')
       }
-      
+    } else {
+      console.log('No game type or game type is none')
+    }
+    
+    // Fallback to showing alert for days without games
+    if (dayInfo) {
+      const message = `${dayInfo.title}\n\n${dayInfo.description}`
+
       console.log(message)
     }
   }
