@@ -1,5 +1,7 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
 import { client } from '../lib/sanity'
+import { animate } from 'animejs'
+import { Timer } from './Timer'
 
 interface DayCellProps {
   day: number
@@ -40,28 +42,26 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
   const cellRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // if (isUnlocked && cellRef.current) {
-    //   animate({
-    //     targets: cellRef.current,
-    //     scale: [0.8, 1],
-    //     opacity: [0, 1],
-    //     duration: 600,
-    //     delay: day * 50,
-    //     easing: 'easeOutElastic(1, .8)'
-    //   })
-    // }
+    if (isUnlocked && cellRef.current) {
+      animate(cellRef.current, {
+        scale: [0.8, 1],
+        opacity: [0, 1],
+        duration: 600,
+        delay: day * 50,
+        easing: 'easeOutElastic(1, .8)'
+      })
+    }
   }, [isUnlocked, day])
 
   const handleClick = () => {
-    // if (isUnlocked && onDayClick) {
-    //   animate({
-    //     targets: cellRef.current,
-    //     scale: [1, 0.95, 1],
-    //     duration: 200,
-    //     easing: 'easeInOutQuad'
-    //   })
-    //   onDayClick(day)
-    // }
+    if (isUnlocked && onDayClick && cellRef.current) {
+      animate(cellRef.current, {
+        scale: [1, 0.95, 1],
+        duration: 200,
+        easing: 'easeInOutQuad'
+      })
+      onDayClick(day)
+    }
   }
 
   return (
@@ -174,15 +174,14 @@ export default function AdventCalendar() {
   const days = useMemo(() => sanityDays.map(day => day.dayNumber).sort((a, b) => a - b), [sanityDays])
 
   useEffect(() => {
-    // if (containerRef.current) {
-    //   anime({
-    //     targets: containerRef.current,
-    //     opacity: [0, 1],
-    //     translateY: [50, 0],
-    //     duration: 1000,
-    //     easing: 'easeOutExpo'
-    //   })
-    // }
+    if (containerRef.current) {
+      animate(containerRef.current, {
+        opacity: [0, 1],
+        translateY: [50, 0],
+        duration: 1000,
+        easing: 'easeOutExpo'
+      })
+    }
   }, [])
 
   const handleDayClick = (day: number) => {
@@ -217,6 +216,7 @@ export default function AdventCalendar() {
           <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow">
             🎄 Advent Calendar
           </h1>
+          <Timer mode="up" durationMs={10000} startFromMs={1000} running={true} isFinished={false} onFinished={() => {console.log('finished')}} className="text-red-100" />
           <p className="mt-3 text-red-100">
             Countdown to Christmas with daily surprises
           </p>
