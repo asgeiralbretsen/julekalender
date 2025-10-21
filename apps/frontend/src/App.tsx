@@ -5,6 +5,7 @@ import CalendarPage from './pages/CalendarPage'
 import HealthPage from './pages/HealthPage'
 import PostsPage from './pages/PostsPage'
 import NotFoundPage from './pages/NotFoundPage'
+import BlurGuessGame from './components/BlurGuessGame'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import { useUserSync } from './hooks/useUserSync'
 import { svgCursorUrl } from "./components/cursor"; 
@@ -59,6 +60,14 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/game/blurGuessGame" 
+            element={
+              <ProtectedRoute>
+                <BlurGuessGame />
+              </ProtectedRoute>
+            } 
+          />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>
@@ -66,4 +75,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
