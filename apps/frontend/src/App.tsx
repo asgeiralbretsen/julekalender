@@ -1,7 +1,7 @@
 import { SignedIn, SignedOut } from '@clerk/clerk-react'
 import Header from './components/Header'
 import LandingPage from './components/LandingPage'
-import HealthMonitor from './components/HealthMonitor'
+import AdventCalendar from './components/AdventCalendar'
 
 function App() {
   return (
@@ -13,7 +13,7 @@ function App() {
       </SignedOut>
       
       <SignedIn>
-        <HealthMonitor />
+        <AdventCalendar />
       </SignedIn>
     </div>
   )
