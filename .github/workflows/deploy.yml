@@ -13,39 +13,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Set up Docker Compose
-      uses: docker/setup-compose-action@v3
+    - name: Install Docker Compose
+      run: |
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
         
     - name: Build and deploy production
       run: |
-        # Stop existing containers
-        docker-compose -f docker-compose.prod.yml down || true
-        
-        # Build and start production containers
         docker-compose -f docker-compose.prod.yml up --build -d
         
-        # Wait for services to be ready
-        sleep 30
-        
-        # Check service health
-        docker-compose -f docker-compose.prod.yml ps
-        
-        # Test API endpoint
-        curl -f http://localhost:5002/api/users || exit 1
-        
-        # Test frontend
-        curl -f http://localhost:3001 || exit 1
-        
-        echo "✅ Production deployment completed successfully!"
-        
-    - name: Notify deployment status
-      if: always()
+    - name: Test deployment
       run: |
-        if [ ${{ job.status }} == 'success' ]; then
-          echo "🎉 Deployment successful!"
-        else
-          echo "❌ Deployment failed!"
-        fi
+        sleep 30
+        curl -f http://localhost:5002/api/users
+        curl -f http://localhost:3001
