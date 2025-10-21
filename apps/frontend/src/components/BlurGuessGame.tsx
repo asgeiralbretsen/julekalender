@@ -20,7 +20,8 @@ interface GameState {
   showResult: boolean;
 }
 
-const SAMPLE_IMAGES: GameImage[] = [
+// Default fallback images if no game data is available
+const FALLBACK_IMAGES: GameImage[] = [
   {
     id: "1",
     src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
@@ -56,7 +57,27 @@ const SAMPLE_IMAGES: GameImage[] = [
 const MAX_BLUR = 20;
 const BLUR_DECREASE_RATE = 0.5;
 const MAX_TIME_PER_ROUND = 30000; // 30 seconds
-const TOTAL_ROUNDS = 5;
+
+// Generate answer options dynamically
+const generateOptions = (correctAnswer: string): string[] => {
+  const commonOptions = [
+    "Mountain", "Ocean", "Forest", "Desert", "City", "Lake", "River", "Beach",
+    "Building", "Tree", "Sky", "Cloud", "Sun", "Moon", "Star", "Flower",
+    "Animal", "Car", "House", "Bridge", "Road", "Path", "Garden", "Park"
+  ];
+  
+  // Remove the correct answer from common options and add it back
+  const filteredOptions = commonOptions.filter(option => option !== correctAnswer);
+  
+  // Shuffle and take 5 random options, then add the correct answer
+  const shuffled = filteredOptions.sort(() => 0.5 - Math.random());
+  const selectedOptions = shuffled.slice(0, 5);
+  
+  // Add the correct answer and shuffle again
+  const allOptions = [...selectedOptions, correctAnswer].sort(() => 0.5 - Math.random());
+  
+  return allOptions;
+};
 
 const BlurGuessGame: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({
@@ -73,10 +94,45 @@ const BlurGuessGame: React.FC = () => {
   });
 
   const [timer, setTimer] = useState<number | null>(null);
+  const [gameImages, setGameImages] = useState<GameImage[]>(FALLBACK_IMAGES);
+  const [dayInfo, setDayInfo] = useState<{day: number, title: string} | null>(null);
+
+  // Load game data from sessionStorage on component mount
+  useEffect(() => {
+    const gameDataStr = sessionStorage.getItem('currentGameData');
+    const gameType = sessionStorage.getItem('currentGameType');
+    const dayInfoStr = sessionStorage.getItem('currentDayInfo');
+
+    if (gameDataStr && gameType === 'blurGuessGame') {
+      try {
+        const gameData = JSON.parse(gameDataStr);
+        if (gameData.blurGuessGame?.images) {
+          // Convert Sanity image data to GameImage format
+          const images: GameImage[] = gameData.blurGuessGame.images.map((img: any, index: number) => ({
+            id: index.toString(),
+            src: `https://cdn.sanity.io/images/54fixmwv/production/${img.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}`,
+            answer: img.answer,
+            options: generateOptions(img.answer)
+          }));
+          setGameImages(images);
+        }
+      } catch (error) {
+        console.error('Error parsing game data:', error);
+      }
+    }
+
+    if (dayInfoStr) {
+      try {
+        setDayInfo(JSON.parse(dayInfoStr));
+      } catch (error) {
+        console.error('Error parsing day info:', error);
+      }
+    }
+  }, []);
 
   const startNewRound = useCallback(() => {
     const randomImage =
-      SAMPLE_IMAGES[Math.floor(Math.random() * SAMPLE_IMAGES.length)];
+      gameImages[Math.floor(Math.random() * gameImages.length)];
     setGameState((prev) => ({
       ...prev,
       currentImage: randomImage,
@@ -86,7 +142,7 @@ const BlurGuessGame: React.FC = () => {
       userAnswer: null,
       showResult: false,
     }));
-  }, []);
+  }, [gameImages]);
 
   const startGame = () => {
     setGameState((prev) => ({
@@ -140,7 +196,7 @@ const BlurGuessGame: React.FC = () => {
 
     // Show result for 2 seconds, then move to next round
     setTimeout(() => {
-      if (gameState.round >= TOTAL_ROUNDS) {
+      if (gameState.round >= gameImages.length) {
         setGameState((prev) => ({ ...prev, gameEnded: true }));
       } else {
         setGameState((prev) => ({ ...prev, round: prev.round + 1 }));
@@ -196,7 +252,7 @@ const BlurGuessGame: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
           <h1 className="text-4xl font-bold text-white mb-4">
-            Blur Guess Game
+            {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : 'Blur Guess Game'}
           </h1>
           <p className="text-white/80 mb-6">
             Watch as the image slowly unblurs and guess what it is as fast as
@@ -238,11 +294,11 @@ const BlurGuessGame: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Blur Guess Game
+            {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : 'Blur Guess Game'}
           </h1>
           <div className="flex justify-center gap-8 text-white/80">
             <span>
-              Round: {gameState.round}/{TOTAL_ROUNDS}
+              Round: {gameState.round}/{gameImages.length}
             </span>
             <span>Score: {gameState.score}</span>
             <span>

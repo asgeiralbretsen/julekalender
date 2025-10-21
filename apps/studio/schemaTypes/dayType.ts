@@ -44,46 +44,58 @@ export const dayType = defineType({
       validation: (rule) => rule.required()
     }),
     defineField({
-      name: 'game',
-      title: 'Game',
+      name: 'gameType',
+      title: 'Game Type',
+      type: 'string',
+      options: {
+        list: [
+          {title: 'No Game', value: 'none'},
+          {title: 'Blur Guess Game', value: 'blurGuessGame'}
+        ],
+        layout: 'radio'
+      },
+      initialValue: 'none',
+      description: 'Select the type of game for this advent day'
+    }),
+    defineField({
+      name: 'blurGuessGameData',
+      title: 'Blur Guess Game Data',
       type: 'object',
+      hidden: ({parent}) => parent?.gameType !== 'blurGuessGame',
       fields: [
         {
-          name: 'title',
-          type: 'string',
-          title: 'Game Title',
-          validation: (rule) => rule.required()
-        },
-        {
-          name: 'description',
-          type: 'text',
-          title: 'Game Description',
-          rows: 3
-        },
-        {
-          name: 'instructions',
+          name: 'images',
+          title: 'Game Images',
           type: 'array',
-          title: 'Game Instructions',
-          of: [{type: 'block'}]
-        },
-        {
-          name: 'difficulty',
-          type: 'string',
-          title: 'Difficulty Level',
-          options: {
-            list: [
-              {title: 'Easy', value: 'easy'},
-              {title: 'Medium', value: 'medium'},
-              {title: 'Hard', value: 'hard'}
-            ],
-            layout: 'radio'
-          }
-        },
-        {
-          name: 'estimatedTime',
-          type: 'string',
-          title: 'Estimated Time',
-          description: 'e.g., "5 minutes", "10-15 minutes"'
+          of: [
+            {
+              type: 'object',
+              fields: [
+                {
+                  name: 'image',
+                  type: 'image',
+                  title: 'Image',
+                  options: {
+                    hotspot: true
+                  },
+                  validation: (rule) => rule.required()
+                },
+                {
+                  name: 'answer',
+                  type: 'string',
+                  title: 'Correct Answer',
+                  validation: (rule) => rule.required()
+                },
+              ],
+              preview: {
+                select: {
+                  title: 'answer',
+                  media: 'image'
+                }
+              }
+            }
+          ],
+          validation: (rule) => rule.required().min(1)
         }
       ]
     }),

@@ -1,4 +1,5 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { client } from '../lib/sanity'
 import { animate } from 'animejs'
 import { Timer } from './Timer'
@@ -29,11 +30,16 @@ interface SanityDay {
     }
     alt?: string
   }
-  game?: {
-    title: string
-    description?: string
-    difficulty?: 'easy' | 'medium' | 'hard'
-    estimatedTime?: string
+  gameType?: 'none' | 'blurGuessGame'
+  blurGuessGameData?: {
+    images: Array<{
+      image: {
+        asset: {
+          _ref: string
+        }
+      }
+      answer: string
+    }>
   }
   isUnlocked: boolean
 }
@@ -125,6 +131,7 @@ function DayCell({ day, isUnlocked, isToday, thumbnail, onDayClick }: DayCellPro
 }
 
 export default function AdventCalendar() {
+  const navigate = useNavigate()
   const today = new Date()
   const currentDay = today.getMonth() === 11 ? today.getDate() : 1 // December only; otherwise start at 1
   const containerRef = useRef<HTMLDivElement>(null)
@@ -143,7 +150,8 @@ export default function AdventCalendar() {
           date,
           title,
           image,
-          game,
+          gameType,
+          blurGuessGameData,
           isUnlocked
         }`
         const data = await client.fetch(query)
@@ -166,7 +174,7 @@ export default function AdventCalendar() {
       day: sanityDay.dayNumber,
       thumbnail: sanityDay.image ? `https://cdn.sanity.io/images/54fixmwv/production/${sanityDay.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}` : undefined,
       title: sanityDay.title,
-      description: sanityDay.game?.description || `Day ${sanityDay.dayNumber} of advent!`
+      description: `Day ${sanityDay.dayNumber} of advent!`
     }))
   }, [sanityDays])
 
@@ -188,19 +196,42 @@ export default function AdventCalendar() {
     const dayInfo = dayData.find(d => d.day === day)
     const sanityDay = sanityDays.find(d => d.dayNumber === day)
     
+    // Debug logging
+    console.log('Day clicked:', day)
+    console.log('Sanity day data:', sanityDay)
+    console.log('Game type:', sanityDay?.gameType)
+    console.log('Game data:', sanityDay?.blurGuessGameData)
+    
+    // Check if this day has a game and navigate to it
+    if (sanityDay?.gameType && sanityDay.gameType !== 'none') {
+      console.log('Game type found:', sanityDay.gameType)
+      
+      // Store game data in sessionStorage for the game component to access
+      if (sanityDay.gameType === 'blurGuessGame' && sanityDay.blurGuessGameData) {
+        console.log('Navigating to BlurGuessGame with data:', sanityDay.blurGuessGameData)
+        
+        sessionStorage.setItem('currentGameData', JSON.stringify({
+          blurGuessGame: sanityDay.blurGuessGameData
+        }))
+        sessionStorage.setItem('currentGameType', sanityDay.gameType)
+        sessionStorage.setItem('currentDayInfo', JSON.stringify({
+          day: sanityDay.dayNumber,
+          title: sanityDay.title
+        }))
+        
+        // Navigate to the appropriate game route
+        navigate('/game/blurGuessGame')
+        return
+      } else {
+        console.log('Game type is blurGuessGame but no game data found')
+      }
+    } else {
+      console.log('No game type or game type is none')
+    }
+    
+    // Fallback to showing alert for days without games
     if (dayInfo) {
       let message = `${dayInfo.title}\n\n${dayInfo.description}`
-      
-      if (sanityDay?.game) {
-        message += `\n\n🎮 Game: ${sanityDay.game.title}`
-        if (sanityDay.game.difficulty) {
-          message += `\n📊 Difficulty: ${sanityDay.game.difficulty}`
-        }
-        if (sanityDay.game.estimatedTime) {
-          message += `\n⏱️ Time: ${sanityDay.game.estimatedTime}`
-        }
-      }
-      
       alert(message)
     }
   }
