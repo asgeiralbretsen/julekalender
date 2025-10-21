@@ -1,0 +1,111 @@
+name: Deploy to Production (Docker)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build and deploy with Docker
+      run: |
+        # Build images
+        echo "🔨 Building backend image..."
+        docker build -t julekalender-backend ./apps/backend
+        
+        echo "🔨 Building frontend image..."
+        docker build -f ./apps/frontend/Dockerfile.prod -t julekalender-frontend ./apps/frontend
+        
+        echo "🔨 Building studio image..."
+        docker build -t julekalender-studio ./apps/studio
+        
+        # Stop existing containers
+        echo "🛑 Stopping existing containers..."
+        docker stop julekalender-postgres julekalender-backend julekalender-frontend julekalender-studio julekalender-caddy julekalender-pgadmin || true
+        docker rm julekalender-postgres julekalender-backend julekalender-frontend julekalender-studio julekalender-caddy julekalender-pgadmin || true
+        
+        # Create network
+        echo "🌐 Creating network..."
+        docker network create julekalender-network || true
+        
+        # Start PostgreSQL
+        echo "🐘 Starting PostgreSQL..."
+        docker run -d \
+          --name julekalender-postgres \
+          --network julekalender-network \
+          -e POSTGRES_DB=julekalender \
+          -e POSTGRES_USER=postgres \
+          -e POSTGRES_PASSWORD=postgres \
+          -p 5432:5432 \
+          postgres:15-alpine
+        
+        # Wait for PostgreSQL
+        echo "⏳ Waiting for PostgreSQL..."
+        sleep 10
+        
+        # Start backend
+        echo "🚀 Starting backend..."
+        docker run -d \
+          --name julekalender-backend \
+          --network julekalender-network \
+          -e ASPNETCORE_ENVIRONMENT=Production \
+          -e ASPNETCORE_URLS=http://+:5000 \
+          -e ConnectionStrings__DefaultConnection="Host=postgres;Database=julekalender;Username=postgres;Password=postgres" \
+          -p 5002:5000 \
+          julekalender-backend
+        
+        # Start frontend
+        echo "🎨 Starting frontend..."
+        docker run -d \
+          --name julekalender-frontend \
+          --network julekalender-network \
+          -p 3001:80 \
+          julekalender-frontend
+        
+        # Start studio
+        echo "📝 Starting studio..."
+        docker run -d \
+          --name julekalender-studio \
+          --network julekalender-network \
+          -e NODE_ENV=production \
+          -p 3333:3333 \
+          julekalender-studio
+        
+        # Start Caddy
+        echo "🌐 Starting Caddy..."
+        docker run -d \
+          --name julekalender-caddy \
+          --network julekalender-network \
+          -p 80:80 \
+          -p 443:443 \
+          -v $(pwd)/Caddyfile:/etc/caddy/Caddyfile \
+          caddy:2-alpine
+        
+        # Wait for services
+        echo "⏳ Waiting for services to start..."
+        sleep 30
+        
+        # Test services
+        echo "🧪 Testing services..."
+        curl -f http://localhost:5002/api/users || exit 1
+        curl -f http://localhost:3001 || exit 1
+        
+        echo "✅ Production deployment completed successfully!"
+        
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "🎉 Deployment successful!"
+        else
+          echo "❌ Deployment failed!"
+        fi
