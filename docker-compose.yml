@@ -22,6 +22,7 @@ services:
       dockerfile: Dockerfile.prod
       args:
         - VITE_API_URL=https://julekalender.albretsen.no
+        - VITE_CLERK_PUBLISHABLE_KEY=pk_test_cHJvbXB0LWRvbHBoaW4tMzguY2xlcmsuYWNjb3VudHMuZGV2JA
     container_name: julekalender-frontend
     ports:
       - "3001:5173"
