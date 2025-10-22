@@ -22,23 +22,25 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Add services
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IGameScoreService, GameScoreService>();
 
-// Add JWT Authentication for Clerk
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
-    {
-        options.Authority = "https://clerk.julekalender.albretsen.no";
-        options.Audience = "https://clerk.julekalender.albretsen.no";
-        options.RequireHttpsMetadata = false; // Set to true in production
-    });
+// Add JWT Authentication for Clerk (temporarily disabled for development)
+// builder.Services.AddAuthentication("Bearer")
+//     .AddJwtBearer("Bearer", options =>
+//     {
+//         options.Authority = "https://clerk.julekalender.albretsen.no";
+//         options.Audience = "https://clerk.julekalender.albretsen.no";
+//         options.RequireHttpsMetadata = false; // Set to true in production
+//     });
 
 var app = builder.Build();
 
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
-app.UseAuthorization();
+// Temporarily disable authentication for development
+// app.UseAuthentication();
+// app.UseAuthorization();
 
 // Add global route prefix for julekalender API
 app.MapControllers();

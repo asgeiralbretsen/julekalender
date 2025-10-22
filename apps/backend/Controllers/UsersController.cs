@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using BackendApi.Services;
 using BackendApi.Models;
 
@@ -15,6 +17,13 @@ public class UsersController : ControllerBase
     {
         _userService = userService;
         _logger = logger;
+    }
+
+    [HttpGet("me")]
+    public async Task<ActionResult<User>> GetCurrentUser()
+    {
+        // For development, return a mock user or handle this differently
+        return BadRequest("Authentication not implemented yet");
     }
 
     [HttpGet("{clerkId}")]
@@ -57,6 +66,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("sync")]
+    [AllowAnonymous]
     public async Task<ActionResult<User>> SyncUser([FromBody] SyncUserRequest request)
     {
         try

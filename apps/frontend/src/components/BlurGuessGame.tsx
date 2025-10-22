@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useUser } from '@clerk/clerk-react';
+import { useGameScore } from '../hooks/useGameScore';
+import type { GameScore, SaveGameScoreRequest } from '../hooks/useGameScore';
 
 interface GameImage {
   id: string;
@@ -18,6 +21,9 @@ interface GameState {
   correctAnswer: string | null;
   userAnswer: string | null;
   showResult: boolean;
+  scoreSaved: boolean;
+  hasPlayedToday: boolean;
+  previousScore: number | null;
 }
 
 // Default fallback images if no game data is available
@@ -80,6 +86,9 @@ const generateOptions = (correctAnswer: string): string[] => {
 };
 
 const BlurGuessGame: React.FC = () => {
+  const { user } = useUser();
+  const { saveGameScore, hasUserPlayedGame, getUserScoreForDay, loading, error } = useGameScore();
+  
   const [gameState, setGameState] = useState<GameState>({
     currentImage: null,
     blurLevel: MAX_BLUR,
@@ -91,6 +100,9 @@ const BlurGuessGame: React.FC = () => {
     correctAnswer: null,
     userAnswer: null,
     showResult: false,
+    scoreSaved: false,
+    hasPlayedToday: false,
+    previousScore: null,
   });
 
   const [timer, setTimer] = useState<number | null>(null);
@@ -130,6 +142,30 @@ const BlurGuessGame: React.FC = () => {
     }
   }, []);
 
+  // Check if user has already played today
+  useEffect(() => {
+    const checkIfPlayedToday = async () => {
+      if (!user || !dayInfo) return;
+
+      try {
+        const hasPlayed = await hasUserPlayedGame(dayInfo.day, 'blurGuessGame');
+        if (hasPlayed) {
+          // Get the previous score
+          const previousScoreData = await getUserScoreForDay(dayInfo.day, 'blurGuessGame');
+          setGameState(prev => ({
+            ...prev,
+            hasPlayedToday: true,
+            previousScore: previousScoreData?.score || null,
+          }));
+        }
+      } catch (err) {
+        console.error('Error checking if user has played today:', err);
+      }
+    };
+
+    checkIfPlayedToday();
+  }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
+
   const startNewRound = useCallback(() => {
     const randomImage =
       gameImages[Math.floor(Math.random() * gameImages.length)];
@@ -144,7 +180,35 @@ const BlurGuessGame: React.FC = () => {
     }));
   }, [gameImages]);
 
+  const saveGameScoreWhenEnded = async () => {
+    if (!user || !dayInfo || gameState.scoreSaved) return;
+
+    try {
+      await saveGameScore({
+        day: dayInfo.day,
+        gameType: 'blurGuessGame',
+        score: gameState.score,
+      });
+      
+      setGameState(prev => ({ ...prev, scoreSaved: true }));
+    } catch (err) {
+      console.error('Error saving game score:', err);
+    }
+  };
+
   const startGame = () => {
+    if (gameState.hasPlayedToday) {
+      // If already played today, show the previous score
+      setGameState((prev) => ({
+        ...prev,
+        gameStarted: true,
+        gameEnded: true,
+        score: prev.previousScore || 0,
+        scoreSaved: true,
+      }));
+      return;
+    }
+
     setGameState((prev) => ({
       ...prev,
       gameStarted: true,
@@ -171,6 +235,9 @@ const BlurGuessGame: React.FC = () => {
       correctAnswer: null,
       userAnswer: null,
       showResult: false,
+      scoreSaved: false,
+      hasPlayedToday: false,
+      previousScore: null,
     });
   };
 
@@ -198,6 +265,8 @@ const BlurGuessGame: React.FC = () => {
     setTimeout(() => {
       if (gameState.round >= gameImages.length) {
         setGameState((prev) => ({ ...prev, gameEnded: true }));
+        // Save the score when game ends
+        saveGameScoreWhenEnded();
       } else {
         setGameState((prev) => ({ ...prev, round: prev.round + 1 }));
         startNewRound();
@@ -254,16 +323,43 @@ const BlurGuessGame: React.FC = () => {
           <h1 className="text-4xl font-bold text-white mb-4">
             {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : 'Blur Guess Game'}
           </h1>
-          <p className="text-white/80 mb-6">
-            Watch as the image slowly unblurs and guess what it is as fast as
-            possible!
-          </p>
-          <button
-            onClick={startGame}
-            className="bg-gradient-to-r from-pink-500 to-violet-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-violet-600 transition-all duration-300 transform hover:scale-105"
-          >
-            Start Game
-          </button>
+          
+          {gameState.hasPlayedToday ? (
+            <>
+              <p className="text-white/80 mb-4">
+                You've already played this game today!
+              </p>
+              <p className="text-yellow-300 mb-6">
+                Your previous score: {gameState.previousScore}
+              </p>
+              <button
+                onClick={startGame}
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-3 rounded-full font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105"
+              >
+                View Previous Score
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-white/80 mb-6">
+                Watch as the image slowly unblurs and guess what it is as fast as
+                possible!
+              </p>
+              <button
+                onClick={startGame}
+                disabled={loading}
+                className="bg-gradient-to-r from-pink-500 to-violet-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-violet-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Loading...' : 'Start Game'}
+              </button>
+            </>
+          )}
+          
+          {error && (
+            <div className="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+              <p className="text-red-200 text-sm">{error}</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -273,15 +369,36 @@ const BlurGuessGame: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">Game Over!</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">
+            {gameState.hasPlayedToday ? 'Previous Game Score' : 'Game Over!'}
+          </h1>
           <p className="text-2xl text-white/80 mb-6">
             Final Score: {gameState.score}
           </p>
+          
+          {gameState.scoreSaved && !gameState.hasPlayedToday && (
+            <p className="text-green-300 mb-4">
+              ✅ Score saved successfully!
+            </p>
+          )}
+          
+          {loading && (
+            <p className="text-yellow-300 mb-4">
+              💾 Saving score...
+            </p>
+          )}
+          
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+              <p className="text-red-200 text-sm">{error}</p>
+            </div>
+          )}
+          
           <button
             onClick={resetGame}
             className="bg-gradient-to-r from-pink-500 to-violet-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-violet-600 transition-all duration-300 transform hover:scale-105"
           >
-            Play Again
+            {gameState.hasPlayedToday ? 'Back to Calendar' : 'Play Again'}
           </button>
         </div>
       </div>
