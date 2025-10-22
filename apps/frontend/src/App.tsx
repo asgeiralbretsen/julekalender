@@ -10,6 +10,7 @@ import { svgCursorUrl } from "./components/cursor";
 import { useEffect, useMemo } from "react";
 import { ColorMatchGame } from "./components/ColorMatch/ColorMatchGame";
 import QuizGame from "./components/QuizGame";
+import { TeamsNotificationGame } from "./components/TeamsNotification/TeamsNotificationGame";
 
 function App() {
   // This will automatically sync users when they log in
@@ -65,6 +66,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <QuizGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/game/teamsNotificationGame"
+            element={
+              <ProtectedRoute>
+                <TeamsNotificationGame />
               </ProtectedRoute>
             }
           />

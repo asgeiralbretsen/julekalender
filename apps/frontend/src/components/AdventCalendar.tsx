@@ -35,7 +35,12 @@ interface SanityDay {
     };
     alt?: string;
   };
-  gameType?: "none" | "blurGuessGame" | "colorMatchGame" | "quizGame";
+  gameType?:
+    | "none"
+    | "blurGuessGame"
+    | "colorMatchGame"
+    | "quizGame"
+    | "teamsNotificationGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -74,6 +79,50 @@ interface SanityDay {
     scoringSettings: {
       correctAnswerPoints: number;
       timeBonus: number;
+    };
+  };
+  teamsNotificationGameData?: {
+    title: string;
+    description: string;
+    firstMessage: string;
+    teamsMessages: Array<{
+      message: string;
+      sender?: string;
+      timestamp?: string;
+      profilePicture?: {
+        _ref: string;
+        _type: "reference";
+      };
+    }>;
+    lastMessage: string;
+    logo?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    defaultProfilePicture?: {
+      _ref: string;
+      _type: "reference";
+    };
+    contextMenuIcon?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    addEmojiIcon?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    closeMessageIcon?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    sendMessageIcon?: {
+      asset: {
+        _ref: string;
+      };
     };
   };
   isUnlocked: boolean;
@@ -235,25 +284,41 @@ function DayCell({
                 const seed = day * 1000 + i;
                 const x = Math.sin(seed * 0.1) * 10000;
                 const y = Math.sin(seed * 0.2) * 10000;
-                const randomX = 10 + ((x - Math.floor(x)) * 80); // 10-90%
-                const randomY = 10 + ((y - Math.floor(y)) * 80); // 10-90%
-                const size = 1 + ((Math.sin(seed * 0.3) * 10000 - Math.floor(Math.sin(seed * 0.3) * 10000)) * 2); // 1-3
-                const delay = (Math.sin(seed * 0.4) * 10000 - Math.floor(Math.sin(seed * 0.4) * 10000)) * 2; // 0-2s
-                const colors = ['bg-yellow-300', 'bg-yellow-400', 'bg-white', 'bg-amber-300'];
-                const colorIndex = Math.floor((Math.sin(seed * 0.5) * 10000 - Math.floor(Math.sin(seed * 0.5) * 10000)) * colors.length);
-                
+                const randomX = 10 + (x - Math.floor(x)) * 80; // 10-90%
+                const randomY = 10 + (y - Math.floor(y)) * 80; // 10-90%
+                const size =
+                  1 +
+                  (Math.sin(seed * 0.3) * 10000 -
+                    Math.floor(Math.sin(seed * 0.3) * 10000)) *
+                    2; // 1-3
+                const delay =
+                  (Math.sin(seed * 0.4) * 10000 -
+                    Math.floor(Math.sin(seed * 0.4) * 10000)) *
+                  2; // 0-2s
+                const colors = [
+                  "bg-yellow-300",
+                  "bg-yellow-400",
+                  "bg-white",
+                  "bg-amber-300",
+                ];
+                const colorIndex = Math.floor(
+                  (Math.sin(seed * 0.5) * 10000 -
+                    Math.floor(Math.sin(seed * 0.5) * 10000)) *
+                    colors.length
+                );
+
                 return (
-                  <div 
+                  <div
                     key={i}
                     className={`absolute ${colors[colorIndex]} rounded-full animate-ping`}
-                    style={{ 
-                      left: `${randomX}%`, 
+                    style={{
+                      left: `${randomX}%`,
                       top: `${randomY}%`,
                       width: `${size * 2}px`,
                       height: `${size * 2}px`,
                       animationDelay: `${delay}s`,
-                      animationDuration: `${1 + delay}s`
-                    }} 
+                      animationDuration: `${1 + delay}s`,
+                    }}
                   />
                 );
               })}
@@ -311,6 +376,7 @@ export default function AdventCalendar() {
           blurGuessGameData,
           colorMatchGameData,
           quizGameData,
+          teamsNotificationGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
@@ -340,18 +406,18 @@ export default function AdventCalendar() {
   const days = useMemo(() => {
     const dayNumbers = sanityDays.map((day) => day.dayNumber);
     const uniqueDays = [...new Set(dayNumbers)].sort((a, b) => a - b);
-    
+
     const shuffled = [...uniqueDays];
     const seed = 54321; // Fixed seed for consistent shuffle
-    
+
     for (let i = shuffled.length - 1; i > 0; i--) {
       const x = Math.sin(seed * (i + 1)) * 10000;
       const random = x - Math.floor(x);
       const j = Math.floor(random * (i + 1));
-      
+
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    
+
     return shuffled;
   }, [sanityDays]);
 
@@ -432,10 +498,7 @@ export default function AdventCalendar() {
         );
         navigate("/game/colorMatchGame");
         return;
-      } else if (
-        sanityDay.gameType === "quizGame" &&
-        sanityDay.quizGameData
-      ) {
+      } else if (sanityDay.gameType === "quizGame" && sanityDay.quizGameData) {
         console.log(
           "Navigating to QuizGame with data:",
           sanityDay.quizGameData
@@ -455,6 +518,30 @@ export default function AdventCalendar() {
           })
         );
         navigate("/game/quizGame");
+        return;
+      } else if (
+        sanityDay.gameType === "teamsNotificationGame" &&
+        sanityDay.teamsNotificationGameData
+      ) {
+        console.log(
+          "Navigating to TeamsNotificationGame with data:",
+          sanityDay.teamsNotificationGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            teamsNotificationGameData: sanityDay.teamsNotificationGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/teamsNotificationGame");
         return;
       } else {
         console.log("Game type found but no game data available");
@@ -550,7 +637,8 @@ export default function AdventCalendar() {
                 Ingen kalenderdager funnet
               </h3>
               <p className="text-red-100 mb-4">
-                Opprett din første kalenderdag i Sanity Studio for å komme i gang!
+                Opprett din første kalenderdag i Sanity Studio for å komme i
+                gang!
               </p>
               <a
                 href="/studio/"
