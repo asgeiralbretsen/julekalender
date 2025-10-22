@@ -348,7 +348,7 @@ export function ColorMatchGame() {
           {!showResults && (
             <div className="mt-4 inline-block p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
               <p className="text-green-200 font-semibold">
-                {hasPlayedToday ? '⚠️ Only First Attempt Counts!' : '🎯 First Attempt Counts!'}
+                {hasPlayedToday ? '⚠️ Only First Attempt Counts!' : 'First Attempt Counts!'}
               </p>
               {hasPlayedToday && previousScore !== null ? (
                 <div className="mt-2">
@@ -468,7 +468,7 @@ export function ColorMatchGame() {
               {showResults && (
                 <div className="border-t border-white/20 pt-6">
                   <h3 className="text-xl font-semibold text-white mb-4">
-                    🎯 Your Results
+                    Your Results
                   </h3>
 
                   {/* Overall Score */}

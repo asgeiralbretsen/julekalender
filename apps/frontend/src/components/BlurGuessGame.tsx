@@ -157,6 +157,8 @@ const BlurGuessGame: React.FC = () => {
             ...prev,
             hasPlayedToday: true,
             previousScore: previousScoreData?.score || null,
+            gameEnded: true,
+            gameStarted: false,
           }));
         }
       } catch (err) {
@@ -224,7 +226,7 @@ const BlurGuessGame: React.FC = () => {
       clearInterval(timer);
       setTimer(null);
     }
-    setGameState({
+    setGameState(prev => ({
       currentImage: null,
       blurLevel: MAX_BLUR,
       timeElapsed: 0,
@@ -236,9 +238,9 @@ const BlurGuessGame: React.FC = () => {
       userAnswer: null,
       showResult: false,
       scoreSaved: false,
-      hasPlayedToday: false,
-      previousScore: null,
-    });
+      hasPlayedToday: prev.hasPlayedToday,
+      previousScore: prev.previousScore,
+    }));
   };
 
   const handleAnswer = (answer: string) => {
@@ -317,132 +319,83 @@ const BlurGuessGame: React.FC = () => {
     gameState.currentImage,
   ]);
 
-  if (!gameState.gameStarted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : 'Blur Guess Game'}
-          </h1>
-          
-          {gameState.hasPlayedToday && gameState.previousScore !== null ? (
-            <>
-              <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-                <p className="text-blue-200 mb-2 font-semibold">
-                  ⚠️ Only First Attempt Counts!
-                </p>
-                <p className="text-white/80 text-sm mb-3">
-                  Your first score has been submitted to the leaderboard.
-                </p>
-                <p className="text-yellow-300 text-xl font-bold">
-                  Submitted Score: {gameState.previousScore}
-                </p>
-              </div>
-              <p className="text-white/60 mb-6 text-sm">
-                You can play again for fun, but your score won't change.
-              </p>
-              <button
-                onClick={startGame}
-                disabled={loading}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-full font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Loading...' : 'Play Again (For Fun)'}
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="mb-4 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
-                <p className="text-green-200 font-semibold">
-                  🎯 First Attempt Counts!
-                </p>
-                <p className="text-white/80 text-sm mt-1">
-                  Your first score will be submitted to the leaderboard.
-                </p>
-              </div>
-              <p className="text-white/80 mb-6">
-                Watch as the image slowly unblurs and guess what it is as fast as
-                possible!
-              </p>
-              <button
-                onClick={startGame}
-                disabled={loading}
-                className="bg-gradient-to-r from-pink-500 to-violet-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-violet-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Loading...' : 'Start Game'}
-              </button>
-            </>
-          )}
-          
-          {error && (
-            <div className="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-              <p className="text-red-200 text-sm">{error}</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   if (gameState.gameEnded) {
     const isFirstAttempt = !gameState.hasPlayedToday;
     const displayScore = isFirstAttempt ? gameState.score : (gameState.previousScore || 0);
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="max-w-6xl w-full">
+      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
+        
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '0s' }}>❄</div>
+          <div className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse" style={{ animationDelay: '1s' }}>❄</div>
+          <div className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse" style={{ animationDelay: '2s' }}>❄</div>
+          <div className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '1.5s' }}>❄</div>
+        </div>
+
+        <div className="max-w-6xl w-full relative z-10">
           <div className="grid md:grid-cols-2 gap-6 items-start">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
-              <h1 className="text-4xl font-bold text-white mb-4">
-                Game Over!
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20">
+              <h1 className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+                {isFirstAttempt ? 'Game Over!' : 'Your Score'}
               </h1>
               
-              <div className="mb-6">
-                <p className="text-white/60 text-sm mb-2">
-                  {isFirstAttempt ? 'Your Score (Submitted)' : 'This Round Score'}
-                </p>
-                <p className="text-2xl text-white/80 mb-2">
-                  {gameState.score}
-                </p>
-              </div>
-
-              {!isFirstAttempt && (
-                <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-                  <p className="text-blue-200 text-sm mb-2">
-                    Your Submitted Score (First Attempt):
+              {isFirstAttempt ? (
+                <>
+                  <div className="mb-6">
+                    <p className="text-red-200 text-sm mb-2">
+                      Your Score (Submitted)
+                    </p>
+                    <p className="text-3xl text-white font-bold mb-2">
+                      {gameState.score}
+                    </p>
+                  </div>
+                  
+                  {gameState.scoreSaved && (
+                    <p className="text-green-300 mb-4">
+                      ✅ Score saved successfully!
+                    </p>
+                  )}
+                  
+                  {loading && (
+                    <p className="text-yellow-300 mb-4">
+                      💾 Saving score...
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
+                  <p className="text-yellow-200 text-sm mb-2">
+                    Your Submitted Score:
                   </p>
-                  <p className="text-yellow-300 text-3xl font-bold">
+                  <p className="text-yellow-300 text-4xl font-bold">
                     {displayScore}
                   </p>
-                  <p className="text-white/60 text-xs mt-2">
-                    This is the score on the leaderboard
+                  <p className="text-red-200 text-xs mt-2">
+                    This is your score on the leaderboard
                   </p>
                 </div>
               )}
               
-              {gameState.scoreSaved && isFirstAttempt && (
-                <p className="text-green-300 mb-4">
-                  ✅ Score saved successfully!
-                </p>
-              )}
-              
-              {loading && (
-                <p className="text-yellow-300 mb-4">
-                  💾 Saving score...
-                </p>
-              )}
-              
               {error && (
-                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
                   <p className="text-red-200 text-sm">{error}</p>
                 </div>
               )}
               
               <button
                 onClick={resetGame}
-                className="bg-gradient-to-r from-pink-500 to-violet-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-violet-600 transition-all duration-300 transform hover:scale-105"
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
               >
-                Play Again
+                {isFirstAttempt ? 'Play Again' : 'Play Again (For Fun)'}
               </button>
+              
+              {!isFirstAttempt && (
+                <p className="text-red-200 text-sm mt-4">
+                  ⚠️ Only your first score counts on the leaderboard
+                </p>
+              )}
             </div>
 
             {dayInfo && (
@@ -460,15 +413,71 @@ const BlurGuessGame: React.FC = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
+  if (!gameState.gameStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
+        
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '0s' }}>❄</div>
+          <div className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse" style={{ animationDelay: '1s' }}>❄</div>
+          <div className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse" style={{ animationDelay: '2s' }}>❄</div>
+          <div className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '1.5s' }}>❄</div>
+        </div>
+
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20 relative z-10">
+          <h1 className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
             {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : 'Blur Guess Game'}
           </h1>
-          <div className="flex justify-center gap-8 text-white/80">
+          
+          <div className="mb-4 p-4 bg-green-500/20 border border-green-400/50 rounded-lg">
+            <p className="text-green-200 font-semibold">
+              First Attempt Counts!
+            </p>
+            <p className="text-red-100 text-sm mt-1">
+              Your first score will be submitted to the leaderboard.
+            </p>
+          </div>
+          <p className="text-red-100 mb-6">
+            Watch as the image slowly unblurs and guess what it is as fast as
+            possible!
+          </p>
+          <button
+            onClick={startGame}
+            disabled={loading}
+            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg border-2 border-green-500"
+          >
+            {loading ? 'Loading...' : 'Start Game'}
+          </button>
+          
+          {error && (
+            <div className="mt-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+              <p className="text-red-200 text-sm">{error}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden p-4">
+      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
+      
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '0s' }}>❄</div>
+        <div className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse" style={{ animationDelay: '1s' }}>❄</div>
+        <div className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse" style={{ animationDelay: '2s' }}>❄</div>
+        <div className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '1.5s' }}>❄</div>
+      </div>
+
+      <div className="max-w-4xl mx-auto relative z-10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+            {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : 'Blur Guess Game'}
+          </h1>
+          <div className="flex justify-center gap-8 text-red-100">
             <span>
               Round: {gameState.round}/{gameImages.length}
             </span>
@@ -488,7 +497,7 @@ const BlurGuessGame: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-8 items-center">
           {/* Image */}
           <div className="relative">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-yellow-400/20">
               <div className="relative overflow-hidden rounded-xl">
                 <img
                   src={gameState.currentImage?.src}
@@ -500,12 +509,12 @@ const BlurGuessGame: React.FC = () => {
                   }}
                 />
                 {gameState.showResult && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
                     <div className="text-center text-white">
                       <p className="text-2xl font-bold mb-2">
                         {gameState.userAnswer === gameState.correctAnswer
-                          ? "Correct!"
-                          : "Wrong!"}
+                          ? "Correct! 🎄"
+                          : "Wrong! ❄️"}
                       </p>
                       <p className="text-lg">
                         Answer: {gameState.correctAnswer}
@@ -528,17 +537,17 @@ const BlurGuessGame: React.FC = () => {
                   key={index}
                   onClick={() => handleAnswer(option)}
                   disabled={!!gameState.userAnswer || gameState.showResult}
-                  className={`p-4 rounded-lg font-medium transition-all duration-200 ${
+                  className={`p-4 rounded-lg font-semibold transition-all duration-200 ${
                     gameState.showResult
                       ? option === gameState.correctAnswer
-                        ? "bg-green-500 text-white"
+                        ? "bg-green-600 text-white border-2 border-green-500"
                         : option === gameState.userAnswer &&
                             option !== gameState.correctAnswer
-                          ? "bg-red-500 text-white"
-                          : "bg-gray-500 text-white"
+                          ? "bg-red-600 text-white border-2 border-red-500"
+                          : "bg-gray-600 text-white"
                       : gameState.userAnswer === option
-                        ? "bg-blue-500 text-white"
-                        : "bg-white/20 text-white hover:bg-white/30"
+                        ? "bg-yellow-500 text-white"
+                        : "bg-white/20 text-white hover:bg-white/30 border border-white/30"
                   }`}
                 >
                   {option}
