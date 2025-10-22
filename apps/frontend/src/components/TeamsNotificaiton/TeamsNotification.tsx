@@ -1,5 +1,6 @@
 import imageUrlBuilder from "@sanity/image-url";
 import { client } from "../../lib/sanity";
+import { useEffect, useState } from "react";
 
 interface TeamsNotificationProps {
   sender: string;
@@ -10,6 +11,14 @@ interface TeamsNotificationProps {
   closeMessageIcon: string;
   sendMessageIcon: string;
   contextMenuIcon: string;
+  duration?: number; // Animation duration in ms (default: 500)
+  side?: "left" | "right"; // Side to slide in from (default: "right")
+  delay?: number; // Delay before animation starts in ms (default: 0)
+  yPosition?: number; // Position on the x-axis (default: 20)
+  animate?: boolean; // Whether to animate the notification (default: false)
+  displayDuration?: number; // How long to display before auto-hide in ms (default: 0 = never hide)
+  onDismiss?: () => void; // Callback when notification is dismissed
+  onClick?: () => void; // Callback when notification is clicked
 }
 
 const TeamsColor = "#444791";
@@ -41,7 +50,60 @@ export function TeamsNotification(props: TeamsNotificationProps) {
     closeMessageIcon,
     sendMessageIcon,
     contextMenuIcon,
+    duration = 500,
+    side = "right",
+    // Use screen height - 20px
+    yPosition = window.innerHeight - 300,
+    delay = 0,
+    animate = false,
+    displayDuration = 0,
+    onDismiss,
+    onClick,
   } = props;
+
+  const [isVisible, setIsVisible] = useState(false);
+  const [shouldRender, setShouldRender] = useState(true);
+
+  const handleClick = () => {
+    if (onClick) {
+      // Slide out
+      setIsVisible(false);
+      // Remove from DOM after animation completes
+      setTimeout(() => {
+        setShouldRender(false);
+        onClick();
+      }, duration);
+    }
+  };
+
+  // Slide in animation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  // Auto-dismiss after displayDuration
+  useEffect(() => {
+    if (displayDuration > 0 && isVisible) {
+      const dismissTimer = setTimeout(() => {
+        // Slide out
+        setIsVisible(false);
+        // Remove from DOM after animation completes
+        setTimeout(() => {
+          setShouldRender(false);
+          onDismiss?.();
+        }, duration);
+      }, displayDuration);
+      return () => clearTimeout(dismissTimer);
+    }
+  }, [displayDuration, isVisible, duration, onDismiss]);
+
+  // Don't render if dismissed
+  if (!shouldRender) {
+    return null;
+  }
 
   // Convert all refs to URLs
   const logoUrl = logo || "";
@@ -51,10 +113,39 @@ export function TeamsNotification(props: TeamsNotificationProps) {
   const sendMessageIconUrl = sendMessageIcon || "";
   const contextMenuIconUrl = contextMenuIcon || "";
 
+  // Calculate animation styles
+  // Right side: slide from right (positive translateX)
+  // Left side: slide from left (negative translateX)
+  console.log("Side:", side, "isVisible:", isVisible);
+  const slideFrom = side === "right" ? "100%" : "-100%";
+  console.log("Slide from:", slideFrom);
+  const animationStyle = {
+    transform: animate
+      ? isVisible
+        ? "translateX(0)"
+        : `translateX(${slideFrom})`
+      : "translateX(0)",
+    transition: `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+    opacity: isVisible ? 1 : 0,
+  };
+
   return (
+    // Make this div take the full width of the container
+
     <div
-      style={{ backgroundColor: TeamsColor, color: "white", maxWidth: "600px" }}
-      className="p-4 rounded-lg gap-4 flex flex-col"
+      style={{
+        backgroundColor: TeamsColor,
+        position: "absolute",
+        left: side === "left" ? 40 : "auto",
+        right: side === "right" ? 40 : "auto",
+        top: yPosition,
+        color: "white",
+        maxWidth: "500px",
+        minWidth: "500px",
+        cursor: onClick ? "pointer" : "default",
+        ...animationStyle,
+      }}
+      className="p-4 rounded-lg gap-4 flex flex-col hover:shadow-2xl transition-shadow"
     >
       <div className="flex flex-row justify-between">
         <div className="flex flex-row justify-between gap-3">
@@ -80,6 +171,7 @@ export function TeamsNotification(props: TeamsNotificationProps) {
           )}
           {closeMessageIconUrl && (
             <img
+              onClick={handleClick}
               src={closeMessageIconUrl}
               alt="Close Message"
               className="h-6 w-6 object-contain"
