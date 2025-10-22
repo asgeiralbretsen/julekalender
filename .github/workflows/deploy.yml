@@ -20,8 +20,12 @@ jobs:
         run: |
           echo "🧹 Cleaning up Docker resources..."
           docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
+          echo "🗑️  Removing old project images..."
+          docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f || true
           docker builder prune -af || true
           docker image prune -af || true
+          docker system prune -af --volumes || true
+          echo "✅ Cleanup complete"
 
       - name: Build images with no cache
         run: |
