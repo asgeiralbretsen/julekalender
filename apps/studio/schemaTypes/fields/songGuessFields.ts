@@ -5,6 +5,7 @@ export const songGuessGameFields = [
     name: 'songGuessGameData',
     title: 'Song Guess Game Data',
     type: 'object',
+    hidden: ({parent}) => parent?.gameType !== 'songGuessGame',
     fields: [
       {
         name: 'title',
@@ -28,21 +29,29 @@ export const songGuessGameFields = [
         },
         validation: (Rule) => Rule.required(),
       },
-      {
-        name: 'correctAnswer',
-        title: 'Correct Answer',
-        type: 'string',
-        description: 'The correct song title',
-        validation: (Rule) => Rule.required(),
-      },
-      {
-        name: 'answerOptions',
-        title: 'Answer Options',
+      defineField({
+        name: 'answers',
+        title: 'Svaralternativer',
         type: 'array',
-        of: [{ type: 'string' }],
-        description: 'List of answer options (should include the correct answer)',
-        validation: (Rule) => Rule.required().min(3).max(6),
-      },
+        validation: (rule) => rule.required().length(4),
+        description: 'Nøyaktig 4 svaralternativer',
+        of: [{type: 'string'}],
+      }),
+      defineField({
+        name: 'correctAnswerIndex',
+        title: 'Riktig svar',
+        type: 'number',
+        description: 'Indeks for riktig svar (0-3)',
+        validation: (rule) => rule.required().min(0).max(3),
+        options: {
+          list: [
+            {title: 'Svar 1', value: 0},
+            {title: 'Svar 2', value: 1},
+            {title: 'Svar 3', value: 2},
+            {title: 'Svar 4', value: 3},
+          ],
+        },
+      }),
       {
         name: 'clipDuration',
         title: 'Clip Duration (seconds)',
@@ -55,12 +64,14 @@ export const songGuessGameFields = [
         name: 'scoringSettings',
         title: 'Scoring Settings',
         type: 'object',
+        validation: (Rule) => Rule.required(),
         fields: [
           {
             name: 'correctAnswerPoints',
             title: 'Points for Correct Answer',
             type: 'number',
             initialValue: 1000,
+            validation: (Rule) => Rule.required().min(0),
           },
           {
             name: 'timeBonusPerSecond',
@@ -68,12 +79,14 @@ export const songGuessGameFields = [
             type: 'number',
             description: 'Bonus points per second remaining',
             initialValue: 50,
+            validation: (Rule) => Rule.required().min(0),
           },
           {
             name: 'maxTimeBonus',
             title: 'Maximum Time Bonus',
             type: 'number',
             initialValue: 500,
+            validation: (Rule) => Rule.required().min(0),
           },
         ],
       },

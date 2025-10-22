@@ -32,13 +32,13 @@ interface SongGuessGameData {
       url?: string;
     };
   };
-  correctAnswer: string;
-  answerOptions: string[];
+  answers: string[];
+  correctAnswerIndex: number;
   clipDuration: number;
-  scoringSettings: {
-    correctAnswerPoints: number;
-    timeBonusPerSecond: number;
-    maxTimeBonus: number;
+  scoringSettings?: {
+    correctAnswerPoints?: number;
+    timeBonusPerSecond?: number;
+    maxTimeBonus?: number;
   };
 }
 
@@ -134,13 +134,14 @@ const SongGuessGame: React.FC = () => {
 
   // Initialize game state when game data loads
   useEffect(() => {
-    if (gameData && gameData.songFile?.asset?._ref) {
+    if (gameData && gameData.songFile?.asset?._ref && gameData.answers) {
       const songUrl = getFileUrl(gameData.songFile.asset._ref);
+      const correctAnswer = gameData.answers[gameData.correctAnswerIndex];
       setGameState((prev) => ({
         ...prev,
         songUrl,
-        correctAnswer: gameData.correctAnswer,
-        answerOptions: shuffleArray([...gameData.answerOptions]),
+        correctAnswer,
+        answerOptions: shuffleArray([...gameData.answers]),
         clipDuration: gameData.clipDuration,
         timeRemaining: gameData.clipDuration,
       }));
@@ -207,11 +208,13 @@ const SongGuessGame: React.FC = () => {
 
     // Calculate score
     let finalScore = 0;
-    if (isCorrect && gameData) {
-      const baseScore = gameData.scoringSettings.correctAnswerPoints;
+    if (isCorrect && gameData && gameData.scoringSettings) {
+      const baseScore = gameData.scoringSettings.correctAnswerPoints || 1000;
+      const timeBonusPerSecond = gameData.scoringSettings.timeBonusPerSecond || 50;
+      const maxTimeBonus = gameData.scoringSettings.maxTimeBonus || 500;
       const timeBonus = Math.min(
-        Math.floor(gameState.timeRemaining * gameData.scoringSettings.timeBonusPerSecond),
-        gameData.scoringSettings.maxTimeBonus
+        Math.floor(gameState.timeRemaining * timeBonusPerSecond),
+        maxTimeBonus
       );
       finalScore = baseScore + timeBonus;
     }
@@ -236,13 +239,14 @@ const SongGuessGame: React.FC = () => {
   };
 
   const handlePlayAgain = () => {
-    if (!gameData || !gameData.songFile?.asset?._ref) return;
+    if (!gameData || !gameData.songFile?.asset?._ref || !gameData.answers) return;
 
     const songUrl = getFileUrl(gameData.songFile.asset._ref);
+    const correctAnswer = gameData.answers[gameData.correctAnswerIndex];
     setGameState({
       songUrl,
-      correctAnswer: gameData.correctAnswer,
-      answerOptions: shuffleArray([...gameData.answerOptions]),
+      correctAnswer,
+      answerOptions: shuffleArray([...gameData.answers]),
       clipDuration: gameData.clipDuration,
       timeRemaining: gameData.clipDuration,
       score: 0,

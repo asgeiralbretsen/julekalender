@@ -77,13 +77,13 @@ interface SanityDay {
         url?: string;
       };
     };
-    correctAnswer: string;
-    answerOptions: string[];
+    answers: string[];
+    correctAnswerIndex: number;
     clipDuration: number;
-    scoringSettings: {
-      correctAnswerPoints: number;
-      timeBonusPerSecond: number;
-      maxTimeBonus: number;
+    scoringSettings?: {
+      correctAnswerPoints?: number;
+      timeBonusPerSecond?: number;
+      maxTimeBonus?: number;
     };
   };
   quizGameData?: {
@@ -530,6 +530,14 @@ export default function AdventCalendar() {
           "currentGameData",
           JSON.stringify({
             songGuessGameData: sanityDay.songGuessGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
           })
         );
         navigate("/game/songGuessGame");
