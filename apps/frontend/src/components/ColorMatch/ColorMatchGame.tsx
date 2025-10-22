@@ -2,6 +2,10 @@ import Stocking from "./Stocking";
 import { useState, useEffect } from "react";
 import ColorPickerNoEyedropper from "./ColorPicker";
 import { createClient } from "@sanity/client";
+import { useUser } from "@clerk/clerk-react";
+import { useGameScore } from "../../hooks/useGameScore";
+import Leaderboard from "../Leaderboard";
+import { ChristmasBackground } from "../ChristmasBackground";
 
 interface Colors {
   topColor: string;
@@ -49,12 +53,24 @@ const client = createClient({
 });
 
 export function ColorMatchGame() {
+  const { user } = useUser();
+  const {
+    saveGameScore,
+    hasUserPlayedGame,
+    getUserScoreForDay,
+    loading: scoreLoading,
+    error: scoreError,
+  } = useGameScore();
+
   const [colorPickerColor, setColorPickerColor] = useState("gray");
   const [showResults, setShowResults] = useState(false);
   const [colorScores, setColorScores] = useState<ColorScore[]>([]);
   const [overallScore, setOverallScore] = useState(0);
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scoreSaved, setScoreSaved] = useState(false);
+  const [hasPlayedToday, setHasPlayedToday] = useState(false);
+  const [previousScore, setPreviousScore] = useState<number | null>(null);
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
     null
   );
@@ -171,6 +187,31 @@ export function ColorMatchGame() {
     loadGameData();
   }, []);
 
+  useEffect(() => {
+    const checkIfPlayedToday = async () => {
+      if (!user || !dayInfo) return;
+
+      try {
+        const hasPlayed = await hasUserPlayedGame(
+          dayInfo.day,
+          "colorMatchGame"
+        );
+        if (hasPlayed) {
+          const previousScoreData = await getUserScoreForDay(
+            dayInfo.day,
+            "colorMatchGame"
+          );
+          setHasPlayedToday(true);
+          setPreviousScore(previousScoreData?.score || null);
+        }
+      } catch (err) {
+        console.error("Error checking if user has played today:", err);
+      }
+    };
+
+    checkIfPlayedToday();
+  }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
+
   const setSingleColor = (
     whichColor:
       | "topColor"
@@ -230,7 +271,7 @@ export function ColorMatchGame() {
     return Math.max(0, 100 - distance / 4.41);
   };
 
-  const calculateScores = () => {
+  const calculateScores = async () => {
     const sections = [
       { key: "topColor", name: "Top Color" },
       { key: "topStripesColor", name: "Top Stripes" },
@@ -245,7 +286,6 @@ export function ColorMatchGame() {
         currentColors[section.key as keyof Colors]
       );
 
-      // Apply perfect match bonus if available
       const perfectMatchBonus =
         gameData?.scoringSettings?.perfectMatchBonus || 0;
       const adjustedPercentage =
@@ -266,53 +306,101 @@ export function ColorMatchGame() {
     setColorScores(scores);
     setOverallScore(averageScore);
     setShowResults(true);
+
+    if (user && dayInfo && !hasPlayedToday) {
+      try {
+        const result = await saveGameScore({
+          day: dayInfo.day,
+          gameType: "colorMatchGame",
+          score: averageScore,
+        });
+
+        if (result && result.score === averageScore) {
+          setScoreSaved(true);
+          setHasPlayedToday(true);
+          setPreviousScore(averageScore);
+        }
+      } catch (err) {
+        console.error("Error saving game score:", err);
+      }
+    }
   };
 
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className=" p-8 max-w-md w-full text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <h1 className="text-2xl font-bold text-white mb-2">
+      <ChristmasBackground className="flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mx-auto mb-4"></div>
+          <h1 className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg">
             Loading Game...
           </h1>
-          <p className="text-white/80">
-            Preparing your color matching challenge!
+          <p className="text-white/90 text-lg">
+            🎨 Preparing your color matching challenge!
           </p>
         </div>
-      </div>
+      </ChristmasBackground>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-900 via-green-900 to-blue-900 p-4">
-      <div className="max-w-7xl mx-auto">
+    <ChristmasBackground className="p-4">
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1
+            className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
+            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+          >
             {dayInfo
               ? `Day ${dayInfo.day}: ${dayInfo.title}`
               : gameData?.title || "🎨 Stocking Color Match"}
           </h1>
-          <p className="text-white/80 text-lg">
+          <p className="text-red-100 text-base">
             {gameData?.description ||
               "Click on the stocking sections to color them!"}
           </p>
+
+          {!showResults && (
+            <div className="mt-4 inline-block p-4 bg-green-500/20 border border-green-400/50 rounded-lg">
+              <p className="text-green-200 font-semibold">
+                {hasPlayedToday
+                  ? "⚠️ Only First Attempt Counts!"
+                  : "First Attempt Counts!"}
+              </p>
+              {hasPlayedToday && previousScore !== null ? (
+                <div className="mt-2">
+                  <p className="text-white/80 text-sm">
+                    Your submitted score:{" "}
+                    <span className="font-bold text-yellow-300">
+                      {previousScore}%
+                    </span>
+                  </p>
+                  <p className="text-white/60 text-xs mt-1">
+                    You can play again for fun, but your score won't change
+                  </p>
+                </div>
+              ) : (
+                <p className="text-red-100 text-sm mt-1">
+                  Your first score will be submitted to the leaderboard.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Main Layout */}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Side - Stockings */}
           <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
               {/* Target Stocking */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-white text-center">
-                  Target Stocking
-                </h2>
-                <div className="flex justify-center">
-                  <div className="rounded-2xl p-4">
+              <div className="relative">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20">
+                  <h2 className="text-2xl font-bold text-yellow-300 text-center mb-4 drop-shadow-lg">
+                    🎯 Mål-sokk
+                  </h2>
+                  <div className="flex justify-center my-6 transform scale-110">
                     <Stocking
                       topColor={originalColors.topColor}
                       topStripesColor={originalColors.topStripesColor}
@@ -321,16 +409,19 @@ export function ColorMatchGame() {
                       stripesColor={originalColors.stripesColor}
                     />
                   </div>
+                  <p className="text-center text-white/90 text-sm">
+                    Fargelegg sokken din slik at den matcher denne!
+                  </p>
                 </div>
               </div>
 
               {/* Player Stocking */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-white text-center">
-                  Your Stocking
-                </h2>
-                <div className="flex justify-center">
-                  <div className=" rounded-2xl p-4">
+              <div className="relative">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20">
+                  <h2 className="text-2xl font-bold text-yellow-300 text-center mb-4 drop-shadow-lg">
+                    🎨 Din sokk
+                  </h2>
+                  <div className="flex justify-center my-6 transform scale-110">
                     <Stocking
                       topColor={currentColors.topColor}
                       topStripesColor={currentColors.topStripesColor}
@@ -354,112 +445,159 @@ export function ColorMatchGame() {
                       }}
                     />
                   </div>
+                  <p className="text-center text-white/90 text-sm">
+                    Trykk på den delen av sokken du vil fargelegge!
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Right Side - Control Panel */}
-          <div className="lg:col-span-1">
-            <div className="p-6 sticky top-4">
-              {/* Color Picker Section */}
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  🎨 Color Picker
-                </h3>
-                <ColorPickerNoEyedropper
-                  value={colorPickerColor}
-                  onChange={(color: string) => setColorPickerColor(color)}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Color Picker Section */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20 justify-center items-center flex flex-col">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                Fargevelger
+              </h3>
+              <ColorPickerNoEyedropper
+                value={colorPickerColor}
+                onChange={(color: string) => setColorPickerColor(color)}
+              />
+
+              {/* Current Color Preview */}
+              <div className="mt-4 flex items-center gap-3">
+                <div className="text-white text-sm font-medium">Selected:</div>
+                <div
+                  className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
+                  style={{ backgroundColor: colorPickerColor }}
                 />
-
-                {/* Current Color Preview */}
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="text-white text-sm font-medium">
-                    Selected:
-                  </div>
-                  <div
-                    className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
-                    style={{ backgroundColor: colorPickerColor }}
-                  />
-                  <div className="text-white text-sm font-mono">
-                    {colorPickerColor}
-                  </div>
+                <div className="text-white text-sm font-mono">
+                  {colorPickerColor}
                 </div>
               </div>
-
-              {/* Done Button */}
-              <div className="mb-6">
-                <button
-                  onClick={calculateScores}
-                  className="w-full bg-gradient-to-r from-red-500 to-green-500 text-white px-6 py-3 rounded-full font-semibold hover:from-red-600 hover:to-green-600 transition-all duration-300 transform hover:scale-105"
-                >
-                  ✅ Done - Check My Colors!
-                </button>
-              </div>
-
-              {/* Results Section */}
-              {showResults && (
-                <div className="border-t border-white/20 pt-6">
-                  <h3 className="text-xl font-semibold text-white mb-4">
-                    🎯 Your Results
-                  </h3>
-
-                  {/* Overall Score */}
-                  <div className="text-center mb-6">
-                    <div className="text-3xl font-bold text-white mb-2">
-                      {overallScore}%
-                    </div>
-                    <p className="text-white/80 text-sm">Overall Accuracy</p>
-                  </div>
-
-                  {/* Individual Scores */}
-                  <div className="space-y-3">
-                    {colorScores.map((score, index) => (
-                      <div key={index} className="bg-white/5 rounded-lg p-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-white text-sm font-medium">
-                            {score.section}
-                          </span>
-                          <span className="text-white font-bold">
-                            {score.percentage}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-red-500 to-green-500 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${score.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Try Again Button */}
-                  <div className="mt-6">
-                    <button
-                      onClick={() => {
-                        setShowResults(false);
-                        setColorScores([]);
-                        setOverallScore(0);
-                        setCurrentColors({
-                          topColor: "gray",
-                          topStripesColor: "white",
-                          mainColor: "gray",
-                          heelColor: "white",
-                          stripesColor: "white",
-                        });
-                      }}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
-                    >
-                      🔄 Try Again
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
+
+            {/* Done Button */}
+            <button
+              onClick={calculateScores}
+              className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
+            >
+              ✅ Done - Check My Colors!
+            </button>
+
+            {/* Results Section */}
+            {showResults && (
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20">
+                <h3 className="text-xl font-semibold text-white mb-4 text-center">
+                  Your Results
+                </h3>
+
+                {/* Overall Score */}
+                <div className="text-center mb-6">
+                  <div className="text-3xl font-bold text-white mb-2">
+                    {overallScore}%
+                  </div>
+                  <p className="text-white/80 text-sm">
+                    {scoreSaved ? "Submitted Score" : "Overall Accuracy"}
+                  </p>
+                </div>
+
+                {scoreSaved && (
+                  <p className="text-green-300 text-center mb-4 text-sm">
+                    ✅ Score saved to leaderboard!
+                  </p>
+                )}
+
+                {!scoreSaved && hasPlayedToday && previousScore !== null && (
+                  <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                    <p className="text-blue-200 text-xs mb-1">
+                      Practice Round - Score not saved
+                    </p>
+                    <p className="text-white/80 text-xs">
+                      Your submitted score:{" "}
+                      <span className="font-bold text-yellow-300">
+                        {previousScore}%
+                      </span>
+                    </p>
+                  </div>
+                )}
+
+                {scoreLoading && (
+                  <p className="text-yellow-300 text-center mb-4 text-sm">
+                    💾 Saving score...
+                  </p>
+                )}
+
+                {scoreError && (
+                  <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                    <p className="text-red-200 text-xs">{scoreError}</p>
+                  </div>
+                )}
+
+                {/* Individual Scores */}
+                <div className="space-y-3">
+                  {colorScores.map((score, index) => (
+                    <div key={index} className="bg-white/5 rounded-lg p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-white text-sm font-medium">
+                          {score.section}
+                        </span>
+                        <span className="text-white font-bold">
+                          {score.percentage}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-red-500 to-green-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${score.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Try Again Button */}
+                <div className="mt-6">
+                  <button
+                    onClick={() => {
+                      setShowResults(false);
+                      setColorScores([]);
+                      setOverallScore(0);
+                      setScoreSaved(false);
+                      setCurrentColors({
+                        topColor: "gray",
+                        topStripesColor: "white",
+                        mainColor: "gray",
+                        heelColor: "white",
+                        stripesColor: "white",
+                      });
+                    }}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
+                  >
+                    {hasPlayedToday
+                      ? "🔄 Play Again (For Fun)"
+                      : "🔄 Try Again"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Leaderboard Section */}
+        {showResults && dayInfo && (
+          <div className="mt-8 max-w-2xl mx-auto">
+            <Leaderboard
+              day={dayInfo.day}
+              gameType="colorMatchGame"
+              title={`Day ${dayInfo.day} Leaderboard`}
+              showRank={true}
+              maxEntries={10}
+            />
+          </div>
+        )}
       </div>
-    </div>
+    </ChristmasBackground>
   );
 }

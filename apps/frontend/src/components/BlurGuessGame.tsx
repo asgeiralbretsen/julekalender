@@ -1,4 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useUser } from "@clerk/clerk-react";
+import { useGameScore } from "../hooks/useGameScore";
+import type { GameScore, SaveGameScoreRequest } from "../hooks/useGameScore";
+import Leaderboard from "./Leaderboard";
+import { ChristmasBackground } from "./ChristmasBackground";
 
 interface GameImage {
   id: string;
@@ -18,6 +23,9 @@ interface GameState {
   correctAnswer: string | null;
   userAnswer: string | null;
   showResult: boolean;
+  scoreSaved: boolean;
+  hasPlayedToday: boolean;
+  previousScore: number | null;
 }
 
 // Default fallback images if no game data is available
@@ -61,25 +69,59 @@ const MAX_TIME_PER_ROUND = 30000; // 30 seconds
 // Generate answer options dynamically
 const generateOptions = (correctAnswer: string): string[] => {
   const commonOptions = [
-    "Mountain", "Ocean", "Forest", "Desert", "City", "Lake", "River", "Beach",
-    "Building", "Tree", "Sky", "Cloud", "Sun", "Moon", "Star", "Flower",
-    "Animal", "Car", "House", "Bridge", "Road", "Path", "Garden", "Park"
+    "Mountain",
+    "Ocean",
+    "Forest",
+    "Desert",
+    "City",
+    "Lake",
+    "River",
+    "Beach",
+    "Building",
+    "Tree",
+    "Sky",
+    "Cloud",
+    "Sun",
+    "Moon",
+    "Star",
+    "Flower",
+    "Animal",
+    "Car",
+    "House",
+    "Bridge",
+    "Road",
+    "Path",
+    "Garden",
+    "Park",
   ];
-  
+
   // Remove the correct answer from common options and add it back
-  const filteredOptions = commonOptions.filter(option => option !== correctAnswer);
-  
+  const filteredOptions = commonOptions.filter(
+    (option) => option !== correctAnswer
+  );
+
   // Shuffle and take 5 random options, then add the correct answer
   const shuffled = filteredOptions.sort(() => 0.5 - Math.random());
   const selectedOptions = shuffled.slice(0, 5);
-  
+
   // Add the correct answer and shuffle again
-  const allOptions = [...selectedOptions, correctAnswer].sort(() => 0.5 - Math.random());
-  
+  const allOptions = [...selectedOptions, correctAnswer].sort(
+    () => 0.5 - Math.random()
+  );
+
   return allOptions;
 };
 
 const BlurGuessGame: React.FC = () => {
+  const { user } = useUser();
+  const {
+    saveGameScore,
+    hasUserPlayedGame,
+    getUserScoreForDay,
+    loading,
+    error,
+  } = useGameScore();
+
   const [gameState, setGameState] = useState<GameState>({
     currentImage: null,
     blurLevel: MAX_BLUR,
@@ -91,33 +133,40 @@ const BlurGuessGame: React.FC = () => {
     correctAnswer: null,
     userAnswer: null,
     showResult: false,
+    scoreSaved: false,
+    hasPlayedToday: false,
+    previousScore: null,
   });
 
   const [timer, setTimer] = useState<number | null>(null);
   const [gameImages, setGameImages] = useState<GameImage[]>(FALLBACK_IMAGES);
-  const [dayInfo, setDayInfo] = useState<{day: number, title: string} | null>(null);
+  const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
+    null
+  );
 
   // Load game data from sessionStorage on component mount
   useEffect(() => {
-    const gameDataStr = sessionStorage.getItem('currentGameData');
-    const gameType = sessionStorage.getItem('currentGameType');
-    const dayInfoStr = sessionStorage.getItem('currentDayInfo');
+    const gameDataStr = sessionStorage.getItem("currentGameData");
+    const gameType = sessionStorage.getItem("currentGameType");
+    const dayInfoStr = sessionStorage.getItem("currentDayInfo");
 
-    if (gameDataStr && gameType === 'blurGuessGame') {
+    if (gameDataStr && gameType === "blurGuessGame") {
       try {
         const gameData = JSON.parse(gameDataStr);
         if (gameData.blurGuessGame?.images) {
           // Convert Sanity image data to GameImage format
-          const images: GameImage[] = gameData.blurGuessGame.images.map((img: any, index: number) => ({
-            id: index.toString(),
-            src: `https://cdn.sanity.io/images/54fixmwv/production/${img.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}`,
-            answer: img.answer,
-            options: generateOptions(img.answer)
-          }));
+          const images: GameImage[] = gameData.blurGuessGame.images.map(
+            (img: any, index: number) => ({
+              id: index.toString(),
+              src: `https://cdn.sanity.io/images/54fixmwv/production/${img.image.asset._ref.replace("image-", "").replace("-jpg", ".jpg").replace("-png", ".png").replace("-webp", ".webp")}`,
+              answer: img.answer,
+              options: generateOptions(img.answer),
+            })
+          );
           setGameImages(images);
         }
       } catch (error) {
-        console.error('Error parsing game data:', error);
+        console.error("Error parsing game data:", error);
       }
     }
 
@@ -125,10 +174,39 @@ const BlurGuessGame: React.FC = () => {
       try {
         setDayInfo(JSON.parse(dayInfoStr));
       } catch (error) {
-        console.error('Error parsing day info:', error);
+        console.error("Error parsing day info:", error);
       }
     }
   }, []);
+
+  // Check if user has already played today
+  useEffect(() => {
+    const checkIfPlayedToday = async () => {
+      if (!user || !dayInfo) return;
+
+      try {
+        const hasPlayed = await hasUserPlayedGame(dayInfo.day, "blurGuessGame");
+        if (hasPlayed) {
+          // Get the previous score
+          const previousScoreData = await getUserScoreForDay(
+            dayInfo.day,
+            "blurGuessGame"
+          );
+          setGameState((prev) => ({
+            ...prev,
+            hasPlayedToday: true,
+            previousScore: previousScoreData?.score || null,
+            gameEnded: true,
+            gameStarted: false,
+          }));
+        }
+      } catch (err) {
+        console.error("Error checking if user has played today:", err);
+      }
+    };
+
+    checkIfPlayedToday();
+  }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
 
   const startNewRound = useCallback(() => {
     const randomImage =
@@ -143,6 +221,33 @@ const BlurGuessGame: React.FC = () => {
       showResult: false,
     }));
   }, [gameImages]);
+
+  const saveGameScoreWhenEnded = async (finalScore: number) => {
+    if (!user || !dayInfo) return;
+
+    if (gameState.hasPlayedToday) {
+      setGameState((prev) => ({ ...prev, scoreSaved: false }));
+      return;
+    }
+
+    try {
+      const result = await saveGameScore({
+        day: dayInfo.day,
+        gameType: "blurGuessGame",
+        score: finalScore,
+      });
+
+      if (result) {
+        setGameState((prev) => ({
+          ...prev,
+          scoreSaved: true,
+          previousScore: result.score,
+        }));
+      }
+    } catch (err) {
+      console.error("Error saving game score:", err);
+    }
+  };
 
   const startGame = () => {
     setGameState((prev) => ({
@@ -160,7 +265,7 @@ const BlurGuessGame: React.FC = () => {
       clearInterval(timer);
       setTimer(null);
     }
-    setGameState({
+    setGameState((prev) => ({
       currentImage: null,
       blurLevel: MAX_BLUR,
       timeElapsed: 0,
@@ -171,7 +276,10 @@ const BlurGuessGame: React.FC = () => {
       correctAnswer: null,
       userAnswer: null,
       showResult: false,
-    });
+      scoreSaved: false,
+      hasPlayedToday: prev.hasPlayedToday,
+      previousScore: prev.previousScore,
+    }));
   };
 
   const handleAnswer = (answer: string) => {
@@ -197,7 +305,10 @@ const BlurGuessGame: React.FC = () => {
     // Show result for 2 seconds, then move to next round
     setTimeout(() => {
       if (gameState.round >= gameImages.length) {
+        const finalScore = gameState.score + points;
         setGameState((prev) => ({ ...prev, gameEnded: true }));
+        // Save the score when game ends
+        saveGameScoreWhenEnded(finalScore);
       } else {
         setGameState((prev) => ({ ...prev, round: prev.round + 1 }));
         startNewRound();
@@ -247,56 +358,151 @@ const BlurGuessGame: React.FC = () => {
     gameState.currentImage,
   ]);
 
+  if (gameState.gameEnded) {
+    const isFirstAttempt = !gameState.hasPlayedToday;
+    const displayScore = isFirstAttempt
+      ? gameState.score
+      : gameState.previousScore || 0;
+
+    return (
+      <ChristmasBackground className="flex items-center justify-center p-4">
+        <div className="max-w-6xl w-full relative z-10">
+          <div className="grid md:grid-cols-2 gap-6 items-start">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20">
+              <h1
+                className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg"
+                style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+              >
+                {isFirstAttempt ? "Game Over!" : "Your Score"}
+              </h1>
+
+              {isFirstAttempt ? (
+                <>
+                  <div className="mb-6">
+                    <p className="text-red-200 text-sm mb-2">
+                      Your Score (Submitted)
+                    </p>
+                    <p className="text-3xl text-white font-bold mb-2">
+                      {gameState.score}
+                    </p>
+                  </div>
+
+                  {gameState.scoreSaved && (
+                    <p className="text-green-300 mb-4">
+                      ✅ Score saved successfully!
+                    </p>
+                  )}
+
+                  {loading && (
+                    <p className="text-yellow-300 mb-4">💾 Saving score...</p>
+                  )}
+                </>
+              ) : (
+                <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
+                  <p className="text-yellow-200 text-sm mb-2">
+                    Your Submitted Score:
+                  </p>
+                  <p className="text-yellow-300 text-4xl font-bold">
+                    {displayScore}
+                  </p>
+                  <p className="text-red-200 text-xs mt-2">
+                    This is your score on the leaderboard
+                  </p>
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+                  <p className="text-red-200 text-sm">{error}</p>
+                </div>
+              )}
+
+              <button
+                onClick={resetGame}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
+              >
+                {isFirstAttempt ? "Play Again" : "Play Again (For Fun)"}
+              </button>
+
+              {!isFirstAttempt && (
+                <p className="text-red-200 text-sm mt-4">
+                  ⚠️ Only your first score counts on the leaderboard
+                </p>
+              )}
+            </div>
+
+            {dayInfo && (
+              <Leaderboard
+                day={dayInfo.day}
+                gameType="blurGuessGame"
+                title={`Day ${dayInfo.day} Leaderboard`}
+                showRank={true}
+                maxEntries={10}
+              />
+            )}
+          </div>
+        </div>
+      </ChristmasBackground>
+    );
+  }
+
   if (!gameState.gameStarted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : 'Blur Guess Game'}
+      <ChristmasBackground className="flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20 relative z-10">
+          <h1
+            className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg"
+            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+          >
+            {dayInfo
+              ? `Day ${dayInfo.day}: ${dayInfo.title}`
+              : "Blur Guess Game"}
           </h1>
-          <p className="text-white/80 mb-6">
+
+          <div className="mb-4 p-4 bg-green-500/20 border border-green-400/50 rounded-lg">
+            <p className="text-green-200 font-semibold">
+              First Attempt Counts!
+            </p>
+            <p className="text-red-100 text-sm mt-1">
+              Your first score will be submitted to the leaderboard.
+            </p>
+          </div>
+          <p className="text-red-100 mb-6">
             Watch as the image slowly unblurs and guess what it is as fast as
             possible!
           </p>
           <button
             onClick={startGame}
-            className="bg-gradient-to-r from-pink-500 to-violet-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-violet-600 transition-all duration-300 transform hover:scale-105"
+            disabled={loading}
+            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg border-2 border-green-500"
           >
-            Start Game
+            {loading ? "Loading..." : "Start Game"}
           </button>
-        </div>
-      </div>
-    );
-  }
 
-  if (gameState.gameEnded) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">Game Over!</h1>
-          <p className="text-2xl text-white/80 mb-6">
-            Final Score: {gameState.score}
-          </p>
-          <button
-            onClick={resetGame}
-            className="bg-gradient-to-r from-pink-500 to-violet-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-violet-600 transition-all duration-300 transform hover:scale-105"
-          >
-            Play Again
-          </button>
+          {error && (
+            <div className="mt-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+              <p className="text-red-200 text-sm">{error}</p>
+            </div>
+          )}
         </div>
-      </div>
+      </ChristmasBackground>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
-      <div className="max-w-4xl mx-auto">
+    <ChristmasBackground className="p-4">
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : 'Blur Guess Game'}
+          <h1
+            className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
+            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+          >
+            {dayInfo
+              ? `Day ${dayInfo.day}: ${dayInfo.title}`
+              : "Blur Guess Game"}
           </h1>
-          <div className="flex justify-center gap-8 text-white/80">
+          <div className="flex justify-center gap-8 text-red-100">
             <span>
               Round: {gameState.round}/{gameImages.length}
             </span>
@@ -316,7 +522,7 @@ const BlurGuessGame: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-8 items-center">
           {/* Image */}
           <div className="relative">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-yellow-400/20">
               <div className="relative overflow-hidden rounded-xl">
                 <img
                   src={gameState.currentImage?.src}
@@ -328,12 +534,12 @@ const BlurGuessGame: React.FC = () => {
                   }}
                 />
                 {gameState.showResult && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
                     <div className="text-center text-white">
                       <p className="text-2xl font-bold mb-2">
                         {gameState.userAnswer === gameState.correctAnswer
-                          ? "Correct!"
-                          : "Wrong!"}
+                          ? "Correct! 🎄"
+                          : "Wrong! ❄️"}
                       </p>
                       <p className="text-lg">
                         Answer: {gameState.correctAnswer}
@@ -356,17 +562,17 @@ const BlurGuessGame: React.FC = () => {
                   key={index}
                   onClick={() => handleAnswer(option)}
                   disabled={!!gameState.userAnswer || gameState.showResult}
-                  className={`p-4 rounded-lg font-medium transition-all duration-200 ${
+                  className={`p-4 rounded-lg font-semibold transition-all duration-200 ${
                     gameState.showResult
                       ? option === gameState.correctAnswer
-                        ? "bg-green-500 text-white"
+                        ? "bg-green-600 text-white border-2 border-green-500"
                         : option === gameState.userAnswer &&
                             option !== gameState.correctAnswer
-                          ? "bg-red-500 text-white"
-                          : "bg-gray-500 text-white"
+                          ? "bg-red-600 text-white border-2 border-red-500"
+                          : "bg-gray-600 text-white"
                       : gameState.userAnswer === option
-                        ? "bg-blue-500 text-white"
-                        : "bg-white/20 text-white hover:bg-white/30"
+                        ? "bg-yellow-500 text-white"
+                        : "bg-white/20 text-white hover:bg-white/30 border border-white/30"
                   }`}
                 >
                   {option}
@@ -376,7 +582,7 @@ const BlurGuessGame: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </ChristmasBackground>
   );
 };
 

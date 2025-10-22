@@ -10,6 +10,7 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; }
+    public DbSet<GameScore> GameScores { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,33 @@ public class ApplicationDbContext : DbContext
                 
             entity.Property(e => e.CompanyKey)
                 .HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<GameScore>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            
+            entity.HasIndex(e => new { e.UserId, e.Day, e.GameType })
+                .IsUnique()
+                .HasDatabaseName("IX_GameScores_User_Day_GameType");
+            
+            entity.Property(e => e.GameType)
+                .IsRequired()
+                .HasMaxLength(50);
+                
+            entity.Property(e => e.Score)
+                .IsRequired();
+                
+            entity.Property(e => e.Day)
+                .IsRequired();
+                
+            entity.Property(e => e.PlayedAt)
+                .IsRequired();
+            
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

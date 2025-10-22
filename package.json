@@ -18,10 +18,13 @@
     "start": "docker-compose up -d --build",
     "stop": "docker-compose down",
     "restart": "docker-compose restart",
+    "rebuild": "docker-compose down --volumes --remove-orphans && docker builder prune -f && docker image prune -f && docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f || true && docker-compose build --no-cache --pull && docker-compose up -d",
     "logs": "docker-compose logs -f",
-    "docker:up": "docker-compose up --build",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f",
+    "logs:backend": "docker-compose logs -f backend",
+    "logs:frontend": "docker-compose logs -f frontend",
+    "logs:studio": "docker-compose logs -f studio",
+    "clean": "docker-compose down --volumes --remove-orphans && docker builder prune -af && docker image prune -af",
+    "deploy": "chmod +x deploy.sh && ./deploy.sh",
     "install:all": "npm install && cd apps/frontend && npm install && cd ../studio && npm install"
   },
   "devDependencies": {

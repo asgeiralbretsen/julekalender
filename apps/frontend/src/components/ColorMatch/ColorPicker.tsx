@@ -275,13 +275,8 @@ export default function ColorPickerNoEyedropper({
   }
 
   return (
-    <div className="w-full max-w-sm p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-sm font-medium">Color picker</div>
-        <div className="text-xs text-slate-500">
-          Hex: <span className="font-mono">{hex}</span>
-        </div>
-      </div>
+    <div className="">
+      <div className="flex items-center justify-between mb-3"></div>
 
       <div className="flex flex-col gap-4">
         <div className="relative">
@@ -321,32 +316,6 @@ export default function ColorPickerNoEyedropper({
             />
           </div>
         </div>
-      </div>
-
-      <div className="mt-4 flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded border"
-          style={{ background: hex }}
-          aria-hidden
-        />
-        <div className="text-sm">
-          Selected: <span className="font-mono">{hex}</span>
-        </div>
-        <div className="flex-1 text-right">
-          <button
-            onClick={() =>
-              navigator.clipboard && navigator.clipboard.writeText(hex)
-            }
-            className="px-3 py-1 rounded bg-slate-100 border text-sm"
-          >
-            Copy
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-3 text-xs text-slate-500">
-        This component avoids the native color input so browser eyedropper tools
-        are not exposed.
       </div>
     </div>
   );

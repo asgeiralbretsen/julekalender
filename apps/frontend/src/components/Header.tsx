@@ -15,45 +15,51 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-gradient-to-r from-red-900 via-red-800 to-red-900 shadow-christmas-lg border-b-2 border-yellow-400/30 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-5 bg-cover bg-center" />
+      
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-2 left-10 text-white/20 text-xl animate-pulse" style={{ animationDelay: '0s', animationDuration: '3s' }}>
+          ❄
+        </div>
+        <div className="absolute top-3 right-20 text-white/20 text-lg animate-pulse" style={{ animationDelay: '1s', animationDuration: '4s' }}>
+          ❄
+        </div>
+        <div className="absolute top-2 left-1/3 text-white/20 text-base animate-pulse" style={{ animationDelay: '2s', animationDuration: '3.5s' }}>
+          ❄
+        </div>
+        <div className="absolute top-3 right-1/4 text-white/20 text-xl animate-pulse" style={{ animationDelay: '1.5s', animationDuration: '4.5s' }}>
+          ❄
+        </div>
+        <div className="absolute top-2 left-1/2 text-white/20 text-lg animate-pulse" style={{ animationDelay: '0.5s', animationDuration: '3s' }}>
+          ❄
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <Link to="/" className="text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors">
-              Julekalender
+            <Link 
+              to="/" 
+              className="text-xl font-bold text-yellow-300 hover:text-yellow-200 transition-all duration-300 drop-shadow-lg flex items-center space-x-2 hover:scale-105"
+              style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
+            >
+              <span className="text-2xl">🎄</span>
+              <span>Julekalender</span>
             </Link>
             
             <SignedIn>
               <nav className="hidden md:flex space-x-6">
                 <Link 
                   to="/calendar" 
-                  className={`text-sm font-medium transition-colors ${
+                  className={`text-sm font-semibold transition-all duration-300 px-3 py-2 rounded-lg ${
                     isActive('/calendar') 
-                      ? 'text-blue-600' 
-                      : 'text-gray-700 hover:text-blue-600'
+                      ? 'text-yellow-300 bg-white/10 backdrop-blur-sm shadow-md' 
+                      : 'text-white hover:text-yellow-300 hover:bg-white/5'
                   }`}
+                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
                 >
-                  Calendar
-                </Link>
-                <Link 
-                  to="/posts" 
-                  className={`text-sm font-medium transition-colors ${
-                    isActive('/posts') 
-                      ? 'text-blue-600' 
-                      : 'text-gray-700 hover:text-blue-600'
-                  }`}
-                >
-                  Posts
-                </Link>
-                <Link 
-                  to="/health" 
-                  className={`text-sm font-medium transition-colors ${
-                    isActive('/health') 
-                      ? 'text-blue-600' 
-                      : 'text-gray-700 hover:text-blue-600'
-                  }`}
-                >
-                  Health
+                  📅 Calendar
                 </Link>
               </nav>
             </SignedIn>
@@ -62,8 +68,8 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                  Sign In
+                <button className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-green-500">
+                  🎅 Sign In
                 </button>
               </SignInButton>
             </SignedOut>
@@ -78,11 +84,10 @@ export default function Header() {
               />
             </SignedIn>
 
-            {/* Mobile menu button */}
             <SignedIn>
               <button
                 onClick={toggleMobileMenu}
-                className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-white hover:text-yellow-300 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-yellow-400"
               >
                 <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                   {isMobileMenuOpen ? (
@@ -96,42 +101,19 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-50 border-t">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-red-800/50 backdrop-blur-sm border-t border-yellow-400/20 rounded-b-lg">
               <Link
                 to="/calendar"
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
+                className={`block px-3 py-2 rounded-md text-base font-semibold ${
                   isActive('/calendar')
-                    ? 'text-blue-600 bg-blue-50'
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
+                    ? 'text-yellow-300 bg-white/10'
+                    : 'text-white hover:text-yellow-300 hover:bg-white/5'
                 }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Calendar
-              </Link>
-              <Link
-                to="/posts"
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActive('/posts')
-                    ? 'text-blue-600 bg-blue-50'
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
-                }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Posts
-              </Link>
-              <Link
-                to="/health"
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActive('/health')
-                    ? 'text-blue-600 bg-blue-50'
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
-                }`}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Health
+                📅 Calendar
               </Link>
             </div>
           </div>
