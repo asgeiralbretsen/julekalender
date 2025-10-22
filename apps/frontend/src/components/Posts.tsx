@@ -44,12 +44,12 @@ export default function Posts() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Latest Posts</h2>
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-christmas-lg p-6 border-2 border-yellow-400/20">
+        <h2 className="text-xl font-semibold mb-4 text-yellow-300">Latest Posts</h2>
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200/20 rounded mb-2"></div>
+          <div className="h-4 bg-gray-200/20 rounded mb-2"></div>
+          <div className="h-4 bg-gray-200/20 rounded w-3/4"></div>
         </div>
       </div>
     )
@@ -57,26 +57,29 @@ export default function Posts() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Latest Posts</h2>
-        <div className="text-red-500">{error}</div>
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-christmas-lg p-6 border-2 border-yellow-400/20">
+        <h2 className="text-xl font-semibold mb-4 text-yellow-300">Latest Posts</h2>
+        <div className="text-red-300 bg-red-800/20 rounded-lg p-3">{error}</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold mb-4">Latest Posts</h2>
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-christmas-lg p-6 border-2 border-yellow-400/20">
+      <h2 className="text-xl font-semibold mb-4 text-yellow-300 flex items-center space-x-2">
+        <span>🎄</span>
+        <span>Latest Posts</span>
+      </h2>
       {posts.length === 0 ? (
-        <p className="text-gray-500">No posts available</p>
+        <p className="text-red-100">No posts available</p>
       ) : (
         <div className="space-y-3">
           {posts.map((post) => (
-            <div key={post._id} className="border-b border-gray-200 pb-3 last:border-b-0">
-              <h3 className="font-medium text-gray-900 hover:text-blue-600 cursor-pointer">
+            <div key={post._id} className="border-b border-yellow-400/20 pb-3 last:border-b-0 hover:bg-white/5 transition-colors rounded-lg px-2 py-1">
+              <h3 className="font-medium text-white hover:text-yellow-300 cursor-pointer transition-colors">
                 {post.title}
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-red-200">
                 {new Date(post.publishedAt).toLocaleDateString()}
               </p>
             </div>
