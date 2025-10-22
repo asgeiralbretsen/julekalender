@@ -153,12 +153,30 @@ export const useGameScore = () => {
     }
   }, [getToken]);
 
+  const getLeaderboard = useCallback(async (day: number, gameType: string): Promise<GameScore[]> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await GameScoreAPI.getLeaderboard(day, gameType, getToken);
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get leaderboard';
+      setError(errorMessage);
+      console.error('Error getting leaderboard:', err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
+
   return {
     saveGameScore,
     getUserScoreForDay,
     hasUserPlayedGame,
     getUserScores,
     getScoresForDay,
+    getLeaderboard,
     getCurrentUser,
     loading,
     error,

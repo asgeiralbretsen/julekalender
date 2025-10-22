@@ -26,9 +26,6 @@ public class GameScoreService : IGameScoreService
         
         if (existingScore != null)
         {
-            existingScore.Score = score;
-            existingScore.PlayedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
             return existingScore;
         }
 
@@ -69,5 +66,14 @@ public class GameScoreService : IGameScoreService
     {
         return await _context.GameScores
             .AnyAsync(gs => gs.UserId == userId && gs.Day == day && gs.GameType == gameType);
+    }
+
+    public async Task<List<GameScore>> GetLeaderboardAsync(int day, string gameType)
+    {
+        return await _context.GameScores
+            .Include(gs => gs.User)
+            .Where(gs => gs.Day == day && gs.GameType == gameType)
+            .OrderByDescending(gs => gs.Score)
+            .ToListAsync();
     }
 }

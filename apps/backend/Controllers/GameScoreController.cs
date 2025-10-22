@@ -171,6 +171,21 @@ public class GameScoreController : ControllerBase
         }
     }
 
+    [HttpGet("leaderboard/day/{day}/game/{gameType}")]
+    [Authorize]
+    public async Task<ActionResult<List<GameScore>>> GetLeaderboard(int day, string gameType)
+    {
+        try
+        {
+            var scores = await _gameScoreService.GetLeaderboardAsync(day, gameType);
+            return Ok(scores);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Error retrieving leaderboard: {ex.Message}");
+        }
+    }
+
     private string? GetCurrentUserId()
     {
         // Try different claim types that Clerk might use

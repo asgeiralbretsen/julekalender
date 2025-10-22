@@ -103,4 +103,19 @@ export class GameScoreAPI {
 
     return response.json();
   }
+
+  static async getLeaderboard(day: number, gameType: string, getToken: () => Promise<string | null>): Promise<any[]> {
+    const headers = await this.getAuthHeaders(getToken);
+    
+    const response = await fetch(
+      `${API_BASE_URL}/api/gamescore/leaderboard/day/${day}/game/${gameType}`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get leaderboard: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }

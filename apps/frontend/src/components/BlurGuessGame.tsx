@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useUser } from '@clerk/clerk-react';
 import { useGameScore } from '../hooks/useGameScore';
 import type { GameScore, SaveGameScoreRequest } from '../hooks/useGameScore';
+import Leaderboard from './Leaderboard';
 
 interface GameImage {
   id: string;
@@ -181,34 +182,33 @@ const BlurGuessGame: React.FC = () => {
   }, [gameImages]);
 
   const saveGameScoreWhenEnded = async (finalScore: number) => {
-    if (!user || !dayInfo || gameState.scoreSaved) return;
+    if (!user || !dayInfo) return;
+
+    if (gameState.hasPlayedToday) {
+      setGameState(prev => ({ ...prev, scoreSaved: false }));
+      return;
+    }
 
     try {
-      await saveGameScore({
+      const result = await saveGameScore({
         day: dayInfo.day,
         gameType: 'blurGuessGame',
         score: finalScore,
       });
       
-      setGameState(prev => ({ ...prev, scoreSaved: true }));
+      if (result) {
+        setGameState(prev => ({ 
+          ...prev, 
+          scoreSaved: true,
+          previousScore: result.score 
+        }));
+      }
     } catch (err) {
       console.error('Error saving game score:', err);
     }
   };
 
   const startGame = () => {
-    if (gameState.hasPlayedToday) {
-      // If already played today, show the previous score
-      setGameState((prev) => ({
-        ...prev,
-        gameStarted: true,
-        gameEnded: true,
-        score: prev.previousScore || 0,
-        scoreSaved: true,
-      }));
-      return;
-    }
-
     setGameState((prev) => ({
       ...prev,
       gameStarted: true,
@@ -325,23 +325,40 @@ const BlurGuessGame: React.FC = () => {
             {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : 'Blur Guess Game'}
           </h1>
           
-          {gameState.hasPlayedToday ? (
+          {gameState.hasPlayedToday && gameState.previousScore !== null ? (
             <>
-              <p className="text-white/80 mb-4">
-                You've already played this game today!
-              </p>
-              <p className="text-yellow-300 mb-6">
-                Your previous score: {gameState.previousScore}
+              <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                <p className="text-blue-200 mb-2 font-semibold">
+                  ⚠️ Only First Attempt Counts!
+                </p>
+                <p className="text-white/80 text-sm mb-3">
+                  Your first score has been submitted to the leaderboard.
+                </p>
+                <p className="text-yellow-300 text-xl font-bold">
+                  Submitted Score: {gameState.previousScore}
+                </p>
+              </div>
+              <p className="text-white/60 mb-6 text-sm">
+                You can play again for fun, but your score won't change.
               </p>
               <button
                 onClick={startGame}
-                className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-3 rounded-full font-semibold hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105"
+                disabled={loading}
+                className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-full font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                View Previous Score
+                {loading ? 'Loading...' : 'Play Again (For Fun)'}
               </button>
             </>
           ) : (
             <>
+              <div className="mb-4 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+                <p className="text-green-200 font-semibold">
+                  🎯 First Attempt Counts!
+                </p>
+                <p className="text-white/80 text-sm mt-1">
+                  Your first score will be submitted to the leaderboard.
+                </p>
+              </div>
               <p className="text-white/80 mb-6">
                 Watch as the image slowly unblurs and guess what it is as fast as
                 possible!
@@ -367,40 +384,77 @@ const BlurGuessGame: React.FC = () => {
   }
 
   if (gameState.gameEnded) {
+    const isFirstAttempt = !gameState.hasPlayedToday;
+    const displayScore = isFirstAttempt ? gameState.score : (gameState.previousScore || 0);
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            {gameState.hasPlayedToday ? 'Previous Game Score' : 'Game Over!'}
-          </h1>
-          <p className="text-2xl text-white/80 mb-6">
-            Final Score: {gameState.score}
-          </p>
-          
-          {gameState.scoreSaved && !gameState.hasPlayedToday && (
-            <p className="text-green-300 mb-4">
-              ✅ Score saved successfully!
-            </p>
-          )}
-          
-          {loading && (
-            <p className="text-yellow-300 mb-4">
-              💾 Saving score...
-            </p>
-          )}
-          
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-              <p className="text-red-200 text-sm">{error}</p>
+        <div className="max-w-6xl w-full">
+          <div className="grid md:grid-cols-2 gap-6 items-start">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
+              <h1 className="text-4xl font-bold text-white mb-4">
+                Game Over!
+              </h1>
+              
+              <div className="mb-6">
+                <p className="text-white/60 text-sm mb-2">
+                  {isFirstAttempt ? 'Your Score (Submitted)' : 'This Round Score'}
+                </p>
+                <p className="text-2xl text-white/80 mb-2">
+                  {gameState.score}
+                </p>
+              </div>
+
+              {!isFirstAttempt && (
+                <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                  <p className="text-blue-200 text-sm mb-2">
+                    Your Submitted Score (First Attempt):
+                  </p>
+                  <p className="text-yellow-300 text-3xl font-bold">
+                    {displayScore}
+                  </p>
+                  <p className="text-white/60 text-xs mt-2">
+                    This is the score on the leaderboard
+                  </p>
+                </div>
+              )}
+              
+              {gameState.scoreSaved && isFirstAttempt && (
+                <p className="text-green-300 mb-4">
+                  ✅ Score saved successfully!
+                </p>
+              )}
+              
+              {loading && (
+                <p className="text-yellow-300 mb-4">
+                  💾 Saving score...
+                </p>
+              )}
+              
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                  <p className="text-red-200 text-sm">{error}</p>
+                </div>
+              )}
+              
+              <button
+                onClick={resetGame}
+                className="bg-gradient-to-r from-pink-500 to-violet-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-violet-600 transition-all duration-300 transform hover:scale-105"
+              >
+                Play Again
+              </button>
             </div>
-          )}
-          
-          <button
-            onClick={resetGame}
-            className="bg-gradient-to-r from-pink-500 to-violet-500 text-white px-8 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-violet-600 transition-all duration-300 transform hover:scale-105"
-          >
-            {gameState.hasPlayedToday ? 'Back to Calendar' : 'Play Again'}
-          </button>
+
+            {dayInfo && (
+              <Leaderboard
+                day={dayInfo.day}
+                gameType="blurGuessGame"
+                title={`Day ${dayInfo.day} Leaderboard`}
+                showRank={true}
+                maxEntries={10}
+              />
+            )}
+          </div>
         </div>
       </div>
     );

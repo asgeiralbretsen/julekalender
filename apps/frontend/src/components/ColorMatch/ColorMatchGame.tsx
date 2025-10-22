@@ -2,6 +2,9 @@ import Stocking from "./Stocking";
 import { useState, useEffect } from "react";
 import ColorPickerNoEyedropper from "./ColorPicker";
 import { createClient } from "@sanity/client";
+import { useUser } from '@clerk/clerk-react';
+import { useGameScore } from '../../hooks/useGameScore';
+import Leaderboard from '../Leaderboard';
 
 interface Colors {
   topColor: string;
@@ -49,12 +52,18 @@ const client = createClient({
 });
 
 export function ColorMatchGame() {
+  const { user } = useUser();
+  const { saveGameScore, hasUserPlayedGame, getUserScoreForDay, loading: scoreLoading, error: scoreError } = useGameScore();
+  
   const [colorPickerColor, setColorPickerColor] = useState("gray");
   const [showResults, setShowResults] = useState(false);
   const [colorScores, setColorScores] = useState<ColorScore[]>([]);
   const [overallScore, setOverallScore] = useState(0);
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scoreSaved, setScoreSaved] = useState(false);
+  const [hasPlayedToday, setHasPlayedToday] = useState(false);
+  const [previousScore, setPreviousScore] = useState<number | null>(null);
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
     null
   );
@@ -171,6 +180,25 @@ export function ColorMatchGame() {
     loadGameData();
   }, []);
 
+  useEffect(() => {
+    const checkIfPlayedToday = async () => {
+      if (!user || !dayInfo) return;
+
+      try {
+        const hasPlayed = await hasUserPlayedGame(dayInfo.day, 'colorMatchGame');
+        if (hasPlayed) {
+          const previousScoreData = await getUserScoreForDay(dayInfo.day, 'colorMatchGame');
+          setHasPlayedToday(true);
+          setPreviousScore(previousScoreData?.score || null);
+        }
+      } catch (err) {
+        console.error('Error checking if user has played today:', err);
+      }
+    };
+
+    checkIfPlayedToday();
+  }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
+
   const setSingleColor = (
     whichColor:
       | "topColor"
@@ -230,7 +258,7 @@ export function ColorMatchGame() {
     return Math.max(0, 100 - distance / 4.41);
   };
 
-  const calculateScores = () => {
+  const calculateScores = async () => {
     const sections = [
       { key: "topColor", name: "Top Color" },
       { key: "topStripesColor", name: "Top Stripes" },
@@ -245,7 +273,6 @@ export function ColorMatchGame() {
         currentColors[section.key as keyof Colors]
       );
 
-      // Apply perfect match bonus if available
       const perfectMatchBonus =
         gameData?.scoringSettings?.perfectMatchBonus || 0;
       const adjustedPercentage =
@@ -266,6 +293,24 @@ export function ColorMatchGame() {
     setColorScores(scores);
     setOverallScore(averageScore);
     setShowResults(true);
+
+    if (user && dayInfo && !hasPlayedToday) {
+      try {
+        const result = await saveGameScore({
+          day: dayInfo.day,
+          gameType: 'colorMatchGame',
+          score: averageScore,
+        });
+        
+        if (result && result.score === averageScore) {
+          setScoreSaved(true);
+          setHasPlayedToday(true);
+          setPreviousScore(averageScore);
+        }
+      } catch (err) {
+        console.error('Error saving game score:', err);
+      }
+    }
   };
 
   // Show loading state
@@ -299,6 +344,28 @@ export function ColorMatchGame() {
             {gameData?.description ||
               "Click on the stocking sections to color them!"}
           </p>
+          
+          {!showResults && (
+            <div className="mt-4 inline-block p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+              <p className="text-green-200 font-semibold">
+                {hasPlayedToday ? '⚠️ Only First Attempt Counts!' : '🎯 First Attempt Counts!'}
+              </p>
+              {hasPlayedToday && previousScore !== null ? (
+                <div className="mt-2">
+                  <p className="text-white/80 text-sm">
+                    Your submitted score: <span className="font-bold text-yellow-300">{previousScore}%</span>
+                  </p>
+                  <p className="text-white/60 text-xs mt-1">
+                    You can play again for fun, but your score won't change
+                  </p>
+                </div>
+              ) : (
+                <p className="text-white/80 text-sm mt-1">
+                  Your first score will be submitted to the leaderboard
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Main Layout */}
@@ -409,8 +476,39 @@ export function ColorMatchGame() {
                     <div className="text-3xl font-bold text-white mb-2">
                       {overallScore}%
                     </div>
-                    <p className="text-white/80 text-sm">Overall Accuracy</p>
+                    <p className="text-white/80 text-sm">
+                      {scoreSaved ? 'Submitted Score' : 'Overall Accuracy'}
+                    </p>
                   </div>
+
+                  {scoreSaved && (
+                    <p className="text-green-300 text-center mb-4 text-sm">
+                      ✅ Score saved to leaderboard!
+                    </p>
+                  )}
+                  
+                  {!scoreSaved && hasPlayedToday && previousScore !== null && (
+                    <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                      <p className="text-blue-200 text-xs mb-1">
+                        Practice Round - Score not saved
+                      </p>
+                      <p className="text-white/80 text-xs">
+                        Your submitted score: <span className="font-bold text-yellow-300">{previousScore}%</span>
+                      </p>
+                    </div>
+                  )}
+                  
+                  {scoreLoading && (
+                    <p className="text-yellow-300 text-center mb-4 text-sm">
+                      💾 Saving score...
+                    </p>
+                  )}
+                  
+                  {scoreError && (
+                    <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                      <p className="text-red-200 text-xs">{scoreError}</p>
+                    </div>
+                  )}
 
                   {/* Individual Scores */}
                   <div className="space-y-3">
@@ -441,6 +539,7 @@ export function ColorMatchGame() {
                         setShowResults(false);
                         setColorScores([]);
                         setOverallScore(0);
+                        setScoreSaved(false);
                         setCurrentColors({
                           topColor: "gray",
                           topStripesColor: "white",
@@ -451,7 +550,7 @@ export function ColorMatchGame() {
                       }}
                       className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
                     >
-                      🔄 Try Again
+                      {hasPlayedToday ? '🔄 Play Again (For Fun)' : '🔄 Try Again'}
                     </button>
                   </div>
                 </div>
@@ -459,6 +558,19 @@ export function ColorMatchGame() {
             </div>
           </div>
         </div>
+
+        {/* Leaderboard Section */}
+        {showResults && dayInfo && (
+          <div className="mt-8 max-w-2xl mx-auto">
+            <Leaderboard
+              day={dayInfo.day}
+              gameType="colorMatchGame"
+              title={`Day ${dayInfo.day} Leaderboard`}
+              showRank={true}
+              maxEntries={10}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
