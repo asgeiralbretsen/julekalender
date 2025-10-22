@@ -16,40 +16,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Clean up Docker resources
-        run: |
-          echo "🧹 Cleaning up Docker resources..."
-          docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
-          echo "🗑️  Removing old project images..."
-          docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f || true
-          docker builder prune -af || true
-          docker image prune -af || true
-          docker system prune -af --volumes || true
-          echo "✅ Cleanup complete"
-
-      - name: Build images with no cache
-        run: |
-          echo "🔨 Building images with no cache..."
-          docker compose -f docker-compose.prod.yml build --no-cache --pull
-
-      - name: Verify builds
-        run: |
-          echo "✅ Build completed successfully"
-          docker images | grep julekalender || echo "Images built"
-
-      - name: Deploy to server (SSH)
-        if: ${{ vars.ENABLE_SSH_DEPLOY == 'true' }}
+      - name: Deploy to server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ vars.SSH_PORT || 22 }}
+          port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            cd ${{ vars.DEPLOY_PATH || '/opt/julekalender' }}
+            cd ${{ secrets.DEPLOY_PATH || '/opt/julekalender' }}
+            echo "📥 Pulling latest code..."
             git pull origin main
+            echo "🚀 Running deployment script..."
             chmod +x deploy.sh
             ./deploy.sh
 
       - name: Summary
-        run: echo "🎉 Build completed successfully!"
+        run: echo "🎉 Deployment completed successfully!"

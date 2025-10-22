@@ -10,24 +10,30 @@ echo "🚀 Starting production deployment with clean rebuild..."
 
 # Stop and remove all existing containers
 echo "🛑 Stopping and removing existing containers..."
-docker-compose -f docker-compose.prod.yml down --volumes --remove-orphans
+docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || docker-compose -f docker-compose.prod.yml down --volumes --remove-orphans
+
+# Clean node_modules from apps to force fresh npm install
+echo "🗑️  Removing node_modules directories..."
+rm -rf apps/frontend/node_modules || true
+rm -rf apps/studio/node_modules || true
+rm -rf node_modules || true
 
 # Remove dangling images and build cache
 echo "🧹 Cleaning up Docker build cache..."
 docker builder prune -f
 docker image prune -f
 
-# Remove old images for this project (optional - uncomment if needed)
+# Remove old images for this project
 echo "🗑️  Removing old project images..."
 docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f || true
 
 # Build with no cache
 echo "🔨 Building images with no cache..."
-docker-compose -f docker-compose.prod.yml build --no-cache --pull
+docker compose -f docker-compose.prod.yml build --no-cache --pull || docker-compose -f docker-compose.prod.yml build --no-cache --pull
 
 # Start production containers
 echo "🚀 Starting production containers..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d || docker-compose -f docker-compose.prod.yml up -d
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to start..."
@@ -35,7 +41,7 @@ sleep 15
 
 # Show running containers
 echo "📋 Running containers:"
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps || docker-compose -f docker-compose.prod.yml ps
 
 # Check if services are running
 echo "🔍 Checking service health..."
@@ -50,7 +56,7 @@ for i in {1..30}; do
     if [ $i -eq 30 ]; then
         echo "❌ Backend API failed to start"
         echo "📋 Backend logs:"
-        docker-compose -f docker-compose.prod.yml logs backend
+        docker compose -f docker-compose.prod.yml logs backend || docker-compose -f docker-compose.prod.yml logs backend
         exit 1
     fi
     echo "   Attempt $i/30..."
@@ -67,7 +73,7 @@ for i in {1..15}; do
     if [ $i -eq 15 ]; then
         echo "❌ Frontend failed to start"
         echo "📋 Frontend logs:"
-        docker-compose -f docker-compose.prod.yml logs frontend
+        docker compose -f docker-compose.prod.yml logs frontend || docker-compose -f docker-compose.prod.yml logs frontend
         exit 1
     fi
     echo "   Attempt $i/15..."
@@ -97,4 +103,4 @@ echo "   - Database: localhost:5432"
 echo "   - Sanity Studio: http://localhost:3333"
 echo "   - pgAdmin: http://localhost:8081"
 echo ""
-echo "📋 View logs with: docker-compose -f docker-compose.prod.yml logs -f [service]"
+echo "📋 View logs with: docker compose -f docker-compose.prod.yml logs -f [service]"
