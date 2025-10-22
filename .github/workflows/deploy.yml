@@ -8,15 +8,45 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Build and Deploy
+  build:
+    name: Build Docker Images
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to server
+      - name: Clean Docker resources
+        run: |
+          echo "🧹 Cleaning Docker resources..."
+          docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
+          docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f || true
+          docker builder prune -af || true
+
+      - name: Build images
+        run: |
+          echo "🔨 Building images with no cache..."
+          docker compose -f docker-compose.prod.yml build --no-cache --pull
+
+      - name: Verify build
+        run: |
+          echo "✅ Build completed successfully"
+          docker images | grep julekalender
+
+      - name: Summary
+        run: echo "🎉 Build verification completed!"
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: build
+    if: vars.ENABLE_SSH_DEPLOY == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -32,4 +62,4 @@ jobs:
             ./deploy.sh
 
       - name: Summary
-        run: echo "🎉 Deployment completed successfully!"
+        run: echo "🎉 Deployed to server!"
