@@ -587,6 +587,30 @@ export default function AdventCalendar() {
         );
         navigate("/game/teamsNotificationGame");
         return;
+      } else if (
+        sanityDay.gameType === "songGuessGame" &&
+        sanityDay.songGuessGameData
+      ) {
+        console.log(
+          "Navigating to SongGuessGame with data:",
+          sanityDay.songGuessGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            songGuessGameData: sanityDay.songGuessGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/songGuessGame");
+        return;
       } else {
         console.log("Game type found but no game data available");
       }

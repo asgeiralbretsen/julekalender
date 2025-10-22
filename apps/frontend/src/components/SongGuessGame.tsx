@@ -230,8 +230,19 @@ const SongGuessGame: React.FC = () => {
     // Save score if user hasn't played today
     if (isCorrect && dayInfo && user && !gameState.hasPlayedToday) {
       try {
-        await saveGameScore(dayInfo.day, "songGuessGame", finalScore);
-        setGameState((prev) => ({ ...prev, scoreSaved: true }));
+        const result = await saveGameScore({
+          day: dayInfo.day,
+          gameType: "songGuessGame",
+          score: finalScore,
+        });
+        if (result) {
+          setGameState((prev) => ({ 
+            ...prev, 
+            scoreSaved: true,
+            hasPlayedToday: true,
+            previousScore: result.score 
+          }));
+        }
       } catch (error) {
         console.error("Error saving score:", error);
       }
