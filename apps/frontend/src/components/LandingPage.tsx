@@ -33,12 +33,12 @@ export default function LandingPage() {
             Julekalender
           </h1>
           <p className="text-xl text-white mb-8 drop-shadow">
-            Countdown to Christmas with daily surprises! 🎁
+            Tell ned til jul med daglige overraskelser! 🎁
           </p>
           
           <SignInButton mode="modal">
             <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-lg font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-green-500">
-              🎅 Sign In to Start
+              🎅 Logg inn for å starte
             </button>
           </SignInButton>
         </div>

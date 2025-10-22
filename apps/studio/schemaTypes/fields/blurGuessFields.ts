@@ -2,13 +2,13 @@ import {defineField} from 'sanity'
 
 export const blurGuessGameFields = defineField({
   name: 'blurGuessGameData',
-  title: 'Blur Guess Game Data',
+  title: 'Gjett bildet spilldata',
   type: 'object',
   hidden: ({parent}) => parent?.gameType !== 'blurGuessGame',
   fields: [
     {
       name: 'images',
-      title: 'Game Images',
+      title: 'Spillbilder',
       type: 'array',
       of: [
         {
@@ -17,7 +17,7 @@ export const blurGuessGameFields = defineField({
             {
               name: 'image',
               type: 'image',
-              title: 'Image',
+              title: 'Bilde',
               options: {
                 hotspot: true,
               },
@@ -26,7 +26,7 @@ export const blurGuessGameFields = defineField({
             {
               name: 'answer',
               type: 'string',
-              title: 'Correct Answer',
+              title: 'Riktig svar',
               validation: (rule) => rule.required(),
             },
           ],

@@ -58,13 +58,13 @@ public class GameScoreController : ControllerBase
             var clerkId = GetCurrentUserId();
             if (clerkId == null)
             {
-                return Unauthorized("User not found");
+                return Unauthorized("Bruker ikke funnet");
             }
 
             var user = await _userService.GetUserByClerkIdAsync(clerkId);
             if (user == null)
             {
-                return NotFound("User not found");
+                return NotFound("Bruker ikke funnet");
             }
 
             var gameScore = await _gameScoreService.SaveGameScoreAsync(
@@ -78,7 +78,7 @@ public class GameScoreController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest($"Error saving game score: {ex.Message}");
+            return BadRequest($"Feil ved lagring av spillpoeng: {ex.Message}");
         }
     }
 
@@ -106,32 +106,32 @@ public class GameScoreController : ControllerBase
             var clerkId = GetCurrentUserId();
             if (clerkId == null)
             {
-                return Unauthorized("User not found");
+                return Unauthorized("Bruker ikke funnet");
             }
 
             var user = await _userService.GetUserByClerkIdAsync(clerkId);
             if (user == null)
             {
-                return NotFound("User not found");
+                return NotFound("Bruker ikke funnet");
             }
 
             // Ensure the user can only access their own scores
             if (user.Id != userId)
             {
-                return Forbid("You can only access your own scores");
+                return Forbid("Du kan bare se dine egne poengsummer");
             }
 
             var gameScore = await _gameScoreService.GetUserScoreForDayAsync(userId, day, gameType);
             if (gameScore == null)
             {
-                return NotFound("No score found for this user, day, and game type");
+                return NotFound("Ingen poengsum funnet for denne brukeren, dagen og spilltypen");
             }
 
             return Ok(gameScore);
         }
         catch (Exception ex)
         {
-            return BadRequest($"Error retrieving game score: {ex.Message}");
+            return BadRequest($"Feil ved henting av spillpoeng: {ex.Message}");
         }
     }
 
@@ -157,19 +157,19 @@ public class GameScoreController : ControllerBase
             var clerkId = GetCurrentUserId();
             if (clerkId == null)
             {
-                return Unauthorized("User not found");
+                return Unauthorized("Bruker ikke funnet");
             }
 
             var user = await _userService.GetUserByClerkIdAsync(clerkId);
             if (user == null)
             {
-                return NotFound("User not found");
+                return NotFound("Bruker ikke funnet");
             }
 
             // Ensure the user can only access their own scores
             if (user.Id != userId)
             {
-                return Forbid("You can only access your own scores");
+                return Forbid("Du kan bare se dine egne poengsummer");
             }
 
             var scores = await _gameScoreService.GetUserScoresAsync(userId);
@@ -177,7 +177,7 @@ public class GameScoreController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest($"Error retrieving user scores: {ex.Message}");
+            return BadRequest($"Feil ved henting av brukerpoengsummer: {ex.Message}");
         }
     }
 
@@ -201,7 +201,7 @@ public class GameScoreController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest($"Error retrieving scores for day: {ex.Message}");
+            return BadRequest($"Feil ved henting av poengsummer for dagen: {ex.Message}");
         }
     }
 
@@ -229,19 +229,19 @@ public class GameScoreController : ControllerBase
             var clerkId = GetCurrentUserId();
             if (clerkId == null)
             {
-                return Unauthorized("User not found");
+                return Unauthorized("Bruker ikke funnet");
             }
 
             var user = await _userService.GetUserByClerkIdAsync(clerkId);
             if (user == null)
             {
-                return NotFound("User not found");
+                return NotFound("Bruker ikke funnet");
             }
 
             // Ensure the user can only check their own game status
             if (user.Id != userId)
             {
-                return Forbid("You can only check your own game status");
+                return Forbid("Du kan bare sjekke din egen spillstatus");
             }
 
             var hasPlayed = await _gameScoreService.HasUserPlayedGameTodayAsync(userId, day, gameType);
@@ -249,7 +249,7 @@ public class GameScoreController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest($"Error checking if user has played game: {ex.Message}");
+            return BadRequest($"Feil ved sjekk om bruker har spilt spillet: {ex.Message}");
         }
     }
 
@@ -278,7 +278,7 @@ public class GameScoreController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest($"Error retrieving leaderboard: {ex.Message}");
+            return BadRequest($"Feil ved henting av toppliste: {ex.Message}");
         }
     }
 

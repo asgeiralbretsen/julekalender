@@ -114,7 +114,7 @@ const TimerPlayground: React.FC = () => {
   return (
     <div className="p-6 grid gap-8 md:grid-cols-2">
       <div className="p-4 rounded-2xl shadow bg-white/50 dark:bg-neutral-900/40">
-        <h2 className="text-xl font-semibold mb-2">Countdown (25s)</h2>
+        <h2 className="text-xl font-semibold mb-2">Nedtelling (25s)</h2>
         <Timer
           mode="down"
           durationMs={25_000}
@@ -123,14 +123,14 @@ const TimerPlayground: React.FC = () => {
           onFinished={handleFinished}
         />
         <div className="mt-4 flex gap-2">
-          <button className="px-3 py-1 rounded-xl shadow" onClick={() => setDownRunning(r => !r)}>{downRunning ? "Pause" : "Resume"}</button>
-          <button className="px-3 py-1 rounded-xl shadow" onClick={() => setDownFinished(true)}>Force Finish</button>
-          <button className="px-3 py-1 rounded-xl shadow" onClick={() => { setDownFinished(false); setDownRunning(true); }}>Reset flags</button>
+          <button className="px-3 py-1 rounded-xl shadow" onClick={() => setDownRunning(r => !r)}>{downRunning ? "Pause" : "Fortsett"}</button>
+          <button className="px-3 py-1 rounded-xl shadow" onClick={() => setDownFinished(true)}>Tving ferdig</button>
+          <button className="px-3 py-1 rounded-xl shadow" onClick={() => { setDownFinished(false); setDownRunning(true); }}>Tilbakestill</button>
         </div>
       </div>
 
       <div className="p-4 rounded-2xl shadow bg-white/50 dark:bg-neutral-900/40">
-        <h2 className="text-xl font-semibold mb-2">Count Up</h2>
+        <h2 className="text-xl font-semibold mb-2">Tell opp</h2>
         <Timer
           mode="up"
           startFromMs={0}
@@ -138,7 +138,7 @@ const TimerPlayground: React.FC = () => {
           onFinished={() => console.log("Up finished (by prop)")}
         />
         <div className="mt-4 flex gap-2">
-          <button className="px-3 py-1 rounded-xl shadow" onClick={() => setUpRunning(r => !r)}>{upRunning ? "Pause" : "Resume"}</button>
+          <button className="px-3 py-1 rounded-xl shadow" onClick={() => setUpRunning(r => !r)}>{upRunning ? "Pause" : "Fortsett"}</button>
         </div>
       </div>
     </div>

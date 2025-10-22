@@ -3,16 +3,20 @@ import {basicDayFields, gameTypeField, additionalFields} from './fields/dayField
 import {blurGuessGameFields} from './fields/blurGuessFields'
 import {colorMatchGameFields} from './fields/colorMatchFileds'
 import {songGuessGameFields} from './fields/songGuessFields'
+import {quizGameFields} from './fields/quizGameFields'
+import {teamsNotificationGameFields} from './fields/TeamsNotificationFields'
 
 export const dayType = defineType({
   name: 'day',
-  title: 'Advent Day',
+  title: 'Kalenderdag',
   type: 'document',
   fields: [
     ...basicDayFields,
     gameTypeField,
     blurGuessGameFields,
     colorMatchGameFields,
+    quizGameFields,
+    teamsNotificationGameFields,
     ...songGuessGameFields,
     ...additionalFields,
   ],
@@ -25,14 +29,14 @@ export const dayType = defineType({
     prepare(selection) {
       const {title, dayNumber, media} = selection
       return {
-        title: `Day ${dayNumber}: ${title}`,
+        title: `Dag ${dayNumber}: ${title}`,
         media: media,
       }
     },
   },
   orderings: [
     {
-      title: 'Day Number',
+      title: 'Dagnummer',
       name: 'dayNumberAsc',
       by: [{field: 'dayNumber', direction: 'asc'}],
     },

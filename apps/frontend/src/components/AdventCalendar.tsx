@@ -35,7 +35,13 @@ interface SanityDay {
     };
     alt?: string;
   };
-  gameType?: "none" | "blurGuessGame" | "colorMatchGame" | "songGuessGame";
+  gameType?:
+    | "none"
+    | "blurGuessGame"
+    | "colorMatchGame"
+    | "quizGame"
+    | "teamsNotificationGame"
+    | "songGuessGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -78,6 +84,64 @@ interface SanityDay {
       correctAnswerPoints: number;
       timeBonusPerSecond: number;
       maxTimeBonus: number;
+    };
+  };
+  quizGameData?: {
+    title: string;
+    description: string;
+    questions: Array<{
+      questionText: string;
+      answers: string[];
+      correctAnswerIndex: number;
+      timeLimit: number;
+    }>;
+    scoringSettings: {
+      correctAnswerPoints: number;
+      timeBonus: number;
+    };
+  };
+  teamsNotificationGameData?: {
+    title: string;
+    description: string;
+    firstMessage: string;
+    teamsMessages: Array<{
+      message: string;
+      sender?: string;
+      timestamp?: string;
+      profilePicture?: {
+        _ref: string;
+        _type: "reference";
+      };
+    }>;
+    lastMessage: string;
+    logo?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    defaultProfilePicture?: {
+      _ref: string;
+      _type: "reference";
+    };
+    contextMenuIcon?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    addEmojiIcon?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    closeMessageIcon?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    sendMessageIcon?: {
+      asset: {
+        _ref: string;
+      };
     };
   };
   isUnlocked: boolean;
@@ -239,25 +303,41 @@ function DayCell({
                 const seed = day * 1000 + i;
                 const x = Math.sin(seed * 0.1) * 10000;
                 const y = Math.sin(seed * 0.2) * 10000;
-                const randomX = 10 + ((x - Math.floor(x)) * 80); // 10-90%
-                const randomY = 10 + ((y - Math.floor(y)) * 80); // 10-90%
-                const size = 1 + ((Math.sin(seed * 0.3) * 10000 - Math.floor(Math.sin(seed * 0.3) * 10000)) * 2); // 1-3
-                const delay = (Math.sin(seed * 0.4) * 10000 - Math.floor(Math.sin(seed * 0.4) * 10000)) * 2; // 0-2s
-                const colors = ['bg-yellow-300', 'bg-yellow-400', 'bg-white', 'bg-amber-300'];
-                const colorIndex = Math.floor((Math.sin(seed * 0.5) * 10000 - Math.floor(Math.sin(seed * 0.5) * 10000)) * colors.length);
-                
+                const randomX = 10 + (x - Math.floor(x)) * 80; // 10-90%
+                const randomY = 10 + (y - Math.floor(y)) * 80; // 10-90%
+                const size =
+                  1 +
+                  (Math.sin(seed * 0.3) * 10000 -
+                    Math.floor(Math.sin(seed * 0.3) * 10000)) *
+                    2; // 1-3
+                const delay =
+                  (Math.sin(seed * 0.4) * 10000 -
+                    Math.floor(Math.sin(seed * 0.4) * 10000)) *
+                  2; // 0-2s
+                const colors = [
+                  "bg-yellow-300",
+                  "bg-yellow-400",
+                  "bg-white",
+                  "bg-amber-300",
+                ];
+                const colorIndex = Math.floor(
+                  (Math.sin(seed * 0.5) * 10000 -
+                    Math.floor(Math.sin(seed * 0.5) * 10000)) *
+                    colors.length
+                );
+
                 return (
-                  <div 
+                  <div
                     key={i}
                     className={`absolute ${colors[colorIndex]} rounded-full animate-ping`}
-                    style={{ 
-                      left: `${randomX}%`, 
+                    style={{
+                      left: `${randomX}%`,
                       top: `${randomY}%`,
                       width: `${size * 2}px`,
                       height: `${size * 2}px`,
                       animationDelay: `${delay}s`,
-                      animationDuration: `${1 + delay}s`
-                    }} 
+                      animationDuration: `${1 + delay}s`,
+                    }}
                   />
                 );
               })}
@@ -315,12 +395,14 @@ export default function AdventCalendar() {
           blurGuessGameData,
           colorMatchGameData,
           songGuessGameData,
+          quizGameData,
+          teamsNotificationGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
         setSanityDays(data);
       } catch (err) {
-        setError("Failed to fetch advent days");
+        setError("Kunne ikke hente kalenderdager");
         console.error("Error fetching days:", err);
       } finally {
         setLoading(false);
@@ -337,25 +419,25 @@ export default function AdventCalendar() {
         ? builder.image(sanityDay.image).width(400).height(400).url()
         : undefined,
       title: sanityDay.title,
-      description: `Day ${sanityDay.dayNumber} of advent!`,
+      description: `Dag ${sanityDay.dayNumber} i julekalenderen!`,
     }));
   }, [sanityDays]);
 
   const days = useMemo(() => {
     const dayNumbers = sanityDays.map((day) => day.dayNumber);
     const uniqueDays = [...new Set(dayNumbers)].sort((a, b) => a - b);
-    
+
     const shuffled = [...uniqueDays];
     const seed = 54321; // Fixed seed for consistent shuffle
-    
+
     for (let i = shuffled.length - 1; i > 0; i--) {
       const x = Math.sin(seed * (i + 1)) * 10000;
       const random = x - Math.floor(x);
       const j = Math.floor(random * (i + 1));
-      
+
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    
+
     return shuffled;
   }, [sanityDays]);
 
@@ -450,6 +532,19 @@ export default function AdventCalendar() {
             songGuessGameData: sanityDay.songGuessGameData,
           })
         );
+        navigate("/game/songGuessGame");
+        return;
+      } else if (sanityDay.gameType === "quizGame" && sanityDay.quizGameData) {
+        console.log(
+          "Navigating to QuizGame with data:",
+          sanityDay.quizGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            quizGameData: sanityDay.quizGameData,
+          })
+        );
         sessionStorage.setItem("currentGameType", sanityDay.gameType);
         sessionStorage.setItem(
           "currentDayInfo",
@@ -458,7 +553,31 @@ export default function AdventCalendar() {
             title: sanityDay.title,
           })
         );
-        navigate("/game/songGuessGame");
+        navigate("/game/quizGame");
+        return;
+      } else if (
+        sanityDay.gameType === "teamsNotificationGame" &&
+        sanityDay.teamsNotificationGameData
+      ) {
+        console.log(
+          "Navigating to TeamsNotificationGame with data:",
+          sanityDay.teamsNotificationGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            teamsNotificationGameData: sanityDay.teamsNotificationGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/teamsNotificationGame");
         return;
       } else {
         console.log("Game type found but no game data available");
@@ -514,7 +633,7 @@ export default function AdventCalendar() {
       >
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow">
-            🎄 Advent Calendar
+            🎄 Julekalender
           </h1>
           <Timer
             mode="up"
@@ -528,19 +647,19 @@ export default function AdventCalendar() {
             className="text-red-100"
           />
           <p className="mt-3 text-red-100">
-            Countdown to Christmas with daily surprises
+            Tell ned til jul med daglige overraskelser
           </p>
           {loading && (
             <div className="mt-4 flex items-center justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              <span className="ml-2 text-red-100">Loading advent days...</span>
+              <span className="ml-2 text-red-100">Laster kalenderdager...</span>
             </div>
           )}
           {error && (
             <div className="mt-4 text-red-200 bg-red-800/20 rounded-lg p-3 max-w-md mx-auto">
               <p className="text-sm">{error}</p>
               <p className="text-xs mt-1">
-                Please check your Sanity configuration
+                Vennligst sjekk Sanity-konfigurasjonen din
               </p>
             </div>
           )}
@@ -551,10 +670,11 @@ export default function AdventCalendar() {
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📅</div>
               <h3 className="text-xl font-semibold text-white mb-2">
-                No Advent Days Found
+                Ingen kalenderdager funnet
               </h3>
               <p className="text-red-100 mb-4">
-                Create your first advent day in Sanity Studio to get started!
+                Opprett din første kalenderdag i Sanity Studio for å komme i
+                gang!
               </p>
               <a
                 href="/studio/"
@@ -562,7 +682,7 @@ export default function AdventCalendar() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open Sanity Studio
+                Åpne Sanity Studio
               </a>
             </div>
           ) : (
@@ -591,12 +711,12 @@ export default function AdventCalendar() {
             <div className="mt-8 text-center text-red-100">
               <p>
                 {today.getMonth() === 11
-                  ? `Today is December ${currentDay}. Days 1-${currentDay} are unlocked! 🎄`
-                  : "Come back in December to unlock advent days! 🎄"}
+                  ? `I dag er det ${currentDay}. desember. Dag 1-${currentDay} er låst opp! 🎄`
+                  : "Kom tilbake i desember for å låse opp kalenderdager! 🎄"}
               </p>
               <p className="text-sm mt-2 text-red-200">
-                Showing {sanityDays.length} advent day
-                {sanityDays.length !== 1 ? "s" : ""} from Sanity
+                Viser {sanityDays.length} kalenderdag
+                {sanityDays.length !== 1 ? "er" : ""} fra Sanity
               </p>
             </div>
           )}

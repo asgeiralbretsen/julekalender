@@ -14,7 +14,7 @@ interface LeaderboardProps {
 const Leaderboard: React.FC<LeaderboardProps> = ({
   day,
   gameType,
-  title = 'Leaderboard',
+  title = 'Toppliste',
   showRank = true,
   maxEntries,
 }) => {
@@ -95,7 +95,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20">
         <h2 className="text-2xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>{title}</h2>
         <div className="text-center py-8">
-          <p className="text-red-100">No scores yet. Be the first to play!</p>
+          <p className="text-red-100">Ingen poengsummer ennå. Bli den første til å spille!</p>
         </div>
       </div>
     );
@@ -108,7 +108,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
       {currentUserRank && (
         <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
           <p className="text-yellow-200 text-sm text-center">
-            Your rank: <span className="font-bold">#{currentUserRank}</span>
+            Din plassering: <span className="font-bold">#{currentUserRank}</span>
           </p>
         </div>
       )}
@@ -148,7 +148,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                   >
                     {getDisplayName(score)}
                     {isCurrent && (
-                      <span className="ml-2 text-xs text-yellow-300">(You)</span>
+                      <span className="ml-2 text-xs text-yellow-300">(Deg)</span>
                     )}
                   </p>
                   <p className="text-xs text-red-200">
@@ -181,7 +181,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
       {maxEntries && scores.length >= maxEntries && (
         <div className="mt-4 text-center">
           <p className="text-red-200 text-sm">
-            Showing top {maxEntries} players
+            Viser topp {maxEntries} spillere
           </p>
         </div>
       )}
