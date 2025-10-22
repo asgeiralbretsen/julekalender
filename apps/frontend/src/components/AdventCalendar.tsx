@@ -40,7 +40,8 @@ interface SanityDay {
     | "blurGuessGame"
     | "colorMatchGame"
     | "quizGame"
-    | "teamsNotificationGame";
+    | "teamsNotificationGame"
+    | "interviewGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -123,6 +124,31 @@ interface SanityDay {
       asset: {
         _ref: string;
       };
+    };
+  };
+  interviewGameData?: {
+    title: string;
+    description: string;
+    interviewers: Array<{
+      name: string;
+      image: {
+        asset: {
+          _ref: string;
+        };
+        alt?: string;
+      };
+      role?: string;
+    }>;
+    questions: Array<{
+      questionText: string;
+      answers: string[];
+      correctAnswerIndex: number;
+      timeLimit: number;
+    }>;
+    scoringSettings: {
+      correctAnswerPoints: number;
+      timeBonus: number;
+      perfectScoreBonus: number;
     };
   };
   isUnlocked: boolean;
@@ -377,6 +403,7 @@ export default function AdventCalendar() {
           colorMatchGameData,
           quizGameData,
           teamsNotificationGameData,
+          interviewGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
@@ -542,6 +569,30 @@ export default function AdventCalendar() {
           })
         );
         navigate("/game/teamsNotificationGame");
+        return;
+      } else if (
+        sanityDay.gameType === "interviewGame" &&
+        sanityDay.interviewGameData
+      ) {
+        console.log(
+          "Navigating to InterviewGame with data:",
+          sanityDay.interviewGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            interviewGameData: sanityDay.interviewGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/interviewGame");
         return;
       } else {
         console.log("Game type found but no game data available");

@@ -11,6 +11,7 @@ import { useEffect, useMemo } from "react";
 import { ColorMatchGame } from "./components/ColorMatch/ColorMatchGame";
 import QuizGame from "./components/QuizGame";
 import { TeamsNotificationGame } from "./components/TeamsNotification/TeamsNotificationGame";
+import InterviewGame from "./components/InterviewGame";
 
 function App() {
   // This will automatically sync users when they log in
@@ -74,6 +75,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TeamsNotificationGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/game/interviewGame"
+            element={
+              <ProtectedRoute>
+                <InterviewGame />
               </ProtectedRoute>
             }
           />
