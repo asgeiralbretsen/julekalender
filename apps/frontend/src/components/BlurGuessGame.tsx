@@ -180,14 +180,14 @@ const BlurGuessGame: React.FC = () => {
     }));
   }, [gameImages]);
 
-  const saveGameScoreWhenEnded = async () => {
+  const saveGameScoreWhenEnded = async (finalScore: number) => {
     if (!user || !dayInfo || gameState.scoreSaved) return;
 
     try {
       await saveGameScore({
         day: dayInfo.day,
         gameType: 'blurGuessGame',
-        score: gameState.score,
+        score: finalScore,
       });
       
       setGameState(prev => ({ ...prev, scoreSaved: true }));
@@ -264,9 +264,10 @@ const BlurGuessGame: React.FC = () => {
     // Show result for 2 seconds, then move to next round
     setTimeout(() => {
       if (gameState.round >= gameImages.length) {
+        const finalScore = gameState.score + points;
         setGameState((prev) => ({ ...prev, gameEnded: true }));
         // Save the score when game ends
-        saveGameScoreWhenEnded();
+        saveGameScoreWhenEnded(finalScore);
       } else {
         setGameState((prev) => ({ ...prev, round: prev.round + 1 }));
         startNewRound();
