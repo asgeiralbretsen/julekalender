@@ -116,28 +116,32 @@ function DayCell({
   }, [hasPlayed]);
 
   const handleClick = () => {
-    if (isUnlocked && onDayClick && doorRef.current && !isOpen) {
-      // Door opening animation
-      setIsOpen(true);
-      animate(doorRef.current, {
-        rotateY: [0, -180],
-        duration: 800,
-        easing: "easeInOutQuad",
-        complete: () => {
-
-          setTimeout(() => {
-            onDayClick(day);
-          }, 800);
-        },
-      });
+    if (isUnlocked && onDayClick && doorRef.current) {
+      if (!isOpen) {
+        // Door opening animation
+        setIsOpen(true);
+        animate(doorRef.current, {
+          rotateY: [0, -180],
+          duration: 800,
+          easing: "easeInOutQuad",
+          complete: () => {
+            setTimeout(() => {
+              onDayClick(day);
+            }, 800);
+          },
+        });
+      } else {
+        // Already open, navigate immediately
+        onDayClick(day);
+      }
     }
   };
 
   const handleMouseEnter = () => {
-    if (isUnlocked && cellRef.current && !isOpen) {
+    if (isUnlocked && cellRef.current) {
       animate(cellRef.current, {
-        scale: 1.05,
-        translateY: -8,
+        scale: isOpen ? 1.03 : 1.05,
+        translateY: isOpen ? -4 : -8,
         duration: 300,
         easing: "easeOutQuad",
       });
@@ -145,7 +149,7 @@ function DayCell({
   };
 
   const handleMouseLeave = () => {
-    if (isUnlocked && cellRef.current && !isOpen) {
+    if (isUnlocked && cellRef.current) {
       animate(cellRef.current, {
         scale: 1,
         translateY: 0,
@@ -161,7 +165,7 @@ function DayCell({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative aspect-square cursor-pointer ${isUnlocked ? "" : "cursor-not-allowed"}`}
+      className={`relative aspect-square ${isUnlocked ? "cursor-pointer" : "cursor-not-allowed"}`}
       style={{ perspective: "1000px" }}
     >
       {/* Container that rotates */}
