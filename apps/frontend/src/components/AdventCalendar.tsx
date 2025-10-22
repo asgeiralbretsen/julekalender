@@ -89,7 +89,7 @@ function DayCell({
   }, [day]);
 
   const handleClick = () => {
-    if (isUnlocked && onDayClick && doorRef.current) {
+    if (isUnlocked && onDayClick && doorRef.current && !isOpen) {
       // Door opening animation
       setIsOpen(true);
       animate(doorRef.current, {
@@ -181,11 +181,6 @@ function DayCell({
             </div>
           </div>
 
-          {/* Door handle */}
-          {isUnlocked && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-8 bg-yellow-500 rounded-full shadow-lg" />
-          )}
-
           {/* Lock icon for locked days */}
           {!isUnlocked && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
@@ -210,14 +205,33 @@ function DayCell({
           {/* Sparkle effects for unlocked days */}
           {isUnlocked && (
             <>
-              <div
-                className="absolute top-1/4 left-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-ping"
-                style={{ animationDelay: "0s" }}
-              />
-              <div
-                className="absolute top-3/4 right-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-ping"
-                style={{ animationDelay: "0.5s" }}
-              />
+              {/* Generate random sparkles based on day number for consistency */}
+              {[...Array(5)].map((_, i) => {
+                const seed = day * 1000 + i;
+                const x = Math.sin(seed * 0.1) * 10000;
+                const y = Math.sin(seed * 0.2) * 10000;
+                const randomX = 10 + ((x - Math.floor(x)) * 80); // 10-90%
+                const randomY = 10 + ((y - Math.floor(y)) * 80); // 10-90%
+                const size = 1 + ((Math.sin(seed * 0.3) * 10000 - Math.floor(Math.sin(seed * 0.3) * 10000)) * 2); // 1-3
+                const delay = (Math.sin(seed * 0.4) * 10000 - Math.floor(Math.sin(seed * 0.4) * 10000)) * 2; // 0-2s
+                const colors = ['bg-yellow-300', 'bg-yellow-400', 'bg-white', 'bg-amber-300'];
+                const colorIndex = Math.floor((Math.sin(seed * 0.5) * 10000 - Math.floor(Math.sin(seed * 0.5) * 10000)) * colors.length);
+                
+                return (
+                  <div 
+                    key={i}
+                    className={`absolute ${colors[colorIndex]} rounded-full animate-ping`}
+                    style={{ 
+                      left: `${randomX}%`, 
+                      top: `${randomY}%`,
+                      width: `${size * 2}px`,
+                      height: `${size * 2}px`,
+                      animationDelay: `${delay}s`,
+                      animationDuration: `${1 + delay}s`
+                    }} 
+                  />
+                );
+              })}
             </>
           )}
         </div>
@@ -229,186 +243,6 @@ function DayCell({
             transformStyle: "preserve-3d",
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
-          }}
-        >
-          <div className="absolute inset-0 flex items-center justify-center p-4">
-            {thumbnail ? (
-              <img
-                src={thumbnail}
-                alt={`Day ${day}`}
-                className="w-full h-full object-cover rounded-xl shadow-lg"
-              />
-            ) : (
-              <span className="text-6xl drop-shadow-xl">🎁</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DoorCell({
-  day,
-  isUnlocked,
-  isToday,
-  thumbnail,
-  onDayClick,
-}: DayCellProps) {
-  const cellRef = useRef<HTMLDivElement>(null);
-  const doorWrapRef = useRef<HTMLDivElement>(null); // NEW
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (cellRef.current) {
-      animate(cellRef.current, {
-        scale: [0, 1],
-        opacity: [0, 1],
-        rotate: [180, 0],
-        duration: 800,
-        delay: day * 80,
-        easing: "easeOutElastic(1, .6)",
-      });
-    }
-  }, [day]);
-
-  const handleClick = () => {
-    if (isUnlocked && onDayClick && doorWrapRef.current) {
-      setIsOpen(true);
-      // Rotate the WRAPPER, not the front panel
-      animate(doorWrapRef.current, {
-        rotateY: [0, -180],
-        duration: 800,
-        easing: "easeInOutQuad",
-        complete: () => onDayClick(day),
-      });
-    }
-  };
-
-  const handleMouseEnter = () => {
-    if (isUnlocked && cellRef.current && !isOpen) {
-      animate(cellRef.current, {
-        scale: 1.05,
-        translateY: -8,
-        duration: 300,
-        easing: "easeOutQuad",
-      });
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (isUnlocked && cellRef.current && !isOpen) {
-      animate(cellRef.current, {
-        scale: 1,
-        translateY: 0,
-        duration: 300,
-        easing: "easeOutQuad",
-      });
-    }
-  };
-
-  return (
-    <div
-      ref={cellRef}
-      onClick={handleClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className={`relative aspect-square ${isUnlocked ? "cursor-pointer" : "cursor-not-allowed"}`}
-      style={{ perspective: "1000px" }}
-    >
-      {/* Flip wrapper holds both faces */}
-      <div
-        ref={doorWrapRef}
-        className="absolute inset-0"
-        style={{
-          transformStyle: "preserve-3d",
-          transformOrigin: "left center", // nice door hinge feel
-          willChange: "transform",
-        }}
-      >
-        {/* Door front */}
-        <div
-          className={`absolute inset-0 rounded-2xl shadow-2xl transition-all duration-300 ${
-            isUnlocked
-              ? "bg-gradient-to-br from-red-600 via-red-700 to-red-800"
-              : "bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600"
-          }`}
-          style={{
-            backfaceVisibility: "hidden",
-          }}
-        >
-          {/* Ornamental border */}
-          <div className="absolute inset-2 rounded-xl border-4 border-yellow-400/30">
-            <div className="absolute inset-2 rounded-lg border-2 border-yellow-300/20" />
-          </div>
-
-          {/* Snow effect on top */}
-          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/40 to-transparent rounded-t-2xl" />
-
-          {/* Snowflake decorations */}
-          <div className="absolute top-3 left-3 text-white/30 text-xl">❄</div>
-          <div className="absolute top-3 right-3 text-white/30 text-xl">❄</div>
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/30 text-xl">
-            ❄
-          </div>
-
-          {/* Day number */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div
-              className={`text-5xl font-bold ${isUnlocked ? "text-yellow-300" : "text-gray-300"} drop-shadow-lg`}
-              style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
-            >
-              {day}
-            </div>
-          </div>
-
-          {/* Door handle */}
-          {isUnlocked && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-8 bg-yellow-500 rounded-full shadow-lg" />
-          )}
-
-          {/* Lock icon for locked days */}
-          {!isUnlocked && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-              <span className="text-3xl drop-shadow-lg">🔒</span>
-            </div>
-          )}
-
-          {/* Today badge */}
-          {isToday && (
-            <>
-              <div className="absolute -top-2 -right-2 animate-pulse">
-                <div className="bg-yellow-400 text-red-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg border-2 border-white">
-                  TODAY
-                </div>
-              </div>
-              <div className="absolute -top-4 -left-4 animate-bounce">
-                <span className="text-4xl drop-shadow-xl">⭐</span>
-              </div>
-            </>
-          )}
-
-          {/* Sparkles */}
-          {isUnlocked && (
-            <>
-              <div
-                className="absolute top-1/4 left-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-ping"
-                style={{ animationDelay: "0s" }}
-              />
-              <div
-                className="absolute top-3/4 right-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-ping"
-                style={{ animationDelay: "0.5s" }}
-              />
-            </>
-          )}
-        </div>
-
-        {/* Door back (revealed content) */}
-        <div
-          className="absolute inset-0 rounded-2xl shadow-2xl bg-gradient-to-br from-green-600 via-green-700 to-green-800"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)", // pre-rotated so it faces viewer after wrapper flips
           }}
         >
           <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -466,9 +300,7 @@ export default function AdventCalendar() {
     fetchDays();
   }, []);
 
-  // Convert Sanity days to the format expected by the component
   const dayData: DayData[] = useMemo(() => {
-    // Only use Sanity data - no fallbacks
     return sanityDays.map((sanityDay) => ({
       day: sanityDay.dayNumber,
       thumbnail: sanityDay.image?.asset
@@ -479,11 +311,22 @@ export default function AdventCalendar() {
     }));
   }, [sanityDays]);
 
-  // Only show days that exist in Sanity, removing duplicates
   const days = useMemo(() => {
     const dayNumbers = sanityDays.map((day) => day.dayNumber);
     const uniqueDays = [...new Set(dayNumbers)].sort((a, b) => a - b);
-    return uniqueDays;
+    
+    const shuffled = [...uniqueDays];
+    const seed = 54321; // Fixed seed for consistent shuffle
+    
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const x = Math.sin(seed * (i + 1)) * 10000;
+      const random = x - Math.floor(x);
+      const j = Math.floor(random * (i + 1));
+      
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    return shuffled;
   }, [sanityDays]);
 
   useEffect(() => {
@@ -671,7 +514,7 @@ export default function AdventCalendar() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
               {days.map((day) => {
-                const isUnlocked = true; // All days are always unlocked/visible
+                const isUnlocked = today.getMonth() === 11 && day <= currentDay;
                 const isToday = day === currentDay && today.getMonth() === 11;
                 const dayInfo = dayData.find((d) => d.day === day);
                 return (
@@ -692,8 +535,8 @@ export default function AdventCalendar() {
             <div className="mt-8 text-center text-red-100">
               <p>
                 {today.getMonth() === 11
-                  ? `Today is December ${currentDay}. All advent days are visible! 🎄`
-                  : "All advent days are visible! The calendar is always open! 🎄"}
+                  ? `Today is December ${currentDay}. Days 1-${currentDay} are unlocked! 🎄`
+                  : "Come back in December to unlock advent days! 🎄"}
               </p>
               <p className="text-sm mt-2 text-red-200">
                 Showing {sanityDays.length} advent day
