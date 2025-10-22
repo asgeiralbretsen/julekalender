@@ -50,6 +50,7 @@ export const gameTypeField = defineField({
       {title: 'No Game', value: 'none'},
       {title: 'Blur Guess Game', value: 'blurGuessGame'},
       {title: 'Color Match Game', value: 'colorMatchGame'},
+      {title: 'Quiz Game', value: 'quizGame'},
     ],
     layout: 'radio',
   },

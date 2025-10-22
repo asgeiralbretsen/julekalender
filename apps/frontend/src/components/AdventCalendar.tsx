@@ -35,7 +35,7 @@ interface SanityDay {
     };
     alt?: string;
   };
-  gameType?: "none" | "blurGuessGame" | "colorMatchGame";
+  gameType?: "none" | "blurGuessGame" | "colorMatchGame" | "quizGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -59,6 +59,20 @@ interface SanityDay {
     scoringSettings: {
       perfectMatchBonus: number;
       closeMatchThreshold: number;
+      timeBonus: number;
+    };
+  };
+  quizGameData?: {
+    title: string;
+    description: string;
+    questions: Array<{
+      questionText: string;
+      answers: string[];
+      correctAnswerIndex: number;
+      timeLimit: number;
+    }>;
+    scoringSettings: {
+      correctAnswerPoints: number;
       timeBonus: number;
     };
   };
@@ -296,6 +310,7 @@ export default function AdventCalendar() {
           gameType,
           blurGuessGameData,
           colorMatchGameData,
+          quizGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
@@ -416,6 +431,30 @@ export default function AdventCalendar() {
           })
         );
         navigate("/game/colorMatchGame");
+        return;
+      } else if (
+        sanityDay.gameType === "quizGame" &&
+        sanityDay.quizGameData
+      ) {
+        console.log(
+          "Navigating to QuizGame with data:",
+          sanityDay.quizGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            quizGameData: sanityDay.quizGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/quizGame");
         return;
       } else {
         console.log("Game type found but no game data available");

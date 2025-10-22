@@ -9,6 +9,7 @@ import { useUserSync } from "./hooks/useUserSync";
 import { svgCursorUrl } from "./components/cursor";
 import { useEffect, useMemo } from "react";
 import { ColorMatchGame } from "./components/ColorMatch/ColorMatchGame";
+import QuizGame from "./components/QuizGame";
 
 function App() {
   // This will automatically sync users when they log in
@@ -56,6 +57,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ColorMatchGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/game/quizGame"
+            element={
+              <ProtectedRoute>
+                <QuizGame />
               </ProtectedRoute>
             }
           />
