@@ -265,7 +265,7 @@ function DayCell({
 export default function AdventCalendar() {
   const navigate = useNavigate();
   const today = new Date();
-  const currentDay = today.getMonth() === 11 ? today.getDate() : 1; // December only; otherwise start at 1
+  const currentDay = today.getMonth() === 9 ? today.getDate() : 1; // December only; otherwise start at 1
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [sanityDays, setSanityDays] = useState<SanityDay[]>([]);
@@ -514,8 +514,8 @@ export default function AdventCalendar() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
               {days.map((day) => {
-                const isUnlocked = today.getMonth() === 11 && day <= currentDay;
-                const isToday = day === currentDay && today.getMonth() === 11;
+                const isUnlocked = today.getMonth() === 9 && day <= currentDay;
+                const isToday = day === currentDay && today.getMonth() === 9;
                 const dayInfo = dayData.find((d) => d.day === day);
                 return (
                   <DayCell
