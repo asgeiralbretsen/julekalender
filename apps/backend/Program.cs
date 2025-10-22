@@ -1,11 +1,58 @@
 using Microsoft.EntityFrameworkCore;
 using BackendApi.Data;
 using BackendApi.Services;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Add Swagger/OpenAPI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "Julekalender API",
+        Description = "API for the Advent Calendar game system with user management, game scores, and leaderboards",
+        Contact = new OpenApiContact
+        {
+            Name = "Julekalender Team",
+            Url = new Uri("https://julekalender.albretsen.no")
+        }
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    options.IncludeXmlComments(xmlPath);
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -74,6 +121,19 @@ builder.Services.AddAuthentication("Bearer")
     });
 
 var app = builder.Build();
+
+// Configure Swagger UI
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Julekalender API v1");
+        options.RoutePrefix = "api/swagger";
+        options.DocumentTitle = "Julekalender API Documentation";
+        options.DisplayRequestDuration();
+    });
+}
 
 // Log all incoming requests
 app.Use(async (context, next) =>
