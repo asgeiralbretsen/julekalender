@@ -20,17 +20,18 @@ public class GameScoreController : ControllerBase
     }
 
     [HttpPost("save")]
+    [Authorize]
     public async Task<ActionResult<GameScore>> SaveGameScore([FromBody] SaveGameScoreRequest request)
     {
         try
         {
-            var userId = GetCurrentUserId();
-            if (userId == null)
+            var clerkId = GetCurrentUserId();
+            if (clerkId == null)
             {
                 return Unauthorized("User not found");
             }
 
-            var user = await _userService.GetUserByClerkIdAsync(userId);
+            var user = await _userService.GetUserByClerkIdAsync(clerkId);
             if (user == null)
             {
                 return NotFound("User not found");
@@ -52,10 +53,29 @@ public class GameScoreController : ControllerBase
     }
 
     [HttpGet("user/{userId}/day/{day}/game/{gameType}")]
+    [Authorize]
     public async Task<ActionResult<GameScore>> GetUserScoreForDay(int userId, int day, string gameType)
     {
         try
         {
+            var clerkId = GetCurrentUserId();
+            if (clerkId == null)
+            {
+                return Unauthorized("User not found");
+            }
+
+            var user = await _userService.GetUserByClerkIdAsync(clerkId);
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            // Ensure the user can only access their own scores
+            if (user.Id != userId)
+            {
+                return Forbid("You can only access your own scores");
+            }
+
             var gameScore = await _gameScoreService.GetUserScoreForDayAsync(userId, day, gameType);
             if (gameScore == null)
             {
@@ -71,10 +91,29 @@ public class GameScoreController : ControllerBase
     }
 
     [HttpGet("user/{userId}")]
+    [Authorize]
     public async Task<ActionResult<List<GameScore>>> GetUserScores(int userId)
     {
         try
         {
+            var clerkId = GetCurrentUserId();
+            if (clerkId == null)
+            {
+                return Unauthorized("User not found");
+            }
+
+            var user = await _userService.GetUserByClerkIdAsync(clerkId);
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            // Ensure the user can only access their own scores
+            if (user.Id != userId)
+            {
+                return Forbid("You can only access your own scores");
+            }
+
             var scores = await _gameScoreService.GetUserScoresAsync(userId);
             return Ok(scores);
         }
@@ -85,6 +124,7 @@ public class GameScoreController : ControllerBase
     }
 
     [HttpGet("day/{day}")]
+    [Authorize]
     public async Task<ActionResult<List<GameScore>>> GetScoresForDay(int day)
     {
         try
@@ -99,10 +139,29 @@ public class GameScoreController : ControllerBase
     }
 
     [HttpGet("user/{userId}/day/{day}/game/{gameType}/played")]
+    [Authorize]
     public async Task<ActionResult<bool>> HasUserPlayedGame(int userId, int day, string gameType)
     {
         try
         {
+            var clerkId = GetCurrentUserId();
+            if (clerkId == null)
+            {
+                return Unauthorized("User not found");
+            }
+
+            var user = await _userService.GetUserByClerkIdAsync(clerkId);
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            // Ensure the user can only check their own game status
+            if (user.Id != userId)
+            {
+                return Forbid("You can only check your own game status");
+            }
+
             var hasPlayed = await _gameScoreService.HasUserPlayedGameTodayAsync(userId, day, gameType);
             return Ok(hasPlayed);
         }
@@ -114,7 +173,10 @@ public class GameScoreController : ControllerBase
 
     private string? GetCurrentUserId()
     {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        // Try different claim types that Clerk might use
+        return User.FindFirst("sub")?.Value ?? 
+               User.FindFirst("user_id")?.Value ?? 
+               User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
 }
 

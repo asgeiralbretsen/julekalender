@@ -20,10 +20,44 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("me")]
+    [Authorize]
     public async Task<ActionResult<User>> GetCurrentUser()
     {
-        // For development, return a mock user or handle this differently
-        return BadRequest("Authentication not implemented yet");
+        try
+        {
+            // Log all claims for debugging
+            var claims = User.Claims.Select(c => $"{c.Type}: {c.Value}").ToList();
+            _logger.LogInformation("JWT Claims: {Claims}", string.Join(", ", claims));
+            
+            // Get the Clerk user ID from the JWT token
+            // ASP.NET Core maps "sub" claim to ClaimTypes.NameIdentifier
+            var clerkId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? 
+                         User.FindFirst("sub")?.Value ?? 
+                         User.FindFirst("user_id")?.Value;
+            
+            if (string.IsNullOrEmpty(clerkId))
+            {
+                _logger.LogWarning("Missing user ID in token. Available claims: {Claims}", string.Join(", ", claims));
+                return Unauthorized("Invalid token: missing user ID");
+            }
+
+            // Get or create the user in our database
+            var user = await _userService.GetUserByClerkIdAsync(clerkId);
+            
+            if (user == null)
+            {
+                // If user doesn't exist in our database, we need to create them
+                // This shouldn't happen if the frontend is properly syncing users
+                return NotFound("User not found in database. Please ensure user sync is working.");
+            }
+
+            return Ok(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting current user");
+            return StatusCode(500, "Error getting current user");
+        }
     }
 
     [HttpGet("{clerkId}")]

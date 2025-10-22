@@ -12,7 +12,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("https://julekalender.albretsen.no", "http://localhost:3001", "http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -24,23 +25,73 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGameScoreService, GameScoreService>();
 
-// Add JWT Authentication for Clerk (temporarily disabled for development)
-// builder.Services.AddAuthentication("Bearer")
-//     .AddJwtBearer("Bearer", options =>
-//     {
-//         options.Authority = "https://clerk.julekalender.albretsen.no";
-//         options.Audience = "https://clerk.julekalender.albretsen.no";
-//         options.RequireHttpsMetadata = false; // Set to true in production
-//     });
+// Add JWT Authentication for Clerk
+var clerkAuthority = builder.Configuration["Clerk:Authority"] ?? "https://prompt-dolphin-38.clerk.accounts.dev";
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.Authority = clerkAuthority;
+        options.RequireHttpsMetadata = false;
+        options.MetadataAddress = $"{clerkAuthority}/.well-known/openid-configuration";
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = clerkAuthority,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            NameClaimType = "sub",
+            ClockSkew = TimeSpan.FromMinutes(5)
+        };
+        
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogInformation("Token received for path: {Path}", context.Request.Path);
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogError(context.Exception, "Authentication failed: {Message}", context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogInformation("Token validated successfully for user: {User}", context.Principal?.FindFirst("sub")?.Value);
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogWarning("Auth challenge for path {Path}: {Error} - {ErrorDescription}", context.Request.Path, context.Error, context.ErrorDescription);
+                return Task.CompletedTask;
+            }
+        };
+    });
 
 var app = builder.Build();
+
+// Log all incoming requests
+app.Use(async (context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Incoming request: {Method} {Path} - Auth header: {HasAuth}", 
+        context.Request.Method, 
+        context.Request.Path,
+        context.Request.Headers.ContainsKey("Authorization") ? "Yes" : "No");
+    await next();
+});
 
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
 
-// Temporarily disable authentication for development
-// app.UseAuthentication();
-// app.UseAuthorization();
+// Enable authentication and authorization
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Add global route prefix for julekalender API
 app.MapControllers();
