@@ -4,6 +4,7 @@ import { client } from "../lib/sanity";
 import imageUrlBuilder from "@sanity/image-url";
 import { animate } from "animejs";
 import { Timer } from "./Timer";
+import { useGameScore } from "../hooks/useGameScore";
 
 const builder = imageUrlBuilder(client);
 
@@ -12,6 +13,7 @@ interface DayCellProps {
   isUnlocked: boolean;
   isToday: boolean;
   thumbnail?: string;
+  gameType?: string;
   onDayClick?: (day: number) => void;
 }
 
@@ -68,11 +70,26 @@ function DayCell({
   isUnlocked,
   isToday,
   thumbnail,
+  gameType,
   onDayClick,
 }: DayCellProps) {
   const cellRef = useRef<HTMLDivElement>(null);
   const doorRef = useRef<HTMLDivElement>(null);
+  const { hasUserPlayedGame } = useGameScore();
+  const [hasPlayed, setHasPlayed] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+
+  // Check if user has played this game
+  useEffect(() => {
+    const checkIfPlayed = async () => {
+      if (gameType && gameType !== "none") {
+        const played = await hasUserPlayedGame(day, gameType);
+        setHasPlayed(played);
+        setIsOpen(played);
+      }
+    };
+    checkIfPlayed();
+  }, [day, gameType, hasUserPlayedGame]);
 
   // Initial entrance animation
   useEffect(() => {
@@ -88,6 +105,16 @@ function DayCell({
     }
   }, [day]);
 
+  // Open door animation if already played
+  useEffect(() => {
+    if (hasPlayed && doorRef.current) {
+      animate(doorRef.current, {
+        rotateY: -180,
+        duration: 0,
+      });
+    }
+  }, [hasPlayed]);
+
   const handleClick = () => {
     if (isUnlocked && onDayClick && doorRef.current && !isOpen) {
       // Door opening animation
@@ -97,7 +124,10 @@ function DayCell({
         duration: 800,
         easing: "easeInOutQuad",
         complete: () => {
-          onDayClick(day);
+
+          setTimeout(() => {
+            onDayClick(day);
+          }, 800);
         },
       });
     }
@@ -181,10 +211,8 @@ function DayCell({
             </div>
           </div>
 
-          {/* Sparkle effects for unlocked days */}
           {isUnlocked && (
             <>
-              {/* Generate random sparkles based on day number for consistency */}
               {[...Array(5)].map((_, i) => {
                 const seed = day * 1000 + i;
                 const x = Math.sin(seed * 0.1) * 10000;
@@ -496,6 +524,7 @@ export default function AdventCalendar() {
                 const isUnlocked = today.getMonth() === 9 && day <= currentDay;
                 const isToday = day === currentDay && today.getMonth() === 9;
                 const dayInfo = dayData.find((d) => d.day === day);
+                const sanityDay = sanityDays.find((d) => d.dayNumber === day);
                 return (
                   <DayCell
                     key={day}
@@ -503,6 +532,7 @@ export default function AdventCalendar() {
                     isUnlocked={isUnlocked}
                     isToday={isToday}
                     thumbnail={dayInfo?.thumbnail}
+                    gameType={sanityDay?.gameType}
                     onDayClick={handleDayClick}
                   />
                 );
