@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage";
 import CalendarPage from "./pages/CalendarPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import BlurGuessGame from "./components/BlurGuessGame";
+import SongGuessGame from "./components/SongGuessGame";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import { useUserSync } from "./hooks/useUserSync";
 import { svgCursorUrl } from "./components/cursor";
@@ -56,6 +57,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ColorMatchGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/game/songGuessGame"
+            element={
+              <ProtectedRoute>
+                <SongGuessGame />
               </ProtectedRoute>
             }
           />

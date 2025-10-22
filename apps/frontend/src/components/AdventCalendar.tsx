@@ -35,7 +35,7 @@ interface SanityDay {
     };
     alt?: string;
   };
-  gameType?: "none" | "blurGuessGame" | "colorMatchGame";
+  gameType?: "none" | "blurGuessGame" | "colorMatchGame" | "songGuessGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -60,6 +60,24 @@ interface SanityDay {
       perfectMatchBonus: number;
       closeMatchThreshold: number;
       timeBonus: number;
+    };
+  };
+  songGuessGameData?: {
+    title: string;
+    description: string;
+    songFile: {
+      asset: {
+        _ref: string;
+        url?: string;
+      };
+    };
+    correctAnswer: string;
+    answerOptions: string[];
+    clipDuration: number;
+    scoringSettings: {
+      correctAnswerPoints: number;
+      timeBonusPerSecond: number;
+      maxTimeBonus: number;
     };
   };
   isUnlocked: boolean;
@@ -296,6 +314,7 @@ export default function AdventCalendar() {
           gameType,
           blurGuessGameData,
           colorMatchGameData,
+          songGuessGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
@@ -416,6 +435,30 @@ export default function AdventCalendar() {
           })
         );
         navigate("/game/colorMatchGame");
+        return;
+      } else if (
+        sanityDay.gameType === "songGuessGame" &&
+        sanityDay.songGuessGameData
+      ) {
+        console.log(
+          "Navigating to SongGuessGame with data:",
+          sanityDay.songGuessGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            songGuessGameData: sanityDay.songGuessGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/songGuessGame");
         return;
       } else {
         console.log("Game type found but no game data available");
