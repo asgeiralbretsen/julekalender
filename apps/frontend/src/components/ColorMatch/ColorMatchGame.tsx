@@ -320,10 +320,10 @@ export function ColorMatchGame() {
         <div className=" p-8 max-w-md w-full text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <h1 className="text-2xl font-bold text-white mb-2">
-            Loading Game...
+            Laster spill...
           </h1>
           <p className="text-white/80">
-            Preparing your color matching challenge!
+            Forbereder fargetilpasningsutfordringen din!
           </p>
         </div>
       </div>
@@ -337,31 +337,31 @@ export function ColorMatchGame() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
             {dayInfo
-              ? `Day ${dayInfo.day}: ${dayInfo.title}`
-              : gameData?.title || "🎨 Stocking Color Match"}
+              ? `Dag ${dayInfo.day}: ${dayInfo.title}`
+              : gameData?.title || "🎨 Sokk fargetilpasning"}
           </h1>
           <p className="text-white/80 text-lg">
             {gameData?.description ||
-              "Click on the stocking sections to color them!"}
+              "Klikk på sokkedelene for å farge dem!"}
           </p>
           
           {!showResults && (
             <div className="mt-4 inline-block p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
               <p className="text-green-200 font-semibold">
-                {hasPlayedToday ? '⚠️ Only First Attempt Counts!' : 'First Attempt Counts!'}
+                {hasPlayedToday ? '⚠️ Bare første forsøk teller!' : 'Første forsøk teller!'}
               </p>
               {hasPlayedToday && previousScore !== null ? (
                 <div className="mt-2">
                   <p className="text-white/80 text-sm">
-                    Your submitted score: <span className="font-bold text-yellow-300">{previousScore}%</span>
+                    Din innsendte poengsum: <span className="font-bold text-yellow-300">{previousScore}%</span>
                   </p>
                   <p className="text-white/60 text-xs mt-1">
-                    You can play again for fun, but your score won't change
+                    Du kan spille igjen for moro skyld, men poengsummen din endres ikke
                   </p>
                 </div>
               ) : (
                 <p className="text-white/80 text-sm mt-1">
-                  Your first score will be submitted to the leaderboard
+                  Din første poengsum blir sendt inn til topplisten
                 </p>
               )}
             </div>
@@ -376,7 +376,7 @@ export function ColorMatchGame() {
               {/* Target Stocking */}
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-white text-center">
-                  Target Stocking
+                  Målsokk
                 </h2>
                 <div className="flex justify-center">
                   <div className="rounded-2xl p-4">
@@ -394,7 +394,7 @@ export function ColorMatchGame() {
               {/* Player Stocking */}
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-white text-center">
-                  Your Stocking
+                  Din sokk
                 </h2>
                 <div className="flex justify-center">
                   <div className=" rounded-2xl p-4">
@@ -432,7 +432,7 @@ export function ColorMatchGame() {
               {/* Color Picker Section */}
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-white mb-4">
-                  🎨 Color Picker
+                  🎨 Fargevelger
                 </h3>
                 <ColorPickerNoEyedropper
                   value={colorPickerColor}
@@ -442,7 +442,7 @@ export function ColorMatchGame() {
                 {/* Current Color Preview */}
                 <div className="mt-4 flex items-center gap-3">
                   <div className="text-white text-sm font-medium">
-                    Selected:
+                    Valgt:
                   </div>
                   <div
                     className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
@@ -460,7 +460,7 @@ export function ColorMatchGame() {
                   onClick={calculateScores}
                   className="w-full bg-gradient-to-r from-red-500 to-green-500 text-white px-6 py-3 rounded-full font-semibold hover:from-red-600 hover:to-green-600 transition-all duration-300 transform hover:scale-105"
                 >
-                  ✅ Done - Check My Colors!
+                  ✅ Ferdig - Sjekk fargene mine!
                 </button>
               </div>
 
@@ -468,7 +468,7 @@ export function ColorMatchGame() {
               {showResults && (
                 <div className="border-t border-white/20 pt-6">
                   <h3 className="text-xl font-semibold text-white mb-4">
-                    Your Results
+                    Dine resultater
                   </h3>
 
                   {/* Overall Score */}
@@ -477,30 +477,30 @@ export function ColorMatchGame() {
                       {overallScore}%
                     </div>
                     <p className="text-white/80 text-sm">
-                      {scoreSaved ? 'Submitted Score' : 'Overall Accuracy'}
+                      {scoreSaved ? 'Innsendt poengsum' : 'Total nøyaktighet'}
                     </p>
                   </div>
 
                   {scoreSaved && (
                     <p className="text-green-300 text-center mb-4 text-sm">
-                      ✅ Score saved to leaderboard!
+                      ✅ Poengsum lagret på topplisten!
                     </p>
                   )}
                   
                   {!scoreSaved && hasPlayedToday && previousScore !== null && (
                     <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg">
                       <p className="text-blue-200 text-xs mb-1">
-                        Practice Round - Score not saved
+                        Øvingsrunde - Poengsum ikke lagret
                       </p>
                       <p className="text-white/80 text-xs">
-                        Your submitted score: <span className="font-bold text-yellow-300">{previousScore}%</span>
+                        Din innsendte poengsum: <span className="font-bold text-yellow-300">{previousScore}%</span>
                       </p>
                     </div>
                   )}
                   
                   {scoreLoading && (
                     <p className="text-yellow-300 text-center mb-4 text-sm">
-                      💾 Saving score...
+                      💾 Lagrer poengsum...
                     </p>
                   )}
                   
@@ -550,7 +550,7 @@ export function ColorMatchGame() {
                       }}
                       className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
                     >
-                      {hasPlayedToday ? '🔄 Play Again (For Fun)' : '🔄 Try Again'}
+                      {hasPlayedToday ? '🔄 Spill igjen (for moro skyld)' : '🔄 Prøv igjen'}
                     </button>
                   </div>
                 </div>
@@ -565,7 +565,7 @@ export function ColorMatchGame() {
             <Leaderboard
               day={dayInfo.day}
               gameType="colorMatchGame"
-              title={`Day ${dayInfo.day} Leaderboard`}
+              title={`Dag ${dayInfo.day} toppliste`}
               showRank={true}
               maxEntries={10}
             />

@@ -2,66 +2,66 @@ import {defineField} from 'sanity'
 
 export const quizGameFields = defineField({
   name: 'quizGameData',
-  title: 'Quiz Game Data',
+  title: 'Quiz spilldata',
   type: 'object',
   hidden: ({parent}) => parent?.gameType !== 'quizGame',
   fields: [
     defineField({
       name: 'title',
-      title: 'Quiz Title',
+      title: 'Quiz-tittel',
       type: 'string',
       validation: (rule) => rule.required(),
     }),
     defineField({
       name: 'description',
-      title: 'Quiz Description',
+      title: 'Quiz-beskrivelse',
       type: 'text',
       rows: 2,
     }),
     defineField({
       name: 'questions',
-      title: 'Quiz Questions',
+      title: 'Quiz-spørsmål',
       type: 'array',
       validation: (rule) => rule.required().length(3),
-      description: 'Exactly 3 questions for the quiz',
+      description: 'Nøyaktig 3 spørsmål til quizen',
       of: [
         {
           type: 'object',
           name: 'question',
-          title: 'Question',
+          title: 'Spørsmål',
           fields: [
             defineField({
               name: 'questionText',
-              title: 'Question Text',
+              title: 'Spørsmålstekst',
               type: 'string',
               validation: (rule) => rule.required(),
             }),
             defineField({
               name: 'answers',
-              title: 'Answer Options',
+              title: 'Svaralternativer',
               type: 'array',
               validation: (rule) => rule.required().length(4),
-              description: 'Exactly 4 answer options',
+              description: 'Nøyaktig 4 svaralternativer',
               of: [{type: 'string'}],
             }),
             defineField({
               name: 'correctAnswerIndex',
-              title: 'Correct Answer',
+              title: 'Riktig svar',
               type: 'number',
-              description: 'Index of the correct answer (0-3)',
+              description: 'Indeks for riktig svar (0-3)',
               validation: (rule) => rule.required().min(0).max(3),
               options: {
                 list: [
-                  {title: 'Answer 1', value: 0},
-                  {title: 'Answer 2', value: 1},
-                  {title: 'Answer 3', value: 2},
-                  {title: 'Answer 4', value: 3},
+                  {title: 'Svar 1', value: 0},
+                  {title: 'Svar 2', value: 1},
+                  {title: 'Svar 3', value: 2},
+                  {title: 'Svar 4', value: 3},
                 ],
               },
             }),
             defineField({
               name: 'timeLimit',
-              title: 'Time Limit (seconds)',
+              title: 'Tidsbegrensning (sekunder)',
               type: 'number',
               initialValue: 15,
               validation: (rule) => rule.required().min(5).max(60),
@@ -75,7 +75,7 @@ export const quizGameFields = defineField({
             prepare({title, correctIndex}) {
               return {
                 title: title,
-                subtitle: `Correct answer: ${correctIndex + 1}`,
+                subtitle: `Riktig svar: ${correctIndex + 1}`,
               }
             },
           },
@@ -84,21 +84,21 @@ export const quizGameFields = defineField({
     }),
     defineField({
       name: 'scoringSettings',
-      title: 'Scoring Settings',
+      title: 'Poengsuminnstillinger',
       type: 'object',
       fields: [
         defineField({
           name: 'correctAnswerPoints',
-          title: 'Points per Correct Answer',
+          title: 'Poeng per riktig svar',
           type: 'number',
           initialValue: 100,
         }),
         defineField({
           name: 'timeBonus',
-          title: 'Time Bonus Multiplier',
+          title: 'Tidsbonusmultiplikator',
           type: 'number',
           initialValue: 2,
-          description: 'Points per second remaining',
+          description: 'Poeng per gjenværende sekund',
         }),
       ],
     }),

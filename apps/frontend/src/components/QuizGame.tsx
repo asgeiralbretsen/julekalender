@@ -179,7 +179,7 @@ export default function QuizGame() {
       <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-300 mx-auto mb-4"></div>
-          <p className="text-red-100">Loading quiz...</p>
+          <p className="text-red-100">Laster quiz...</p>
         </div>
       </div>
     );
@@ -189,7 +189,7 @@ export default function QuizGame() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20">
-          <p className="text-red-100">No quiz data available</p>
+          <p className="text-red-100">Ingen quiz-data tilgjengelig</p>
         </div>
       </div>
     );
@@ -207,38 +207,38 @@ export default function QuizGame() {
           <div className="grid md:grid-cols-2 gap-6 items-start">
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20">
               <h1 className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-                {isFirstAttempt && !hasPlayedToday ? 'Quiz Complete!' : 'Your Score'}
+                {isFirstAttempt && !hasPlayedToday ? 'Quiz fullført!' : 'Din poengsum'}
               </h1>
               
               <div className="mb-6">
                 <p className="text-red-200 text-sm mb-2">
-                  {isFirstAttempt && !hasPlayedToday ? 'Your Score (Submitted)' : 'Your Submitted Score'}
+                  {isFirstAttempt && !hasPlayedToday ? 'Din poengsum (innsendt)' : 'Din innsendte poengsum'}
                 </p>
                 <p className="text-6xl text-white font-bold mb-2">
                   {displayScore}
                 </p>
-                <p className="text-red-200 text-sm">points</p>
+                <p className="text-red-200 text-sm">poeng</p>
               </div>
               
               {scoreSaved && (
                 <p className="text-green-300 mb-4">
-                  ✅ Score saved successfully!
+                  ✅ Poengsum lagret!
                 </p>
               )}
               
               {scoreLoading && (
                 <p className="text-yellow-300 mb-4">
-                  💾 Saving score...
+                  💾 Lagrer poengsum...
                 </p>
               )}
               
               {hasPlayedToday && !scoreSaved && (
                 <div className="mb-4 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
                   <p className="text-yellow-200 text-sm">
-                    You've already played this quiz today!
+                    Du har allerede spilt denne quizen i dag!
                   </p>
                   <p className="text-red-200 text-xs mt-1">
-                    Only your first score counts on the leaderboard
+                    Bare første poengsum teller på topplisten
                   </p>
                 </div>
               )}
@@ -253,7 +253,7 @@ export default function QuizGame() {
                 onClick={startGame}
                 className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
               >
-                {isFirstAttempt && !hasPlayedToday ? 'Play Again' : 'Play Again (For Fun)'}
+                {isFirstAttempt && !hasPlayedToday ? 'Spill igjen' : 'Spill igjen (for moro skyld)'}
               </button>
             </div>
 
@@ -261,7 +261,7 @@ export default function QuizGame() {
               <Leaderboard
                 day={dayInfo.day}
                 gameType="quizGame"
-                title={`Day ${dayInfo.day} Leaderboard`}
+                title={`Dag ${dayInfo.day} toppliste`}
                 showRank={true}
                 maxEntries={10}
               />
@@ -279,18 +279,18 @@ export default function QuizGame() {
         
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20 relative z-10">
           <h1 className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-            {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
+            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
           </h1>
           
           <p className="text-red-100 mb-6">{gameData.description}</p>
           
           <div className="mb-6 p-4 bg-blue-500/20 border border-blue-400/50 rounded-lg">
-            <p className="text-blue-200 font-semibold mb-2">Quiz Rules:</p>
+            <p className="text-blue-200 font-semibold mb-2">Quiz-regler:</p>
             <ul className="text-red-100 text-sm space-y-1">
-              <li>• {gameData.questions.length} questions</li>
-              <li>• 4 answer options each</li>
-              <li>• Time bonus for quick answers</li>
-              <li>• First attempt counts!</li>
+              <li>• {gameData.questions.length} spørsmål</li>
+              <li>• 4 svaralternativer hver</li>
+              <li>• Bonuspoeng for raske svar</li>
+              <li>• Første forsøk teller!</li>
             </ul>
           </div>
           
@@ -298,7 +298,7 @@ export default function QuizGame() {
             onClick={startGame}
             className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
           >
-            Start Quiz
+            Start quiz
           </button>
         </div>
       </div>
@@ -315,13 +315,13 @@ export default function QuizGame() {
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-            {dayInfo ? `Day ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
+            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
           </h1>
           <div className="flex justify-center gap-8 text-red-100">
-            <span>Question {currentRound + 1} / {gameData.questions.length}</span>
-            <span>Score: {score}</span>
+            <span>Spørsmål {currentRound + 1} / {gameData.questions.length}</span>
+            <span>Poeng: {score}</span>
             <span className={timeLeft <= 5 ? 'text-red-300 font-bold animate-pulse' : ''}>
-              Time: {timeLeft}s
+              Tid: {timeLeft}s
             </span>
           </div>
         </div>
@@ -363,11 +363,11 @@ export default function QuizGame() {
           {showResult && (
             <div className="mt-6 text-center">
               <p className={`text-2xl font-bold ${isCorrect ? 'text-green-300' : 'text-red-300'}`}>
-                {isCorrect ? '✅ Correct!' : '❌ Wrong!'}
+                {isCorrect ? '✅ Riktig!' : '❌ Feil!'}
               </p>
               {isCorrect && (
                 <p className="text-yellow-300 mt-2">
-                  +{gameData.scoringSettings.correctAnswerPoints + (timeLeft * gameData.scoringSettings.timeBonus)} points
+                  +{gameData.scoringSettings.correctAnswerPoints + (timeLeft * gameData.scoringSettings.timeBonus)} poeng
                 </p>
               )}
             </div>

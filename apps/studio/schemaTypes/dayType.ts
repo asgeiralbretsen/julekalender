@@ -6,7 +6,7 @@ import {quizGameFields} from './fields/quizGameFields'
 
 export const dayType = defineType({
   name: 'day',
-  title: 'Advent Day',
+  title: 'Kalenderdag',
   type: 'document',
   fields: [
     ...basicDayFields,
@@ -25,14 +25,14 @@ export const dayType = defineType({
     prepare(selection) {
       const {title, dayNumber, media} = selection
       return {
-        title: `Day ${dayNumber}: ${title}`,
+        title: `Dag ${dayNumber}: ${title}`,
         media: media,
       }
     },
   },
   orderings: [
     {
-      title: 'Day Number',
+      title: 'Dagnummer',
       name: 'dayNumberAsc',
       by: [{field: 'dayNumber', direction: 'asc'}],
     },

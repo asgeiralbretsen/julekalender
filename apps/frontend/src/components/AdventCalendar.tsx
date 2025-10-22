@@ -316,7 +316,7 @@ export default function AdventCalendar() {
         const data = await client.fetch(query);
         setSanityDays(data);
       } catch (err) {
-        setError("Failed to fetch advent days");
+        setError("Kunne ikke hente kalenderdager");
         console.error("Error fetching days:", err);
       } finally {
         setLoading(false);
@@ -333,7 +333,7 @@ export default function AdventCalendar() {
         ? builder.image(sanityDay.image).width(400).height(400).url()
         : undefined,
       title: sanityDay.title,
-      description: `Day ${sanityDay.dayNumber} of advent!`,
+      description: `Dag ${sanityDay.dayNumber} i julekalenderen!`,
     }));
   }, [sanityDays]);
 
@@ -510,7 +510,7 @@ export default function AdventCalendar() {
       >
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow">
-            🎄 Advent Calendar
+            🎄 Julekalender
           </h1>
           <Timer
             mode="up"
@@ -524,19 +524,19 @@ export default function AdventCalendar() {
             className="text-red-100"
           />
           <p className="mt-3 text-red-100">
-            Countdown to Christmas with daily surprises
+            Tell ned til jul med daglige overraskelser
           </p>
           {loading && (
             <div className="mt-4 flex items-center justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              <span className="ml-2 text-red-100">Loading advent days...</span>
+              <span className="ml-2 text-red-100">Laster kalenderdager...</span>
             </div>
           )}
           {error && (
             <div className="mt-4 text-red-200 bg-red-800/20 rounded-lg p-3 max-w-md mx-auto">
               <p className="text-sm">{error}</p>
               <p className="text-xs mt-1">
-                Please check your Sanity configuration
+                Vennligst sjekk Sanity-konfigurasjonen din
               </p>
             </div>
           )}
@@ -547,10 +547,10 @@ export default function AdventCalendar() {
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📅</div>
               <h3 className="text-xl font-semibold text-white mb-2">
-                No Advent Days Found
+                Ingen kalenderdager funnet
               </h3>
               <p className="text-red-100 mb-4">
-                Create your first advent day in Sanity Studio to get started!
+                Opprett din første kalenderdag i Sanity Studio for å komme i gang!
               </p>
               <a
                 href="/studio/"
@@ -558,7 +558,7 @@ export default function AdventCalendar() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open Sanity Studio
+                Åpne Sanity Studio
               </a>
             </div>
           ) : (
@@ -587,12 +587,12 @@ export default function AdventCalendar() {
             <div className="mt-8 text-center text-red-100">
               <p>
                 {today.getMonth() === 11
-                  ? `Today is December ${currentDay}. Days 1-${currentDay} are unlocked! 🎄`
-                  : "Come back in December to unlock advent days! 🎄"}
+                  ? `I dag er det ${currentDay}. desember. Dag 1-${currentDay} er låst opp! 🎄`
+                  : "Kom tilbake i desember for å låse opp kalenderdager! 🎄"}
               </p>
               <p className="text-sm mt-2 text-red-200">
-                Showing {sanityDays.length} advent day
-                {sanityDays.length !== 1 ? "s" : ""} from Sanity
+                Viser {sanityDays.length} kalenderdag
+                {sanityDays.length !== 1 ? "er" : ""} fra Sanity
               </p>
             </div>
           )}

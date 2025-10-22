@@ -59,7 +59,7 @@ export default function Header() {
                   }`}
                   style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
                 >
-                  📅 Calendar
+                  📅 Kalender
                 </Link>
               </nav>
             </SignedIn>
@@ -69,7 +69,7 @@ export default function Header() {
             <SignedOut>
               <SignInButton mode="modal">
                 <button className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-green-500">
-                  🎅 Sign In
+                  🎅 Logg inn
                 </button>
               </SignInButton>
             </SignedOut>
@@ -113,7 +113,7 @@ export default function Header() {
                 }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                📅 Calendar
+                📅 Kalender
               </Link>
             </div>
           </div>

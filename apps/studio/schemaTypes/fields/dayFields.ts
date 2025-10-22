@@ -3,28 +3,28 @@ import {defineField} from 'sanity'
 export const basicDayFields = [
   defineField({
     name: 'dayNumber',
-    title: 'Day Number',
+    title: 'Dagnummer',
     type: 'number',
     validation: (rule) => rule.required().min(1).max(24),
-    description: 'The day number in the advent calendar (1-24)',
+    description: 'Dagnummeret i julekalenderen (1-24)',
   }),
   defineField({
     name: 'date',
-    title: 'Date',
+    title: 'Dato',
     type: 'date',
     validation: (rule) => rule.required(),
-    description: 'The actual date for this advent day',
+    description: 'Den faktiske datoen for denne kalenderdagen',
   }),
   defineField({
     name: 'title',
-    title: 'Title',
+    title: 'Tittel',
     type: 'string',
     validation: (rule) => rule.required(),
-    description: 'Title of the advent day',
+    description: 'Tittel på kalenderdagen',
   }),
   defineField({
     name: 'image',
-    title: 'Day Image',
+    title: 'Dagbilde',
     type: 'image',
     options: {
       hotspot: true,
@@ -33,8 +33,8 @@ export const basicDayFields = [
       {
         name: 'alt',
         type: 'string',
-        title: 'Alternative Text',
-        description: 'Important for SEO and accessibility.',
+        title: 'Alternativ tekst',
+        description: 'Viktig for SEO og tilgjengelighet.',
       },
     ],
     validation: (rule) => rule.required(),
@@ -43,34 +43,34 @@ export const basicDayFields = [
 
 export const gameTypeField = defineField({
   name: 'gameType',
-  title: 'Game Type',
+  title: 'Spilltype',
   type: 'string',
   options: {
     list: [
-      {title: 'No Game', value: 'none'},
-      {title: 'Blur Guess Game', value: 'blurGuessGame'},
-      {title: 'Color Match Game', value: 'colorMatchGame'},
-      {title: 'Quiz Game', value: 'quizGame'},
+      {title: 'Ingen spill', value: 'none'},
+      {title: 'Gjett bildet', value: 'blurGuessGame'},
+      {title: 'Fargetilpasning', value: 'colorMatchGame'},
+      {title: 'Quiz', value: 'quizGame'},
     ],
     layout: 'radio',
   },
   initialValue: 'none',
-  description: 'Select the type of game for this advent day',
+  description: 'Velg spilltypen for denne kalenderdagen',
 })
 
 export const additionalFields = [
   defineField({
     name: 'content',
-    title: 'Additional Content',
+    title: 'Ekstra innhold',
     type: 'array',
     of: [{type: 'block'}],
-    description: 'Any additional content or story for this day',
+    description: 'Ekstra innhold eller historie for denne dagen',
   }),
   defineField({
     name: 'isUnlocked',
-    title: 'Is Unlocked',
+    title: 'Er låst opp',
     type: 'boolean',
     initialValue: false,
-    description: 'Whether this day is currently unlocked for users',
+    description: 'Om denne dagen er låst opp for brukere',
   }),
 ]
