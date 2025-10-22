@@ -14,8 +14,8 @@ interface StockingProps {
 
 const SVGComponent = (props: StockingProps) => (
   <svg
-    width="800px"
-    height="800px"
+    width="400px"
+    height="350px"
     viewBox="0 0 64 64"
     xmlns="http://www.w3.org/2000/svg"
     fill="#000000"
