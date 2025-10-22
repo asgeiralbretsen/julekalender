@@ -181,27 +181,6 @@ function DayCell({
             </div>
           </div>
 
-          {/* Lock icon for locked days */}
-          {!isUnlocked && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-              <span className="text-3xl drop-shadow-lg">🔒</span>
-            </div>
-          )}
-
-          {/* Today badge */}
-          {isToday && (
-            <>
-              <div className="absolute -top-2 -right-2 animate-pulse">
-                <div className="bg-yellow-400 text-red-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg border-2 border-white">
-                  TODAY
-                </div>
-              </div>
-              <div className="absolute -top-4 -left-4 animate-bounce">
-                <span className="text-4xl drop-shadow-xl">⭐</span>
-              </div>
-            </>
-          )}
-
           {/* Sparkle effects for unlocked days */}
           {isUnlocked && (
             <>
