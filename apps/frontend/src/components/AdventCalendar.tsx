@@ -33,7 +33,11 @@ interface SanityDay {
     };
     alt?: string;
   };
-  gameType?: "none" | "blurGuessGame" | "colorMatchGame";
+  gameType?:
+    | "none"
+    | "blurGuessGame"
+    | "colorMatchGame"
+    | "teamsNotificationGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -58,6 +62,50 @@ interface SanityDay {
       perfectMatchBonus: number;
       closeMatchThreshold: number;
       timeBonus: number;
+    };
+  };
+  teamsNotificationGameData?: {
+    title: string;
+    description: string;
+    firstMessage: string;
+    teamsMessages: Array<{
+      message: string;
+      sender?: string;
+      timestamp?: string;
+      profilePicture?: {
+        _ref: string;
+        _type: "reference";
+      };
+    }>;
+    lastMessage: string;
+    logo?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    defaultProfilePicture?: {
+      _ref: string;
+      _type: "reference";
+    };
+    contextMenuIcon?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    addEmojiIcon?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    closeMessageIcon?: {
+      asset: {
+        _ref: string;
+      };
+    };
+    sendMessageIcon?: {
+      asset: {
+        _ref: string;
+      };
     };
   };
   isUnlocked: boolean;
@@ -451,6 +499,7 @@ export default function AdventCalendar() {
           gameType,
           blurGuessGameData,
           colorMatchGameData,
+          teamsNotificationGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
@@ -562,6 +611,30 @@ export default function AdventCalendar() {
           })
         );
         navigate("/game/colorMatchGame");
+        return;
+      } else if (
+        sanityDay.gameType === "teamsNotificationGame" &&
+        sanityDay.teamsNotificationGameData
+      ) {
+        console.log(
+          "Navigating to TeamsNotificationGame with data:",
+          sanityDay.teamsNotificationGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            teamsNotificationGameData: sanityDay.teamsNotificationGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/teamsNotificationGame");
         return;
       } else {
         console.log("Game type found but no game data available");
