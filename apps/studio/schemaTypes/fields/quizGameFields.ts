@@ -22,7 +22,6 @@ export const quizGameFields = defineField({
       name: 'questions',
       title: 'Quiz-spørsmål',
       type: 'array',
-      validation: (rule) => rule.required().length(3),
       description: 'Nøyaktig 3 spørsmål til quizen',
       of: [
         {
@@ -104,4 +103,3 @@ export const quizGameFields = defineField({
     }),
   ],
 })
-
