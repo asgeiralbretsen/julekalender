@@ -592,10 +592,7 @@ export default function AdventCalendar() {
         );
         navigate("/game/teamsNotificationGame");
         return;
-      } else if (
-        sanityDay.gameType === "snowflakeCatchGame" &&
-        sanityDay.snowflakeCatchGameData
-      ) {
+      } else if (sanityDay.gameType === "snowflakeCatchGame") {
         console.log(
           "Navigating to SnowflakeCatchGame with data:",
           sanityDay.snowflakeCatchGameData
@@ -603,7 +600,7 @@ export default function AdventCalendar() {
         sessionStorage.setItem(
           "currentGameData",
           JSON.stringify({
-            snowflakeCatchGameData: sanityDay.snowflakeCatchGameData,
+            snowflakeCatchGameData: sanityDay.snowflakeCatchGameData || {},
           })
         );
         sessionStorage.setItem("currentGameType", sanityDay.gameType);

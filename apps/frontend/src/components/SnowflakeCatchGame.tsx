@@ -39,6 +39,7 @@ const SnowflakeCatchGame: React.FC = () => {
     fallingObjects: [],
   });
 
+
   const gameLoopRef = useRef<number | null>(null);
   const keysPressed = useRef<Set<string>>(new Set());
 
