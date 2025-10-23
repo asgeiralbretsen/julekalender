@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../hooks/useGameScore";
-import Leaderboard from "./Leaderboard";
 import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
 

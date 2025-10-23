@@ -9,6 +9,8 @@ interface LeaderboardProps {
   title?: string;
   showRank?: boolean;
   maxEntries?: number;
+  scoreSaved?: boolean;
+  isFirstAttempt?: boolean;
 }
 
 const Leaderboard: React.FC<LeaderboardProps> = ({
@@ -17,6 +19,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
   title = 'Toppliste',
   showRank = true,
   maxEntries,
+  scoreSaved = false,
+  isFirstAttempt = false,
 }) => {
   const { user } = useUser();
   const { getLeaderboard, loading, error } = useGameScore();
@@ -24,6 +28,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
   const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
 
   useEffect(() => {
+    if (isFirstAttempt && !scoreSaved) {
+      return;
+    }
+
     const fetchLeaderboard = async () => {
       const leaderboardScores = await getLeaderboard(day, gameType);
       const displayScores = maxEntries
@@ -42,7 +50,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
     };
 
     fetchLeaderboard();
-  }, [day, gameType, maxEntries, getLeaderboard, user]);
+  }, [day, gameType, maxEntries, getLeaderboard, user, scoreSaved, isFirstAttempt]);
 
   const getMedalEmoji = (rank: number): string => {
     switch (rank) {

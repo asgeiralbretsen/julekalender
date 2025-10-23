@@ -4,7 +4,6 @@ import ColorPickerNoEyedropper from "./ColorPicker";
 import { createClient } from "@sanity/client";
 import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../../hooks/useGameScore";
-import Leaderboard from "../Leaderboard";
 import { ChristmasBackground } from "../ChristmasBackground";
 import GameResultsScreen from "../GameResultsScreen";
 import { StartGameScreen } from "../StartGameScreen";
