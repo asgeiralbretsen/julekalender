@@ -41,7 +41,8 @@ interface SanityDay {
     | "colorMatchGame"
     | "quizGame"
     | "teamsNotificationGame"
-    | "songGuessGame";
+    | "songGuessGame"
+    | "snowflakeCatchGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -143,6 +144,9 @@ interface SanityDay {
         _ref: string;
       };
     };
+  };
+  snowflakeCatchGameData?: {
+    title: string;
   };
   isUnlocked: boolean;
 }
@@ -397,6 +401,7 @@ export default function AdventCalendar() {
           songGuessGameData,
           quizGameData,
           teamsNotificationGameData,
+          snowflakeCatchGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
@@ -586,6 +591,30 @@ export default function AdventCalendar() {
           })
         );
         navigate("/game/teamsNotificationGame");
+        return;
+      } else if (
+        sanityDay.gameType === "snowflakeCatchGame" &&
+        sanityDay.snowflakeCatchGameData
+      ) {
+        console.log(
+          "Navigating to SnowflakeCatchGame with data:",
+          sanityDay.snowflakeCatchGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            snowflakeCatchGameData: sanityDay.snowflakeCatchGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/snowflakeCatchGame");
         return;
       } else if (
         sanityDay.gameType === "songGuessGame" &&
