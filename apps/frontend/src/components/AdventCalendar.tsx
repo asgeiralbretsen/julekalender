@@ -42,7 +42,8 @@ interface SanityDay {
     | "quizGame"
     | "teamsNotificationGame"
     | "songGuessGame"
-    | "snowflakeCatchGame";
+    | "snowflakeCatchGame"
+    | "wordScrambleGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -147,6 +148,19 @@ interface SanityDay {
   };
   snowflakeCatchGameData?: {
     title: string;
+  };
+  wordScrambleGameData?: {
+    title: string;
+    description?: string;
+    words: Array<{
+      word: string;
+      hint?: string;
+    }>;
+    timeLimit: number;
+    scoringSettings: {
+      correctAnswerPoints: number;
+      timeBonusPerSecond: number;
+    };
   };
   isUnlocked: boolean;
 }
@@ -402,6 +416,7 @@ export default function AdventCalendar() {
           quizGameData,
           teamsNotificationGameData,
           snowflakeCatchGameData,
+          wordScrambleGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
@@ -636,6 +651,30 @@ export default function AdventCalendar() {
           })
         );
         navigate("/game/songGuessGame");
+        return;
+      } else if (
+        sanityDay.gameType === "wordScrambleGame" &&
+        sanityDay.wordScrambleGameData
+      ) {
+        console.log(
+          "Navigating to WordScrambleGame with data:",
+          sanityDay.wordScrambleGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            wordScrambleGameData: sanityDay.wordScrambleGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/wordScrambleGame");
         return;
       } else {
         console.log("Game type found but no game data available");
