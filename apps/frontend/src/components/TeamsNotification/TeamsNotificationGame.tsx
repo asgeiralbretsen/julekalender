@@ -431,7 +431,6 @@ export function TeamsNotificationGame() {
           </div>
         </div>
 
-
         {/* Render active notifications */}
         {Array.from(activeNotifications.entries()).map(([id, notification]) => (
           <TeamsNotification
