@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../hooks/useGameScore";
 import Leaderboard from "./Leaderboard";
+import GameResultsScreen from "./GameResultsScreen";
 import { useNavigate } from "react-router-dom";
 import { client } from "../lib/sanity";
 
@@ -125,6 +126,7 @@ const SongGuessGame: React.FC = () => {
             ...prev,
             hasPlayedToday: true,
             previousScore: userScore?.score || null,
+            gameEnded: true, // Show results screen immediately if already played
           }));
         }
       }
@@ -272,6 +274,23 @@ const SongGuessGame: React.FC = () => {
       timeElapsed: 0,
     });
   };
+
+  if (gameState.gameEnded) {
+    return (
+      <GameResultsScreen
+        isFirstAttempt={!gameState.hasPlayedToday}
+        currentScore={gameState.score}
+        previousScore={gameState.previousScore}
+        scoreSaved={gameState.scoreSaved}
+        loading={false}
+        error={null}
+        dayInfo={dayInfo}
+        gameType="songGuessGame"
+        onPlayAgain={handlePlayAgain}
+        scoreLabel="points"
+      />
+    );
+  }
 
   if (!gameData) {
     return (
