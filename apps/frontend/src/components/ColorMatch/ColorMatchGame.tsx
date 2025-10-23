@@ -6,6 +6,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../../hooks/useGameScore";
 import Leaderboard from "../Leaderboard";
 import { ChristmasBackground } from "../ChristmasBackground";
+import GameResultsScreen from "../GameResultsScreen";
 
 interface Colors {
   topColor: string;
@@ -72,6 +73,7 @@ export function ColorMatchGame() {
   const [hasPlayedToday, setHasPlayedToday] = useState(false);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showResultsScreen, setShowResultsScreen] = useState(false);
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
     null
   );
@@ -224,6 +226,7 @@ export function ColorMatchGame() {
           setHasPlayedToday(true);
           setPreviousScore(previousScoreData?.score || null);
           setShowLeaderboard(true); // Show leaderboard immediately if already played
+          setShowResultsScreen(true); // Show results screen immediately if already played
         }
       } catch (err) {
         console.error("Error checking if user has played today:", err);
@@ -350,6 +353,26 @@ export function ColorMatchGame() {
       }
     }
   };
+
+  // Show results screen if user has already played
+  if (showResultsScreen) {
+    return (
+      <GameResultsScreen
+        isFirstAttempt={false}
+        currentScore={0}
+        previousScore={previousScore}
+        scoreSaved={true}
+        loading={false}
+        error={null}
+        dayInfo={dayInfo}
+        gameType="colorMatchGame"
+        gameName="Fargetilpasning"
+        onPlayAgain={() => setShowResultsScreen(false)}
+        scoreLabel="%"
+        scoreSuffix="%"
+      />
+    );
+  }
 
   // Show loading state
   if (loading) {
@@ -672,19 +695,6 @@ export function ColorMatchGame() {
             </div>
           </div>
         </div>
-
-        {/* Leaderboard Section */}
-        {showLeaderboard && dayInfo && (
-          <div className="mt-8 max-w-2xl mx-auto">
-            <Leaderboard
-              day={dayInfo.day}
-              gameType="colorMatchGame"
-              title={`Dag ${dayInfo.day} toppliste`}
-              showRank={true}
-              maxEntries={10}
-            />
-          </div>
-        )}
       </div>
     </ChristmasBackground>
   );

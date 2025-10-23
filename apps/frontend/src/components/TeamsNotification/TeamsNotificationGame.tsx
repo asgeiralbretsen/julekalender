@@ -3,6 +3,9 @@ import imageUrlBuilder from "@sanity/image-url";
 import { client } from "../../lib/sanity";
 import { TeamsNotification } from "./TeamsNotification";
 import { ChristmasBackground } from "../ChristmasBackground";
+import { useUser } from "@clerk/clerk-react";
+import { useGameScore } from "../../hooks/useGameScore";
+import GameResultsScreen from "../GameResultsScreen";
 
 const builder = imageUrlBuilder(client);
 
@@ -48,11 +51,14 @@ interface TeamsNotificationGameData {
 }
 
 export function TeamsNotificationGame() {
+  const { user } = useUser();
+  const { saveGameScore, hasUserPlayedGame, getUserScoreForDay } = useGameScore();
+  
   const [profiles, setProfiles] = useState<ProfileEntry[]>([]);
   const [gameData, setGameData] = useState<TeamsNotificationGameData | null>(
     null
   );
-  const [dayTitle, setDayTitle] = useState<string>("");
+  const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [activeNotifications, setActiveNotifications] = useState<
@@ -63,6 +69,9 @@ export function TeamsNotificationGame() {
   const [gameStarted, setGameStarted] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(30); // 30 seconds
   const [gameOver, setGameOver] = useState(false);
+  const [scoreSaved, setScoreSaved] = useState(false);
+  const [hasPlayedToday, setHasPlayedToday] = useState(false);
+  const [previousScore, setPreviousScore] = useState<number | null>(null);
   const minSpawnInterval = 500; // Minimum 0.5 seconds between spawns
 
   useEffect(() => {
@@ -85,9 +94,9 @@ export function TeamsNotificationGame() {
         if (dayInfoRaw) {
           try {
             const parsed = JSON.parse(dayInfoRaw);
-            setDayTitle(parsed?.title || "");
+            setDayInfo(parsed);
           } catch {
-            setDayTitle("");
+            setDayInfo(null);
           }
         }
 
@@ -114,6 +123,28 @@ export function TeamsNotificationGame() {
 
     fetchData();
   }, []);
+
+  // Check if user has played today
+  useEffect(() => {
+    const checkPlayStatus = async () => {
+      if (dayInfo && user) {
+        const hasPlayed = await hasUserPlayedGame(
+          dayInfo.day,
+          "teamsNotificationGame"
+        );
+        if (hasPlayed) {
+          const userScore = await getUserScoreForDay(
+            dayInfo.day,
+            "teamsNotificationGame"
+          );
+          setHasPlayedToday(true);
+          setPreviousScore(userScore?.score || null);
+          setGameOver(true); // Show results screen immediately if already played
+        }
+      }
+    };
+    checkPlayStatus();
+  }, [dayInfo, user, hasUserPlayedGame, getUserScoreForDay]);
 
   // Function to generate a random notification on-the-fly
   const generateRandomNotification = (): NotificationData => {
@@ -165,6 +196,25 @@ export function TeamsNotificationGame() {
       return () => clearInterval(timer);
     }
   }, [gameStarted, gameOver, timeRemaining]);
+
+  // Save score when game ends
+  useEffect(() => {
+    if (gameOver && !hasPlayedToday && dayInfo && user) {
+      saveGameScore({
+        day: dayInfo.day,
+        gameType: "teamsNotificationGame",
+        score: score,
+      }).then((result) => {
+        if (result) {
+          setScoreSaved(true);
+          setHasPlayedToday(true);
+          setPreviousScore(result.score);
+        }
+      }).catch((error) => {
+        console.error("Error saving score:", error);
+      });
+    }
+  }, [gameOver, hasPlayedToday, dayInfo, user, score, saveGameScore]);
 
   // Auto-spawn notifications with decreasing interval
   useEffect(() => {
@@ -284,6 +334,36 @@ export function TeamsNotificationGame() {
     );
   }
 
+  // Show results screen when game is over
+  if (gameOver && dayInfo) {
+    const handlePlayAgain = () => {
+      setGameStarted(false);
+      setGameOver(false);
+      setScore(0);
+      setNextNotificationId(0);
+      setSpawnInterval(1000);
+      setTimeRemaining(30);
+      setActiveNotifications(new Map());
+      setScoreSaved(false);
+    };
+
+    return (
+      <GameResultsScreen
+        isFirstAttempt={!hasPlayedToday || scoreSaved}
+        currentScore={score}
+        previousScore={previousScore}
+        scoreSaved={scoreSaved}
+        loading={false}
+        error={null}
+        dayInfo={dayInfo}
+        gameType="teamsNotificationGame"
+        gameName="Teams Varsel Spill"
+        onPlayAgain={handlePlayAgain}
+        scoreLabel="poeng"
+      />
+    );
+  }
+
   return (
     <ChristmasBackground>
       <div className="min-h-screen p-4">
@@ -292,7 +372,7 @@ export function TeamsNotificationGame() {
             className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg text-center"
             style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
           >
-            {gameData.title || dayTitle || "Teams Varsel Spill"}
+            {gameData.title || dayInfo?.title || "Teams Varsel Spill"}
           </h1>
           {gameData.description && (
             <p className="text-white/90 text-center mb-4">
@@ -315,41 +395,29 @@ export function TeamsNotificationGame() {
             </div>
           </div>
 
-          {!gameStarted && !gameOver && (
+          {!gameStarted && (
             <button
               onClick={() => setGameStarted(true)}
               className="w-full py-4 bg-green-600 hover:bg-green-700 text-white text-xl font-bold rounded-lg transition-colors"
             >
-              Start Spillet
+              {hasPlayedToday ? "Spill Igjen (for moro skyld)" : "Start Spillet"}
             </button>
           )}
 
-          {gameOver && (
-            <div className="text-center mb-4">
-              <p className="text-3xl font-bold text-yellow-300 mb-2">
-                🎮 Spillet er over!
-              </p>
-              <p className="text-2xl text-white">
-                Din endelige poengsum:{" "}
-                <span className="font-bold text-green-400">{score}</span>
-              </p>
-            </div>
-          )}
-
-          {(gameStarted || gameOver) && (
+          {gameStarted && (
             <button
               onClick={() => {
                 setGameStarted(false);
                 setGameOver(false);
                 setScore(0);
                 setNextNotificationId(0);
-                setSpawnInterval(2000);
+                setSpawnInterval(1000);
                 setTimeRemaining(30);
                 setActiveNotifications(new Map());
               }}
               className="w-full py-4 bg-red-600 hover:bg-red-700 text-white text-xl font-bold rounded-lg transition-colors"
             >
-              {gameOver ? "Spill Igjen" : "Nullstill Spillet"}
+              Nullstill Spillet
             </button>
           )}
         </div>
