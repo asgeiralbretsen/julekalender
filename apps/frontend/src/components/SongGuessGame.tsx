@@ -46,7 +46,7 @@ interface SongGuessGameData {
 // Helper function to get file URL from Sanity
 const getFileUrl = (ref: string): string => {
   // Sanity file reference format: file-{assetId}-{extension}
-  const [, assetId, extension] = ref.split('-');
+  const [, assetId, extension] = ref.split("-");
   return `https://cdn.sanity.io/files/${client.config().projectId}/${client.config().dataset}/${assetId}.${extension}`;
 };
 
@@ -113,10 +113,7 @@ const SongGuessGame: React.FC = () => {
   useEffect(() => {
     const checkPlayStatus = async () => {
       if (dayInfo && user) {
-        const hasPlayed = await hasUserPlayedGame(
-          dayInfo.day,
-          "songGuessGame"
-        );
+        const hasPlayed = await hasUserPlayedGame(dayInfo.day, "songGuessGame");
         if (hasPlayed) {
           const userScore = await getUserScoreForDay(
             dayInfo.day,
@@ -166,7 +163,7 @@ const SongGuessGame: React.FC = () => {
       };
     }
   }, [gameState.isPlaying, gameState.timeRemaining]);
-  
+
   const stopAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -211,7 +208,8 @@ const SongGuessGame: React.FC = () => {
     let finalScore = 0;
     if (isCorrect && gameData && gameData.scoringSettings) {
       const baseScore = gameData.scoringSettings.correctAnswerPoints || 1000;
-      const timeBonusPerSecond = gameData.scoringSettings.timeBonusPerSecond || 50;
+      const timeBonusPerSecond =
+        gameData.scoringSettings.timeBonusPerSecond || 50;
       const maxTimeBonus = gameData.scoringSettings.maxTimeBonus || 500;
       const timeBonus = Math.min(
         Math.floor(gameState.timeRemaining * timeBonusPerSecond),
@@ -236,8 +234,8 @@ const SongGuessGame: React.FC = () => {
           score: finalScore,
         });
         if (result) {
-          setGameState((prev) => ({ 
-            ...prev, 
+          setGameState((prev) => ({
+            ...prev,
             scoreSaved: true,
             hasPlayedToday: true,
             previousScore: result.score,
@@ -257,11 +255,12 @@ const SongGuessGame: React.FC = () => {
   };
 
   const handlePlayAgain = () => {
-    if (!gameData || !gameData.songFile?.asset?._ref || !gameData.answers) return;
+    if (!gameData || !gameData.songFile?.asset?._ref || !gameData.answers)
+      return;
 
     const songUrl = getFileUrl(gameData.songFile.asset._ref);
     const correctAnswer = gameData.answers[gameData.correctAnswerIndex];
-    
+
     // Reset game state to start fresh
     setGameState({
       songUrl,
@@ -326,15 +325,24 @@ const SongGuessGame: React.FC = () => {
       <>
         {audioElement}
         <StartGameScreen
-          title={dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title || "Gjett julesangen!"}
-          description={gameData.description || "Lytt til klippet og gjett hvilken julesang det er!"}
+          title={
+            dayInfo
+              ? `Dag ${dayInfo.day}: ${dayInfo.title}`
+              : gameData.title || "Gjett julesangen!"
+          }
+          description={
+            gameData.description ||
+            "Lytt til klippet og gjett hvilken julesang det er!"
+          }
           howToPlay={[
             `• Lytt til sangklippet (${gameState.clipDuration} sekunder)`,
             "• Velg riktig julesang",
             "• Rask gjetning gir bonuspoeng",
-            "• Første forsøk teller!"
+            "• Første forsøk teller!",
           ]}
-          previousScore={gameState.hasPlayedToday ? gameState.previousScore : undefined}
+          previousScore={
+            gameState.hasPlayedToday ? gameState.previousScore : undefined
+          }
           onClickStartGame={handleStartGame}
         />
       </>
@@ -346,63 +354,67 @@ const SongGuessGame: React.FC = () => {
       {audioElement}
       <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden p-4">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-        
+
         <div className="max-w-4xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title || "Gjett julesangen!"}
-          </h1>
-          <div className="flex justify-center gap-8 text-red-100">
-            <span>🎵 Gjett sangen</span>
-            {gameState.score > 0 && <span>Poeng: {gameState.score}</span>}
-          </div>
-        </div>
-
-        {/* Game Area */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-yellow-400/20">
-          {/* Audio Player Visual */}
+          {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-block p-8 bg-gradient-to-br from-green-600 via-green-700 to-green-800 rounded-full shadow-2xl mb-4">
-              <div className="text-8xl">🎵</div>
+            <h1
+              className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
+              style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+            >
+              {dayInfo
+                ? `Dag ${dayInfo.day}: ${dayInfo.title}`
+                : gameData.title || "Gjett julesangen!"}
+            </h1>
+            <div className="flex justify-center gap-8 text-red-100">
+              <span>🎵 Gjett sangen</span>
+              {gameState.score > 0 && <span>Poeng: {gameState.score}</span>}
             </div>
-            
-            {gameState.gameStarted && (
-              <div className="mt-4">
-                <div className="text-white text-2xl font-bold mb-2">
-                  {gameState.timeRemaining.toFixed(1)}s
-                </div>
-                <div className="w-full bg-white/20 rounded-full h-4 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-100"
-                    style={{
-                      width: `${(gameState.timeRemaining / gameState.clipDuration) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Answer Options */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {gameState.answerOptions.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswer(option)}
-                disabled={gameState.userAnswer !== null}
-                className="bg-white/20 hover:bg-white/30 disabled:bg-white/10 text-white p-6 rounded-lg font-semibold border-2 border-white/30 hover:border-white/50 transition-all duration-200 disabled:cursor-not-allowed"
-              >
-                {option}
-              </button>
-            ))}
+          {/* Game Area */}
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-yellow-400/20">
+            {/* Audio Player Visual */}
+            <div className="text-center mb-8">
+              <div className="inline-block p-8 bg-gradient-to-br from-green-600 via-green-700 to-green-800 rounded-full shadow-2xl mb-4">
+                <div className="text-8xl">🎵</div>
+              </div>
+
+              {gameState.gameStarted && (
+                <div className="mt-4">
+                  <div className="text-white text-2xl font-bold mb-2">
+                    {gameState.timeRemaining.toFixed(1)}s
+                  </div>
+                  <div className="w-full bg-white/20 rounded-full h-4 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-100"
+                      style={{
+                        width: `${(gameState.timeRemaining / gameState.clipDuration) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Answer Options */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {gameState.answerOptions.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAnswer(option)}
+                  disabled={gameState.userAnswer !== null}
+                  className="bg-white/20 hover:bg-white/30 disabled:bg-white/10 text-white p-6 rounded-lg font-semibold border-2 border-white/30 hover:border-white/50 transition-all duration-200 disabled:cursor-not-allowed"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 };
 
 export default SongGuessGame;
-

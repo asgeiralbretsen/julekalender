@@ -218,53 +218,59 @@ const BlurGuessGame: React.FC = () => {
     checkIfPlayedToday();
   }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
 
-  const startNewRound = useCallback((roundNumber: number) => {
-    // Use round number as index (round is 1-based, array is 0-based)
-    const imageIndex = roundNumber - 1;
-    const nextImage = gameImages[imageIndex];
-    
-    if (!nextImage) {
-      console.error('No image found for round', roundNumber);
-      return;
-    }
-    
-    setGameState((prev) => ({
-      ...prev,
-      currentImage: nextImage,
-      blurLevel: MAX_BLUR,
-      timeElapsed: 0,
-      correctAnswer: null,
-      userAnswer: null,
-      showResult: false,
-    }));
-  }, [gameImages]);
+  const startNewRound = useCallback(
+    (roundNumber: number) => {
+      // Use round number as index (round is 1-based, array is 0-based)
+      const imageIndex = roundNumber - 1;
+      const nextImage = gameImages[imageIndex];
 
-  const saveGameScoreWhenEnded = useCallback(async (finalScore: number) => {
-    if (!user || !dayInfo) return;
-
-    if (gameState.hasPlayedToday) {
-      setGameState((prev) => ({ ...prev, scoreSaved: false }));
-      return;
-    }
-
-    try {
-      const result = await saveGameScore({
-        day: dayInfo.day,
-        gameType: "blurGuessGame",
-        score: finalScore,
-      });
-
-      if (result) {
-        setGameState((prev) => ({
-          ...prev,
-          scoreSaved: true,
-          previousScore: result.score,
-        }));
+      if (!nextImage) {
+        console.error("No image found for round", roundNumber);
+        return;
       }
-    } catch (err) {
-      console.error("Error saving game score:", err);
-    }
-  }, [user, dayInfo, gameState.hasPlayedToday, saveGameScore]);
+
+      setGameState((prev) => ({
+        ...prev,
+        currentImage: nextImage,
+        blurLevel: MAX_BLUR,
+        timeElapsed: 0,
+        correctAnswer: null,
+        userAnswer: null,
+        showResult: false,
+      }));
+    },
+    [gameImages]
+  );
+
+  const saveGameScoreWhenEnded = useCallback(
+    async (finalScore: number) => {
+      if (!user || !dayInfo) return;
+
+      if (gameState.hasPlayedToday) {
+        setGameState((prev) => ({ ...prev, scoreSaved: false }));
+        return;
+      }
+
+      try {
+        const result = await saveGameScore({
+          day: dayInfo.day,
+          gameType: "blurGuessGame",
+          score: finalScore,
+        });
+
+        if (result) {
+          setGameState((prev) => ({
+            ...prev,
+            scoreSaved: true,
+            previousScore: result.score,
+          }));
+        }
+      } catch (err) {
+        console.error("Error saving game score:", err);
+      }
+    },
+    [user, dayInfo, gameState.hasPlayedToday, saveGameScore]
+  );
 
   const startGame = () => {
     setGameState((prev) => ({
@@ -378,7 +384,12 @@ const BlurGuessGame: React.FC = () => {
 
   // Handle moving to next round when time runs out
   useEffect(() => {
-    if (gameState.showResult && !gameState.userAnswer && gameState.gameStarted && !gameState.gameEnded) {
+    if (
+      gameState.showResult &&
+      !gameState.userAnswer &&
+      gameState.gameStarted &&
+      !gameState.gameEnded
+    ) {
       // Time ran out (no user answer)
       const moveToNextRound = setTimeout(() => {
         if (gameState.round >= gameImages.length) {
@@ -390,10 +401,20 @@ const BlurGuessGame: React.FC = () => {
           startNewRound(nextRound);
         }
       }, 2000);
-      
+
       return () => clearTimeout(moveToNextRound);
     }
-  }, [gameState.showResult, gameState.userAnswer, gameState.round, gameState.gameStarted, gameState.gameEnded, gameState.score, gameImages.length, saveGameScoreWhenEnded, startNewRound]);
+  }, [
+    gameState.showResult,
+    gameState.userAnswer,
+    gameState.round,
+    gameState.gameStarted,
+    gameState.gameEnded,
+    gameState.score,
+    gameImages.length,
+    saveGameScoreWhenEnded,
+    startNewRound,
+  ]);
 
   if (gameState.gameEnded) {
     return (

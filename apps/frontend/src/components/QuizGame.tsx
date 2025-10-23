@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/clerk-react';
-import { useGameScore } from '../hooks/useGameScore';
-import Leaderboard from './Leaderboard';
-import GameResultsScreen from './GameResultsScreen';
-import { StartGameScreen } from './StartGameScreen';
+import { useState, useEffect } from "react";
+import { useUser } from "@clerk/clerk-react";
+import { useGameScore } from "../hooks/useGameScore";
+import Leaderboard from "./Leaderboard";
+import GameResultsScreen from "./GameResultsScreen";
+import { StartGameScreen } from "./StartGameScreen";
 
 interface Question {
   questionText: string;
@@ -24,10 +24,18 @@ interface QuizGameData {
 
 export default function QuizGame() {
   const { user } = useUser();
-  const { saveGameScore, hasUserPlayedGame, getUserScoreForDay, loading: scoreLoading, error: scoreError } = useGameScore();
-  
+  const {
+    saveGameScore,
+    hasUserPlayedGame,
+    getUserScoreForDay,
+    loading: scoreLoading,
+    error: scoreError,
+  } = useGameScore();
+
   const [gameData, setGameData] = useState<QuizGameData | null>(null);
-  const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(null);
+  const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
+    null
+  );
   const [currentRound, setCurrentRound] = useState(0);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -42,8 +50,8 @@ export default function QuizGame() {
   const [checkingPlayStatus, setCheckingPlayStatus] = useState(true);
 
   useEffect(() => {
-    const gameDataStr = sessionStorage.getItem('currentGameData');
-    const dayInfoStr = sessionStorage.getItem('currentDayInfo');
+    const gameDataStr = sessionStorage.getItem("currentGameData");
+    const dayInfoStr = sessionStorage.getItem("currentDayInfo");
 
     if (gameDataStr) {
       try {
@@ -52,7 +60,7 @@ export default function QuizGame() {
           setGameData(parsed.quizGameData);
         }
       } catch (error) {
-        console.error('Error parsing game data:', error);
+        console.error("Error parsing game data:", error);
       }
     }
 
@@ -60,7 +68,7 @@ export default function QuizGame() {
       try {
         setDayInfo(JSON.parse(dayInfoStr));
       } catch (error) {
-        console.error('Error parsing day info:', error);
+        console.error("Error parsing day info:", error);
       }
     }
 
@@ -75,15 +83,18 @@ export default function QuizGame() {
       }
 
       try {
-        const hasPlayed = await hasUserPlayedGame(dayInfo.day, 'quizGame');
+        const hasPlayed = await hasUserPlayedGame(dayInfo.day, "quizGame");
         if (hasPlayed) {
-          const previousScoreData = await getUserScoreForDay(dayInfo.day, 'quizGame');
+          const previousScoreData = await getUserScoreForDay(
+            dayInfo.day,
+            "quizGame"
+          );
           setHasPlayedToday(true);
           setPreviousScore(previousScoreData?.score || null);
           setGameEnded(true);
         }
       } catch (err) {
-        console.error('Error checking if user has played today:', err);
+        console.error("Error checking if user has played today:", err);
       } finally {
         setCheckingPlayStatus(false);
       }
@@ -130,9 +141,11 @@ export default function QuizGame() {
 
     const currentQuestion = gameData.questions[currentRound];
     const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
-    
+
     if (isCorrect) {
-      const points = gameData.scoringSettings.correctAnswerPoints + (timeLeft * gameData.scoringSettings.timeBonus);
+      const points =
+        gameData.scoringSettings.correctAnswerPoints +
+        timeLeft * gameData.scoringSettings.timeBonus;
       setScore(score + points);
     }
 
@@ -156,22 +169,22 @@ export default function QuizGame() {
 
   const endGame = async () => {
     setGameEnded(true);
-    
+
     if (user && dayInfo && !hasPlayedToday) {
       try {
         const result = await saveGameScore({
           day: dayInfo.day,
-          gameType: 'quizGame',
+          gameType: "quizGame",
           score: score,
         });
-        
+
         if (result) {
           setScoreSaved(true);
           setHasPlayedToday(true);
           setPreviousScore(score);
         }
       } catch (err) {
-        console.error('Error saving game score:', err);
+        console.error("Error saving game score:", err);
       }
     }
   };
@@ -218,13 +231,15 @@ export default function QuizGame() {
   if (!gameStarted) {
     return (
       <StartGameScreen
-        title={dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
+        title={
+          dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title
+        }
         description={gameData.description}
         howToPlay={[
           `• ${gameData.questions.length} spørsmål`,
           "• 4 svaralternativer hver",
           "• Bonuspoeng for raske svar",
-          "• Første forsøk teller!"
+          "• Første forsøk teller!",
         ]}
         previousScore={hasPlayedToday ? previousScore : undefined}
         onClickStartGame={startGame}
@@ -238,16 +253,25 @@ export default function QuizGame() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden p-4">
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-      
+
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+          <h1
+            className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
+            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+          >
             {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
           </h1>
           <div className="flex justify-center gap-8 text-red-100">
-            <span>Spørsmål {currentRound + 1} / {gameData.questions.length}</span>
+            <span>
+              Spørsmål {currentRound + 1} / {gameData.questions.length}
+            </span>
             <span>Poeng: {score}</span>
-            <span className={timeLeft <= 5 ? 'text-red-300 font-bold animate-pulse' : ''}>
+            <span
+              className={
+                timeLeft <= 5 ? "text-red-300 font-bold animate-pulse" : ""
+              }
+            >
               Tid: {timeLeft}s
             </span>
           </div>
@@ -260,18 +284,18 @@ export default function QuizGame() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {currentQuestion.answers.map((answer, index) => {
-              let buttonStyle = 'bg-white/20 hover:bg-white/30 border-white/30';
-              
+              let buttonStyle = "bg-white/20 hover:bg-white/30 border-white/30";
+
               if (showResult) {
                 if (index === currentQuestion.correctAnswerIndex) {
-                  buttonStyle = 'bg-green-600 border-green-500';
+                  buttonStyle = "bg-green-600 border-green-500";
                 } else if (index === selectedAnswer) {
-                  buttonStyle = 'bg-red-600 border-red-500';
+                  buttonStyle = "bg-red-600 border-red-500";
                 } else {
-                  buttonStyle = 'bg-gray-600 border-gray-500';
+                  buttonStyle = "bg-gray-600 border-gray-500";
                 }
               } else if (selectedAnswer === index) {
-                buttonStyle = 'bg-yellow-500 border-yellow-400';
+                buttonStyle = "bg-yellow-500 border-yellow-400";
               }
 
               return (
@@ -289,12 +313,17 @@ export default function QuizGame() {
 
           {showResult && (
             <div className="mt-6 text-center">
-              <p className={`text-2xl font-bold ${isCorrect ? 'text-green-300' : 'text-red-300'}`}>
-                {isCorrect ? '✅ Riktig!' : '❌ Feil!'}
+              <p
+                className={`text-2xl font-bold ${isCorrect ? "text-green-300" : "text-red-300"}`}
+              >
+                {isCorrect ? "✅ Riktig!" : "❌ Feil!"}
               </p>
               {isCorrect && (
                 <p className="text-yellow-300 mt-2">
-                  +{gameData.scoringSettings.correctAnswerPoints + (timeLeft * gameData.scoringSettings.timeBonus)} poeng
+                  +
+                  {gameData.scoringSettings.correctAnswerPoints +
+                    timeLeft * gameData.scoringSettings.timeBonus}{" "}
+                  poeng
                 </p>
               )}
             </div>
@@ -304,4 +333,3 @@ export default function QuizGame() {
     </div>
   );
 }
-
