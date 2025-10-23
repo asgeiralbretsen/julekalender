@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChristmasBackground } from "./ChristmasBackground";
 import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
+import { StartGameScreen } from "./StartGameScreen";
 
 interface Word {
   word: string;
@@ -45,13 +46,19 @@ const ChristmasWordScramble = () => {
   const [score, setScore] = useState(0);
   const [gameEnded, setGameEnded] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
-  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  const [feedback, setFeedback] = useState<
+    "correct" | "wrong" | "skipped" | null
+  >(null);
+  const [revealedWord, setRevealedWord] = useState<string | null>(null);
 
   // Track played status
   const [hasPlayedToday, setHasPlayedToday] = useState(false);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
   const [scoreSaved, setScoreSaved] = useState(false);
   const [showResultsScreen, setShowResultsScreen] = useState(false);
+
+  // Ref for input field
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Load game data
   useEffect(() => {
@@ -172,16 +179,29 @@ const ChristmasWordScramble = () => {
       }, 1500);
     } else {
       setFeedback("wrong");
+      setRevealedWord(currentWord.word);
+
       setTimeout(() => {
         setFeedback(null);
-      }, 1000);
+        setRevealedWord(null);
+        moveToNextWord();
+      }, 2000);
     }
   };
 
   // Skip to next word
   const handleSkip = () => {
-    setFeedback(null);
-    moveToNextWord();
+    if (!gameData) return;
+
+    const currentWord = gameData.words[currentWordIndex];
+    setFeedback("skipped");
+    setRevealedWord(currentWord.word);
+
+    setTimeout(() => {
+      setFeedback(null);
+      setRevealedWord(null);
+      moveToNextWord();
+    }, 2000);
   };
 
   // Move to next word
@@ -193,7 +213,13 @@ const ChristmasWordScramble = () => {
       setScrambledWord(scrambleWord(gameData.words[currentWordIndex + 1].word));
       setUserInput("");
       setFeedback(null);
+      setRevealedWord(null);
       setTimeRemaining(gameData.timeLimit);
+
+      // Refocus input field after a short delay
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     } else {
       endGame();
     }
@@ -286,7 +312,7 @@ const ChristmasWordScramble = () => {
         <div className="min-h-screen flex items-center justify-center p-4">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
             <h1 className="text-4xl font-bold text-white mb-6">
-              🎄 Spillet er ferdig! 🎄
+              Spillet er ferdig!
             </h1>
 
             <div className="mb-6 p-6 bg-white/10 rounded-xl">
@@ -302,13 +328,13 @@ const ChristmasWordScramble = () => {
               </p>
               {scoreSaved && (
                 <div className="mt-4 p-3 bg-green-500/20 border border-green-400/50 rounded-lg">
-                  <p className="text-green-200 text-sm">✅ Poengsum lagret!</p>
+                  <p className="text-green-200 text-sm">Poengsum lagret!</p>
                 </div>
               )}
               {hasPlayedToday && !scoreSaved && (
                 <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
                   <p className="text-yellow-200 text-sm">
-                    ⚠️ Øvingsrunde - Poengsum ikke lagret
+                    Øvingsrunde - Poengsum ikke lagret
                   </p>
                   <p className="text-white/60 text-xs mt-1">
                     Din innsendte poengsum: {previousScore} poeng
@@ -325,9 +351,7 @@ const ChristmasWordScramble = () => {
               }}
               className="w-full bg-gradient-to-r from-red-500 to-green-500 text-white px-6 py-3 rounded-full font-semibold hover:from-red-600 hover:to-green-600 transition-all duration-300"
             >
-              {hasPlayedToday
-                ? "🔄 Spill igjen (for moro skyld)"
-                : "🔄 Prøv igjen"}
+              {hasPlayedToday ? "Spill igjen (for moro skyld)" : "Prøv igjen"}
             </button>
           </div>
         </div>
@@ -338,51 +362,17 @@ const ChristmasWordScramble = () => {
   // Start screen
   if (!gameStarted) {
     return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-            <h1 className="text-4xl font-bold text-white mb-4">
-              🎄{" "}
-              {dayInfo
-                ? `Dag ${dayInfo.day}: ${dayInfo.title}`
-                : gameData.title}
-            </h1>
-            {gameData.description && (
-              <p className="text-white/80 mb-6">{gameData.description}</p>
-            )}
-
-            <div className="mb-6 p-4 bg-white/5 rounded-xl text-left">
-              <h3 className="text-white font-semibold mb-2">
-                📋 Hvordan spille:
-              </h3>
-              <ul className="text-white/70 text-sm space-y-1">
-                <li>• Stokka juleord vises</li>
-                <li>• Gjett det riktige ordet</li>
-                <li>• {gameData.timeLimit} sekunder per ord</li>
-                <li>• {gameData.words.length} ord totalt</li>
-              </ul>
-            </div>
-
-            {hasPlayedToday && previousScore !== null && (
-              <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
-                <p className="text-yellow-200 text-sm">
-                  ⚠️ Bare første forsøk teller!
-                </p>
-                <p className="text-white/70 text-xs mt-1">
-                  Din innsendte poengsum: {previousScore} poeng
-                </p>
-              </div>
-            )}
-
-            <button
-              onClick={startGame}
-              className="w-full bg-gradient-to-r from-red-500 to-green-500 text-white px-8 py-4 rounded-full font-bold text-xl hover:from-red-600 hover:to-green-600 transition-all duration-300 transform hover:scale-105"
-            >
-              🎮 Start Spill
-            </button>
-          </div>
-        </div>
-      </ChristmasBackground>
+      <StartGameScreen
+        title="Juleord Scramble"
+        description=""
+        howToPlay={[
+          "Stokkede juleord vises",
+          "Gjett det riktige ordet",
+          "10 sekunder per ord",
+        ]}
+        previousScore={previousScore}
+        onClickStartGame={startGame}
+      />
     );
   }
 
@@ -401,7 +391,7 @@ const ChristmasWordScramble = () => {
             <div
               className={`text-2xl font-bold ${timeRemaining <= 5 ? "text-red-400" : "text-white"}`}
             >
-              ⏱️ {timeRemaining}s
+              {timeRemaining}s
             </div>
             <div className="text-white/80">Poeng: {score}</div>
           </div>
@@ -413,7 +403,7 @@ const ChristmasWordScramble = () => {
             </div>
             {currentWord.hint && (
               <div className="text-yellow-300 text-sm">
-                💡 Hint: {currentWord.hint}
+                Hint: {currentWord.hint}
               </div>
             )}
           </div>
@@ -424,17 +414,25 @@ const ChristmasWordScramble = () => {
               className={`text-center mb-4 p-3 rounded-lg ${
                 feedback === "correct"
                   ? "bg-green-500/20 border border-green-400/50"
-                  : "bg-red-500/20 border border-red-400/50"
+                  : feedback === "skipped"
+                    ? "bg-yellow-500/20 border border-yellow-400/50"
+                    : "bg-red-500/20 border border-red-400/50"
               }`}
             >
               <p
                 className={`font-bold ${
-                  feedback === "correct" ? "text-green-200" : "text-red-200"
+                  feedback === "correct"
+                    ? "text-green-200"
+                    : feedback === "skipped"
+                      ? "text-yellow-200"
+                      : "text-red-200"
                 }`}
               >
                 {feedback === "correct"
-                  ? `✅ Riktig! Ordet var "${currentWord.word}"`
-                  : "❌ Feil, prøv igjen!"}
+                  ? `Riktig! Ordet var "${currentWord.word}"`
+                  : feedback === "skipped"
+                    ? `Hoppet over! Ordet var "${revealedWord}"`
+                    : `Feil! Riktig ord var "${revealedWord}"`}
               </p>
             </div>
           )}
@@ -442,11 +440,12 @@ const ChristmasWordScramble = () => {
           {/* Input */}
           <div className="mb-6">
             <input
+              ref={inputRef}
               type="text"
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-              disabled={feedback === "correct"}
+              disabled={feedback !== null}
               placeholder="Skriv ditt svar her..."
               className="w-full px-6 py-4 text-2xl text-center bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-yellow-400/50"
               autoFocus
@@ -457,17 +456,17 @@ const ChristmasWordScramble = () => {
           <div className="flex gap-4">
             <button
               onClick={handleSkip}
-              disabled={feedback === "correct"}
+              disabled={feedback !== null}
               className="flex-1 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-full font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ⏭️ Hopp over
+              Hopp over
             </button>
             <button
               onClick={handleSubmit}
-              disabled={!userInput.trim() || feedback === "correct"}
-              className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-6 py-3 rounded-full font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!userInput.trim() || feedback !== null}
+              className="flex-1 text-white px-6 py-3 rounded-full font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ✅ Sjekk svar
+              Sjekk svar
             </button>
           </div>
         </div>

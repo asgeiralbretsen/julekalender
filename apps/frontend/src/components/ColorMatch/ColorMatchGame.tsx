@@ -4,9 +4,9 @@ import ColorPickerNoEyedropper from "./ColorPicker";
 import { createClient } from "@sanity/client";
 import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../../hooks/useGameScore";
-import Leaderboard from "../Leaderboard";
 import { ChristmasBackground } from "../ChristmasBackground";
 import GameResultsScreen from "../GameResultsScreen";
+import { StartGameScreen } from "../StartGameScreen";
 
 interface Colors {
   topColor: string;
@@ -21,23 +21,10 @@ interface ColorScore {
   percentage: number;
 }
 
-interface SanityColorData {
-  hex: string;
-  hsl: { h: number; s: number; l: number };
-  hsv: { h: number; s: number; v: number };
-  rgb: { r: number; g: number; b: number };
-}
-
 interface GameData {
   title: string;
   description: string;
-  stockingColors: {
-    topColor: SanityColorData;
-    topStripesColor: SanityColorData;
-    mainColor: SanityColorData;
-    heelColor: SanityColorData;
-    stripesColor: SanityColorData;
-  };
+  stockingColors: Colors;
   scoringSettings: {
     perfectMatchBonus: number;
     closeMatchThreshold: number;
@@ -72,7 +59,6 @@ export function ColorMatchGame() {
   const [scoreSaved, setScoreSaved] = useState(false);
   const [hasPlayedToday, setHasPlayedToday] = useState(false);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showResultsScreen, setShowResultsScreen] = useState(false);
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
     null
@@ -81,6 +67,7 @@ export function ColorMatchGame() {
   const [timeRemaining, setTimeRemaining] = useState(45);
   const [gameOver, setGameOver] = useState(false);
 
+  // Original colors from Sanity
   const [originalColors, setOriginalColors] = useState<Colors>({
     topColor: "blue",
     topStripesColor: "red",
@@ -88,6 +75,8 @@ export function ColorMatchGame() {
     heelColor: "yellow",
     stripesColor: "purple",
   });
+
+  // Player's current colors
   const [currentColors, setCurrentColors] = useState<Colors>({
     topColor: "gray",
     topStripesColor: "white",
@@ -109,67 +98,21 @@ export function ColorMatchGame() {
           if (parsedData.colorMatchGameData) {
             const data = parsedData.colorMatchGameData;
 
-            // Convert Sanity color data to hex strings
-            const stockingColors = {
-              topColor: data.stockingColors?.topColor?.hex || "#ff0000",
+            // Set colors from Sanity (now simple strings)
+            const stockingColors: Colors = {
+              topColor: data.stockingColors?.topColor || "#ff0000",
               topStripesColor:
-                data.stockingColors?.topStripesColor?.hex || "#800080",
-              mainColor: data.stockingColors?.mainColor?.hex || "#008000",
-              heelColor: data.stockingColors?.heelColor?.hex || "#ffff00",
-              stripesColor: data.stockingColors?.stripesColor?.hex || "#800080",
+                data.stockingColors?.topStripesColor || "#800080",
+              mainColor: data.stockingColors?.mainColor || "#008000",
+              heelColor: data.stockingColors?.heelColor || "#ffff00",
+              stripesColor: data.stockingColors?.stripesColor || "#800080",
             };
 
             setOriginalColors(stockingColors);
             setGameData({
               title: data.title || "Color Match Game",
               description: data.description || "",
-              stockingColors: data.stockingColors,
-              scoringSettings: data.scoringSettings || {
-                perfectMatchBonus: 50,
-                closeMatchThreshold: 80,
-                timeBonus: 1.5,
-              },
-            });
-          }
-        } else {
-          // Fallback: fetch from Sanity directly
-          const query = `*[_type == "day" && gameType == "colorMatchGame" && isUnlocked == true][0]{
-            title,
-            colorMatchGameData {
-              title,
-              description,
-              stockingColors {
-                topColor,
-                topStripesColor,
-                mainColor,
-                heelColor,
-                stripesColor
-              },
-              scoringSettings {
-                perfectMatchBonus,
-                closeMatchThreshold,
-                timeBonus
-              }
-            }
-          }`;
-
-          const result = await client.fetch(query);
-          if (result?.colorMatchGameData) {
-            const data = result.colorMatchGameData;
-            const stockingColors = {
-              topColor: data.stockingColors?.topColor?.hex || "#ff0000",
-              topStripesColor:
-                data.stockingColors?.topStripesColor?.hex || "#800080",
-              mainColor: data.stockingColors?.mainColor?.hex || "#008000",
-              heelColor: data.stockingColors?.heelColor?.hex || "#ffff00",
-              stripesColor: data.stockingColors?.stripesColor?.hex || "#800080",
-            };
-
-            setOriginalColors(stockingColors);
-            setGameData({
-              title: data.title || "Color Match Game",
-              description: data.description || "",
-              stockingColors: data.stockingColors,
+              stockingColors: stockingColors,
               scoringSettings: data.scoringSettings || {
                 perfectMatchBonus: 50,
                 closeMatchThreshold: 80,
@@ -180,12 +123,16 @@ export function ColorMatchGame() {
         }
 
         if (dayInfoStr) {
-          setDayInfo(JSON.parse(dayInfoStr));
+          try {
+            setDayInfo(JSON.parse(dayInfoStr));
+          } catch (error) {
+            console.error("Error parsing day info:", error);
+          }
         }
+
+        setLoading(false);
       } catch (error) {
         console.error("Error loading game data:", error);
-        // Keep default colors as fallback
-      } finally {
         setLoading(false);
       }
     };
@@ -193,7 +140,28 @@ export function ColorMatchGame() {
     loadGameData();
   }, []);
 
-  // Game timer - counts down from 45 seconds
+  // Check if user has played today
+  useEffect(() => {
+    const checkPlayStatus = async () => {
+      if (dayInfo && user) {
+        const hasPlayed = await hasUserPlayedGame(
+          dayInfo.day,
+          "colorMatchGame"
+        );
+        if (hasPlayed) {
+          const userScore = await getUserScoreForDay(
+            dayInfo.day,
+            "colorMatchGame"
+          );
+          setHasPlayedToday(true);
+          setPreviousScore(userScore?.score || null);
+        }
+      }
+    };
+    checkPlayStatus();
+  }, [dayInfo, user, hasUserPlayedGame, getUserScoreForDay]);
+
+  // Timer countdown
   useEffect(() => {
     if (gameStarted && !gameOver && timeRemaining > 0) {
       const timer = setInterval(() => {
@@ -209,70 +177,24 @@ export function ColorMatchGame() {
     }
   }, [gameStarted, gameOver, timeRemaining]);
 
-  useEffect(() => {
-    const checkIfPlayedToday = async () => {
-      if (!user || !dayInfo) return;
-
-      try {
-        const hasPlayed = await hasUserPlayedGame(
-          dayInfo.day,
-          "colorMatchGame"
-        );
-        if (hasPlayed) {
-          const previousScoreData = await getUserScoreForDay(
-            dayInfo.day,
-            "colorMatchGame"
-          );
-          setHasPlayedToday(true);
-          setPreviousScore(previousScoreData?.score || null);
-          setShowLeaderboard(true); // Show leaderboard immediately if already played
-          setShowResultsScreen(true); // Show results screen immediately if already played
-        }
-      } catch (err) {
-        console.error("Error checking if user has played today:", err);
-      }
-    };
-
-    checkIfPlayedToday();
-  }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
-
-  const setSingleColor = (
-    whichColor:
-      | "topColor"
-      | "topStripesColor"
-      | "mainColor"
-      | "heelColor"
-      | "stripesColor",
-    color: string
-  ) => {
-    // Only allow color changes if game is started and not over
-    if (!gameStarted || gameOver) return;
-
-    setCurrentColors({
-      ...currentColors,
-      [whichColor]: color,
-    });
+  const setSingleColor = (section: keyof Colors, color: string) => {
+    setCurrentColors((prev) => ({
+      ...prev,
+      [section]: color,
+    }));
   };
 
   const hexToRgb = (hex: string) => {
-    // Handle named colors
-    const colorMap: { [key: string]: string } = {
-      red: "#ff0000",
-      blue: "#0000ff",
-      green: "#008000",
-      yellow: "#ffff00",
-      purple: "#800080",
-      orange: "#ffa500",
-      pink: "#ffc0cb",
-      brown: "#a52a2a",
-      gray: "#808080",
-      white: "#ffffff",
-      black: "#000000",
-    };
+    // Handle both hex and named colors
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return { r: 0, g: 0, b: 0 };
 
-    const normalizedHex = colorMap[hex.toLowerCase()] || hex;
+    ctx.fillStyle = hex;
+    const computedColor = ctx.fillStyle;
+
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
-      normalizedHex
+      computedColor
     );
     return result
       ? {
@@ -283,70 +205,98 @@ export function ColorMatchGame() {
       : { r: 0, g: 0, b: 0 };
   };
 
-  const calculateColorDifference = (color1: string, color2: string): number => {
+  const calculateColorMatch = (color1: string, color2: string): number => {
     const rgb1 = hexToRgb(color1);
     const rgb2 = hexToRgb(color2);
 
-    // Calculate Euclidean distance in RGB space
     const distance = Math.sqrt(
       Math.pow(rgb1.r - rgb2.r, 2) +
         Math.pow(rgb1.g - rgb2.g, 2) +
         Math.pow(rgb1.b - rgb2.b, 2)
     );
 
-    // Normalize to 0-100 percentage (higher is better)
-    return Math.max(0, 100 - distance / 4.41);
+    const maxDistance = Math.sqrt(Math.pow(255, 2) * 3);
+    return Math.max(0, 100 - (distance / maxDistance) * 100);
   };
 
-  const calculateScores = async () => {
-    const sections = [
-      { key: "topColor", name: "Top Color" },
-      { key: "topStripesColor", name: "Top Stripes" },
-      { key: "mainColor", name: "Main Color" },
-      { key: "heelColor", name: "Heel Color" },
-      { key: "stripesColor", name: "Stripes Color" },
+  const submitColors = async () => {
+    if (!gameData) return;
+
+    const scores: ColorScore[] = [
+      {
+        section: "Top Color",
+        percentage: calculateColorMatch(
+          currentColors.topColor,
+          originalColors.topColor
+        ),
+      },
+      {
+        section: "Top Stripes",
+        percentage: calculateColorMatch(
+          currentColors.topStripesColor,
+          originalColors.topStripesColor
+        ),
+      },
+      {
+        section: "Main Color",
+        percentage: calculateColorMatch(
+          currentColors.mainColor,
+          originalColors.mainColor
+        ),
+      },
+      {
+        section: "Heel Color",
+        percentage: calculateColorMatch(
+          currentColors.heelColor,
+          originalColors.heelColor
+        ),
+      },
+      {
+        section: "Stripes Color",
+        percentage: calculateColorMatch(
+          currentColors.stripesColor,
+          originalColors.stripesColor
+        ),
+      },
     ];
 
-    const scores: ColorScore[] = sections.map((section) => {
-      const percentage = calculateColorDifference(
-        originalColors[section.key as keyof Colors],
-        currentColors[section.key as keyof Colors]
-      );
-
-      const perfectMatchBonus =
-        gameData?.scoringSettings?.perfectMatchBonus || 0;
-      const adjustedPercentage =
-        percentage === 100
-          ? Math.min(100, percentage + perfectMatchBonus / 10)
-          : percentage;
-
-      return {
-        section: section.name,
-        percentage: Math.round(adjustedPercentage),
-      };
-    });
-
-    const averageScore = Math.round(
-      scores.reduce((sum, score) => sum + score.percentage, 0) / scores.length
-    );
-
     setColorScores(scores);
-    setOverallScore(averageScore);
-    setShowResults(true);
 
+    const averageScore =
+      scores.reduce((sum, score) => sum + score.percentage, 0) / scores.length;
+
+    let finalScore = Math.round(averageScore * 10);
+
+    // Add time bonus
+    const timeBonus = Math.round(
+      timeRemaining * gameData.scoringSettings.timeBonus
+    );
+    finalScore += timeBonus;
+
+    // Add perfect match bonus
+    const perfectMatches = scores.filter(
+      (s) => s.percentage >= gameData.scoringSettings.closeMatchThreshold
+    ).length;
+    if (perfectMatches === scores.length) {
+      finalScore += gameData.scoringSettings.perfectMatchBonus;
+    }
+
+    setOverallScore(finalScore);
+    setShowResults(true);
+    setGameOver(true);
+
+    // Save score if first attempt
     if (user && dayInfo && !hasPlayedToday) {
       try {
         const result = await saveGameScore({
           day: dayInfo.day,
           gameType: "colorMatchGame",
-          score: averageScore,
+          score: finalScore,
         });
 
-        if (result && result.score === averageScore) {
+        if (result) {
           setScoreSaved(true);
-          setHasPlayedToday(true);
-          setPreviousScore(averageScore);
-          setShowLeaderboard(true); // Show leaderboard after first submission
+          setPreviousScore(result.score);
         }
       } catch (err) {
         console.error("Error saving game score:", err);
@@ -354,346 +304,225 @@ export function ColorMatchGame() {
     }
   };
 
-  // Show results screen if user has already played
-  if (showResultsScreen) {
+  const resetGame = () => {
+    setCurrentColors({
+      topColor: "gray",
+      topStripesColor: "white",
+      mainColor: "gray",
+      heelColor: "white",
+      stripesColor: "white",
+    });
+    setShowResults(false);
+    setColorScores([]);
+    setOverallScore(0);
+    setGameStarted(false);
+    setTimeRemaining(45);
+    setGameOver(false);
+    setScoreSaved(false);
+  };
+
+  const startGame = () => {
+    setGameStarted(true);
+    setTimeRemaining(45);
+    setGameOver(false);
+  };
+
+  if (loading) {
+    return (
+      <ChristmasBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
+            <p className="text-white text-xl">Laster spill...</p>
+          </div>
+        </div>
+      </ChristmasBackground>
+    );
+  }
+
+  if (!gameData) {
+    return (
+      <ChristmasBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
+            <p className="text-white text-xl">Ingen spilldata funnet.</p>
+          </div>
+        </div>
+      </ChristmasBackground>
+    );
+  }
+
+  // Show results screen after game ends
+  if (gameOver && showResults && dayInfo) {
     return (
       <GameResultsScreen
-        isFirstAttempt={false}
-        currentScore={0}
+        isFirstAttempt={!hasPlayedToday || scoreSaved}
+        currentScore={overallScore}
         previousScore={previousScore}
-        scoreSaved={true}
+        scoreSaved={scoreSaved}
         loading={false}
         error={null}
         dayInfo={dayInfo}
         gameType="colorMatchGame"
-        gameName="Fargetilpasning"
-        onPlayAgain={() => setShowResultsScreen(false)}
-        scoreLabel="%"
-        scoreSuffix="%"
+        gameName="Color Match"
+        onPlayAgain={resetGame}
+        scoreLabel="poeng"
       />
     );
   }
 
-  // Show loading state
-  if (loading) {
+  // Show start screen
+  if (!gameStarted) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className=" p-8 max-w-md w-full text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <h1 className="text-2xl font-bold text-white mb-2">
-            Laster spill...
-          </h1>
-          <p className="text-white/80">
-            Forbereder fargetilpasningsutfordringen din!
-          </p>
-        </div>
-      </div>
+      <StartGameScreen
+        title={
+          dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title
+        }
+        description={
+          gameData.description ||
+          "Match fargene på julestrømpa så nøyaktig som mulig!"
+        }
+        howToPlay={[
+          "• Velg en farge fra fargepaletten",
+          "• Klikk på en del av sokken for å sette fargen",
+          "• Match alle 5 farger så nøyaktig som mulig",
+          "• 45 sekunder til å fullføre",
+          "• Jo nærmere match, desto flere poeng!",
+        ]}
+        previousScore={hasPlayedToday ? previousScore : undefined}
+        onClickStartGame={startGame}
+      />
     );
   }
 
   return (
     <ChristmasBackground>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            {dayInfo
-              ? `Dag ${dayInfo.day}: ${dayInfo.title}`
-              : gameData?.title || "🎨 Sokk fargetilpasning"}
-          </h1>
-          <p className="text-white/80 text-lg">
-            {gameData?.description || "Klikk på sokkedelene for å farge dem!"}
-          </p>
-
-          {/* Timer and Start Button */}
-          {!showResults && (
-            <div className="mt-6 flex flex-col items-center gap-4">
-              {!gameStarted && !gameOver && (
-                <button
-                  onClick={() => setGameStarted(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-4 px-8 rounded-lg transition-colors shadow-lg"
-                >
-                  🎮 Start Spillet (45 sekunder)
-                </button>
-              )}
-
-              {gameStarted && !gameOver && (
-                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border-2 border-yellow-400/20">
-                  <p className="text-yellow-300 font-bold text-sm mb-1">
-                    Tid Igjen
-                  </p>
-                  <p
-                    className={`text-4xl font-bold ${timeRemaining <= 10 ? "text-red-400" : "text-white"}`}
-                  >
-                    {timeRemaining}s
-                  </p>
-                </div>
-              )}
-
-              {gameOver && !showResults && (
-                <div className="bg-red-500/20 border border-red-400/50 rounded-lg p-4">
-                  <p className="text-red-200 text-xl font-bold text-center">
-                    ⏰ Tiden er ute! Sjekk resultatet ditt.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {!showResults && (
-            <div className="mt-4 inline-block p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
-              <p className="text-green-200 font-semibold">
-                {hasPlayedToday
-                  ? "⚠️ Bare første forsøk teller!"
-                  : "🎯 Første forsøk teller!"}
-              </p>
-              {hasPlayedToday && previousScore !== null ? (
-                <div className="mt-2">
-                  <p className="text-white/80 text-sm">
-                    Din innsendte poengsum:{" "}
-                    <span className="font-bold text-yellow-300">
-                      {previousScore}%
-                    </span>
-                  </p>
-                  <p className="text-white/60 text-xs mt-1">
-                    Du kan spille igjen for moro skyld, men poengsummen din
-                    endres ikke
-                  </p>
-                  <button
-                    onClick={() => setShowLeaderboard(true)}
-                    className="mt-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 px-3 py-1 rounded-full text-xs font-medium transition-colors"
-                  >
-                    📊 Se toppliste
-                  </button>
-                </div>
-              ) : (
-                <p className="text-white/80 text-sm mt-1">
-                  Din første poengsum blir sendt inn til topplisten
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Main Layout */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Side - Stockings */}
-          <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Target Stocking */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-white text-center">
-                  Målsokk
-                </h2>
-                <div className="flex justify-center">
-                  <div className="rounded-2xl p-4">
-                    <Stocking
-                      topColor={originalColors.topColor}
-                      topStripesColor={originalColors.topStripesColor}
-                      mainColor={originalColors.mainColor}
-                      heelColor={originalColors.heelColor}
-                      stripesColor={originalColors.stripesColor}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Player Stocking */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-white text-center">
-                  Din sokk
-                </h2>
-                <div className="flex justify-center">
-                  <div className=" rounded-2xl p-4">
-                    <Stocking
-                      topColor={currentColors.topColor}
-                      topStripesColor={currentColors.topStripesColor}
-                      mainColor={currentColors.mainColor}
-                      heelColor={currentColors.heelColor}
-                      stripesColor={currentColors.stripesColor}
-                      onClickTopColor={() => {
-                        setSingleColor("topColor", colorPickerColor);
-                      }}
-                      onClickTopStripesColor={() => {
-                        setSingleColor("topStripesColor", colorPickerColor);
-                      }}
-                      onClickMainColor={() => {
-                        setSingleColor("mainColor", colorPickerColor);
-                      }}
-                      onClickHeelColor={() => {
-                        setSingleColor("heelColor", colorPickerColor);
-                      }}
-                      onClickStripesColor={() => {
-                        setSingleColor("stripesColor", colorPickerColor);
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
+      <div className="min-h-screen p-4">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">
+              {dayInfo
+                ? `Dag ${dayInfo.day}: ${dayInfo.title}`
+                : gameData.title}
+            </h1>
+            <div className="flex justify-center gap-8 text-white/80">
+              <span>Tid: {timeRemaining}s</span>
+              {showResults && <span>Poeng: {overallScore}</span>}
             </div>
           </div>
 
-          {/* Right Side - Control Panel */}
-          <div className="lg:col-span-1">
-            <div className="p-6 sticky top-4">
-              {/* Color Picker Section */}
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  🎨 Fargevelger
-                </h3>
-                {!gameStarted && !gameOver && (
-                  <div className="mb-3 p-2 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
-                    <p className="text-yellow-200 text-xs text-center">
-                      ⚠️ Start spillet for å velge farger
-                    </p>
-                  </div>
-                )}
-                {gameOver && !showResults && (
-                  <div className="mb-3 p-2 bg-red-500/20 border border-red-400/50 rounded-lg">
-                    <p className="text-red-200 text-xs text-center">
-                      ⏰ Tiden er ute
-                    </p>
-                  </div>
-                )}
-                <ColorPickerNoEyedropper
-                  value={colorPickerColor}
-                  onChange={(color: string) => setColorPickerColor(color)}
+          {/* Main Game Area */}
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Original Stocking (Target) */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+              <h2 className="text-xl font-semibold text-white text-center mb-4">
+                Målsokk
+              </h2>
+              <div className="flex justify-center">
+                <Stocking
+                  topColor={originalColors.topColor}
+                  topStripesColor={originalColors.topStripesColor}
+                  mainColor={originalColors.mainColor}
+                  heelColor={originalColors.heelColor}
+                  stripesColor={originalColors.stripesColor}
                 />
-
-                {/* Current Color Preview */}
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="text-white text-sm font-medium">Valgt:</div>
-                  <div
-                    className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
-                    style={{ backgroundColor: colorPickerColor }}
-                  />
-                  <div className="text-white text-sm font-mono">
-                    {colorPickerColor}
-                  </div>
-                </div>
               </div>
+            </div>
 
-              {/* Done Button */}
-              <div className="mb-6">
-                <button
-                  onClick={calculateScores}
-                  disabled={!gameStarted}
-                  className={`w-full px-6 py-3 rounded-full font-semibold transition-all duration-300 transform ${
-                    gameStarted
-                      ? "bg-gradient-to-r from-red-500 to-green-500 text-white hover:from-red-600 hover:to-green-600 hover:scale-105 cursor-pointer"
-                      : "bg-gray-500 text-gray-300 cursor-not-allowed opacity-50"
-                  }`}
-                >
-                  ✅ Ferdig - Sjekk fargene mine!
-                </button>
+            {/* Player Stocking */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+              <h2 className="text-xl font-semibold text-white text-center mb-4">
+                Din sokk
+              </h2>
+              <div className="flex justify-center">
+                <Stocking
+                  topColor={currentColors.topColor}
+                  topStripesColor={currentColors.topStripesColor}
+                  mainColor={currentColors.mainColor}
+                  heelColor={currentColors.heelColor}
+                  stripesColor={currentColors.stripesColor}
+                  onClickTopColor={() => {
+                    setSingleColor("topColor", colorPickerColor);
+                  }}
+                  onClickTopStripesColor={() => {
+                    setSingleColor("topStripesColor", colorPickerColor);
+                  }}
+                  onClickMainColor={() => {
+                    setSingleColor("mainColor", colorPickerColor);
+                  }}
+                  onClickHeelColor={() => {
+                    setSingleColor("heelColor", colorPickerColor);
+                  }}
+                  onClickStripesColor={() => {
+                    setSingleColor("stripesColor", colorPickerColor);
+                  }}
+                />
               </div>
-
-              {/* Results Section */}
-              {showResults && (
-                <div className="border-t border-white/20 pt-6">
-                  <h3 className="text-xl font-semibold text-white mb-4">
-                    Dine resultater
-                  </h3>
-
-                  {/* Overall Score */}
-                  <div className="text-center mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
-                    <div className="text-3xl font-bold text-white mb-2">
-                      {overallScore}%
-                    </div>
-                    <p className="text-white/80 text-sm">
-                      {scoreSaved ? "Innsendt poengsum" : "Total nøyaktighet"}
-                    </p>
-                  </div>
-
-                  {scoreSaved && (
-                    <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
-                      <p className="text-red-200 text-center text-sm">
-                        ✅ Poengsum lagret på topplisten!
-                      </p>
-                    </div>
-                  )}
-
-                  {!scoreSaved && hasPlayedToday && previousScore !== null && (
-                    <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
-                      <p className="text-red-200 text-xs mb-1">
-                        Øvingsrunde - Poengsum ikke lagret
-                      </p>
-                      <p className="text-white/80 text-xs">
-                        Din innsendte poengsum:{" "}
-                        <span className="font-bold text-red-300">
-                          {previousScore}%
-                        </span>
-                      </p>
-                    </div>
-                  )}
-
-                  {scoreLoading && (
-                    <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
-                      <p className="text-red-200 text-center text-sm">
-                        💾 Lagrer poengsum...
-                      </p>
-                    </div>
-                  )}
-
-                  {scoreError && (
-                    <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-                      <p className="text-red-200 text-xs">{scoreError}</p>
-                    </div>
-                  )}
-
-                  {/* Individual Scores */}
-                  <div className="space-y-3">
-                    {colorScores.map((score, index) => (
-                      <div key={index} className="bg-white/5 rounded-lg p-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-white text-sm font-medium">
-                            {score.section}
-                          </span>
-                          <span className="text-white font-bold">
-                            {score.percentage}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-red-500 to-green-500 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${score.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Try Again Button */}
-                  <div className="mt-6">
-                    <button
-                      onClick={() => {
-                        setShowResults(false);
-                        setColorScores([]);
-                        setOverallScore(0);
-                        setScoreSaved(false);
-                        setShowLeaderboard(false); // Hide leaderboard when playing again
-                        setGameStarted(false);
-                        setGameOver(false);
-                        setTimeRemaining(45);
-                        setCurrentColors({
-                          topColor: "gray",
-                          topStripesColor: "white",
-                          mainColor: "gray",
-                          heelColor: "white",
-                          stripesColor: "white",
-                        });
-                      }}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
-                    >
-                      {hasPlayedToday
-                        ? "🔄 Spill igjen (for moro skyld)"
-                        : "🔄 Prøv igjen"}
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
+
+          {/* Color Picker */}
+          <div className="mt-8 flex justify-center">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6">
+              <h3 className="text-white text-center mb-4 font-semibold">
+                Velg farge
+              </h3>
+              <ColorPickerNoEyedropper
+                value={colorPickerColor}
+                onChange={(color) => setColorPickerColor(color)}
+              />
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          {!showResults && (
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={submitColors}
+                disabled={gameOver}
+                className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-8 py-4 rounded-full font-bold text-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send inn farger
+              </button>
+            </div>
+          )}
+
+          {/* Results */}
+          {showResults && (
+            <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+              <h2 className="text-2xl font-bold text-white text-center mb-6">
+                Resultater
+              </h2>
+              <div className="space-y-4">
+                {colorScores.map((score, index) => (
+                  <div
+                    key={index}
+                    className="bg-white/5 rounded-lg p-4 flex justify-between items-center"
+                  >
+                    <span className="text-white font-semibold">
+                      {score.section}
+                    </span>
+                    <span className="text-white">
+                      {score.percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 text-center">
+                <p className="text-3xl font-bold text-yellow-300">
+                  Total: {overallScore} poeng
+                </p>
+                {scoreSaved && (
+                  <p className="text-green-300 mt-2">Poengsum lagret!</p>
+                )}
+                {hasPlayedToday && !scoreSaved && (
+                  <p className="text-yellow-300 mt-2">
+                    Øvingsrunde - Poengsum ikke lagret
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </ChristmasBackground>

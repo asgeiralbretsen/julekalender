@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ChristmasBackground } from "./ChristmasBackground";
+import { StartGameScreen } from "./StartGameScreen";
 
 interface FallingObject {
   id: string;
@@ -228,27 +229,19 @@ const SnowflakeCatchGame: React.FC = () => {
 
   if (!gameState.gameStarted) {
     return (
-      <ChristmasBackground>
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            ❄️ Snowflake Catch
-          </h1>
-          <p className="text-white/80 mb-6">
-            Catch falling snowflakes ❄️! Move your mouse to control the paddle.
-          </p>
-          <div className="text-white/70 text-sm mb-6">
-            <p>❄️ Snowflakes: +10 points</p>
-            <p>⚠️ Miss a snowflake = game over!</p>
-            <p>Lives: {MAX_LIVES}</p>
-          </div>
-          <button
-            onClick={startGame}
-            className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-3 rounded-full font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105"
-          >
-            Start Game
-          </button>
-        </div>
-      </ChristmasBackground>
+      <StartGameScreen
+        title="Snowflake Catch"
+        description="Catch falling snowflakes! Move your mouse to control the paddle."
+        howToPlay={[
+          "• Move your mouse to control the paddle",
+          "• Catch snowflakes: +10 points",
+          "• Miss a snowflake = game over!",
+          `• Lives: ${MAX_LIVES}`,
+          "• Snowflakes spawn faster and move faster over time",
+        ]}
+        previousScore={undefined}
+        onClickStartGame={startGame}
+      />
     );
   }
 

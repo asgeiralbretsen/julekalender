@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useUser } from '@clerk/clerk-react';
-import { useGameScore } from '../hooks/useGameScore';
-import GameResultsScreen from './GameResultsScreen';
+import { useUser } from "@clerk/clerk-react";
+import { useGameScore } from "../hooks/useGameScore";
+import GameResultsScreen from "./GameResultsScreen";
+import { StartGameScreen } from "./StartGameScreen";
 
 interface GameImage {
   id: string;
@@ -73,28 +74,59 @@ const MAX_TIME_PER_ROUND = 30000; // 30 seconds
 // Generate answer options dynamically
 const generateOptions = (correctAnswer: string): string[] => {
   const commonOptions = [
-    "Mountain", "Ocean", "Forest", "Desert", "City", "Lake", "River", "Beach",
-    "Building", "Tree", "Sky", "Cloud", "Sun", "Moon", "Star", "Flower",
-    "Animal", "Car", "House", "Bridge", "Road", "Path", "Garden", "Park"
+    "Mountain",
+    "Ocean",
+    "Forest",
+    "Desert",
+    "City",
+    "Lake",
+    "River",
+    "Beach",
+    "Building",
+    "Tree",
+    "Sky",
+    "Cloud",
+    "Sun",
+    "Moon",
+    "Star",
+    "Flower",
+    "Animal",
+    "Car",
+    "House",
+    "Bridge",
+    "Road",
+    "Path",
+    "Garden",
+    "Park",
   ];
-  
+
   // Remove the correct answer from common options and add it back
-  const filteredOptions = commonOptions.filter(option => option !== correctAnswer);
-  
+  const filteredOptions = commonOptions.filter(
+    (option) => option !== correctAnswer
+  );
+
   // Shuffle and take 5 random options, then add the correct answer
   const shuffled = filteredOptions.sort(() => 0.5 - Math.random());
   const selectedOptions = shuffled.slice(0, 5);
-  
+
   // Add the correct answer and shuffle again
-  const allOptions = [...selectedOptions, correctAnswer].sort(() => 0.5 - Math.random());
-  
+  const allOptions = [...selectedOptions, correctAnswer].sort(
+    () => 0.5 - Math.random()
+  );
+
   return allOptions;
 };
 
 const BlurGuessGame: React.FC = () => {
   const { user } = useUser();
-  const { saveGameScore, hasUserPlayedGame, getUserScoreForDay, loading, error } = useGameScore();
-  
+  const {
+    saveGameScore,
+    hasUserPlayedGame,
+    getUserScoreForDay,
+    loading,
+    error,
+  } = useGameScore();
+
   const [gameState, setGameState] = useState<GameState>({
     currentImage: null,
     blurLevel: MAX_BLUR,
@@ -113,31 +145,38 @@ const BlurGuessGame: React.FC = () => {
 
   const [timer, setTimer] = useState<number | null>(null);
   const [gameImages, setGameImages] = useState<GameImage[]>(FALLBACK_IMAGES);
-  const [dayInfo, setDayInfo] = useState<{day: number, title: string} | null>(null);
+  const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
+    null
+  );
 
   // Load game data from sessionStorage on component mount
   useEffect(() => {
-    const gameDataStr = sessionStorage.getItem('currentGameData');
-    const gameType = sessionStorage.getItem('currentGameType');
-    const dayInfoStr = sessionStorage.getItem('currentDayInfo');
+    const gameDataStr = sessionStorage.getItem("currentGameData");
+    const gameType = sessionStorage.getItem("currentGameType");
+    const dayInfoStr = sessionStorage.getItem("currentDayInfo");
 
-    if (gameDataStr && gameType === 'blurGuessGame') {
+    if (gameDataStr && gameType === "blurGuessGame") {
       try {
         const gameData = JSON.parse(gameDataStr);
         if (gameData.blurGuessGame?.images) {
           // Convert Sanity image data to GameImage format
-          const images: GameImage[] = gameData.blurGuessGame.images.map((img: any, index: number) => ({
-            id: index.toString(),
-            src: `https://cdn.sanity.io/images/54fixmwv/production/${img.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}`,
-            answer: img.answer,
-            question: img.question,
-            // Use options from Sanity if available, otherwise generate them
-            options: img.options && img.options.length > 0 ? img.options : generateOptions(img.answer)
-          }));
+          const images: GameImage[] = gameData.blurGuessGame.images.map(
+            (img: any, index: number) => ({
+              id: index.toString(),
+              src: `https://cdn.sanity.io/images/54fixmwv/production/${img.image.asset._ref.replace("image-", "").replace("-jpg", ".jpg").replace("-png", ".png").replace("-webp", ".webp")}`,
+              answer: img.answer,
+              question: img.question,
+              // Use options from Sanity if available, otherwise generate them
+              options:
+                img.options && img.options.length > 0
+                  ? img.options
+                  : generateOptions(img.answer),
+            })
+          );
           setGameImages(images);
         }
       } catch (error) {
-        console.error('Error parsing game data:', error);
+        console.error("Error parsing game data:", error);
       }
     }
 
@@ -145,7 +184,7 @@ const BlurGuessGame: React.FC = () => {
       try {
         setDayInfo(JSON.parse(dayInfoStr));
       } catch (error) {
-        console.error('Error parsing day info:', error);
+        console.error("Error parsing day info:", error);
       }
     }
   }, []);
@@ -156,11 +195,14 @@ const BlurGuessGame: React.FC = () => {
       if (!user || !dayInfo) return;
 
       try {
-        const hasPlayed = await hasUserPlayedGame(dayInfo.day, 'blurGuessGame');
+        const hasPlayed = await hasUserPlayedGame(dayInfo.day, "blurGuessGame");
         if (hasPlayed) {
           // Get the previous score
-          const previousScoreData = await getUserScoreForDay(dayInfo.day, 'blurGuessGame');
-          setGameState(prev => ({
+          const previousScoreData = await getUserScoreForDay(
+            dayInfo.day,
+            "blurGuessGame"
+          );
+          setGameState((prev) => ({
             ...prev,
             hasPlayedToday: true,
             previousScore: previousScoreData?.score || null,
@@ -169,53 +211,66 @@ const BlurGuessGame: React.FC = () => {
           }));
         }
       } catch (err) {
-        console.error('Error checking if user has played today:', err);
+        console.error("Error checking if user has played today:", err);
       }
     };
 
     checkIfPlayedToday();
   }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
 
-  const startNewRound = useCallback(() => {
-    const randomImage =
-      gameImages[Math.floor(Math.random() * gameImages.length)];
-    setGameState((prev) => ({
-      ...prev,
-      currentImage: randomImage,
-      blurLevel: MAX_BLUR,
-      timeElapsed: 0,
-      correctAnswer: null,
-      userAnswer: null,
-      showResult: false,
-    }));
-  }, [gameImages]);
+  const startNewRound = useCallback(
+    (roundNumber: number) => {
+      // Use round number as index (round is 1-based, array is 0-based)
+      const imageIndex = roundNumber - 1;
+      const nextImage = gameImages[imageIndex];
 
-  const saveGameScoreWhenEnded = async (finalScore: number) => {
-    if (!user || !dayInfo) return;
-
-    if (gameState.hasPlayedToday) {
-      setGameState(prev => ({ ...prev, scoreSaved: false }));
-      return;
-    }
-
-    try {
-      const result = await saveGameScore({
-        day: dayInfo.day,
-        gameType: 'blurGuessGame',
-        score: finalScore,
-      });
-      
-      if (result) {
-        setGameState(prev => ({ 
-          ...prev, 
-          scoreSaved: true,
-          previousScore: result.score 
-        }));
+      if (!nextImage) {
+        console.error("No image found for round", roundNumber);
+        return;
       }
-    } catch (err) {
-      console.error('Error saving game score:', err);
-    }
-  };
+
+      setGameState((prev) => ({
+        ...prev,
+        currentImage: nextImage,
+        blurLevel: MAX_BLUR,
+        timeElapsed: 0,
+        correctAnswer: null,
+        userAnswer: null,
+        showResult: false,
+      }));
+    },
+    [gameImages]
+  );
+
+  const saveGameScoreWhenEnded = useCallback(
+    async (finalScore: number) => {
+      if (!user || !dayInfo) return;
+
+      if (gameState.hasPlayedToday) {
+        setGameState((prev) => ({ ...prev, scoreSaved: false }));
+        return;
+      }
+
+      try {
+        const result = await saveGameScore({
+          day: dayInfo.day,
+          gameType: "blurGuessGame",
+          score: finalScore,
+        });
+
+        if (result) {
+          setGameState((prev) => ({
+            ...prev,
+            scoreSaved: true,
+            previousScore: result.score,
+          }));
+        }
+      } catch (err) {
+        console.error("Error saving game score:", err);
+      }
+    },
+    [user, dayInfo, gameState.hasPlayedToday, saveGameScore]
+  );
 
   const startGame = () => {
     setGameState((prev) => ({
@@ -225,7 +280,7 @@ const BlurGuessGame: React.FC = () => {
       score: 0,
       round: 1,
     }));
-    startNewRound();
+    startNewRound(1); // Start with first image
   };
 
   const resetGame = () => {
@@ -233,7 +288,7 @@ const BlurGuessGame: React.FC = () => {
       clearInterval(timer);
       setTimer(null);
     }
-    setGameState(prev => ({
+    setGameState((prev) => ({
       currentImage: null,
       blurLevel: MAX_BLUR,
       timeElapsed: 0,
@@ -278,8 +333,9 @@ const BlurGuessGame: React.FC = () => {
         // Save the score when game ends
         saveGameScoreWhenEnded(finalScore);
       } else {
-        setGameState((prev) => ({ ...prev, round: prev.round + 1 }));
-        startNewRound();
+        const nextRound = gameState.round + 1;
+        setGameState((prev) => ({ ...prev, round: nextRound }));
+        startNewRound(nextRound); // Load next image in sequence
       }
     }, 2000);
   };
@@ -326,6 +382,40 @@ const BlurGuessGame: React.FC = () => {
     gameState.currentImage,
   ]);
 
+  // Handle moving to next round when time runs out
+  useEffect(() => {
+    if (
+      gameState.showResult &&
+      !gameState.userAnswer &&
+      gameState.gameStarted &&
+      !gameState.gameEnded
+    ) {
+      // Time ran out (no user answer)
+      const moveToNextRound = setTimeout(() => {
+        if (gameState.round >= gameImages.length) {
+          setGameState((prev) => ({ ...prev, gameEnded: true }));
+          saveGameScoreWhenEnded(gameState.score);
+        } else {
+          const nextRound = gameState.round + 1;
+          setGameState((prev) => ({ ...prev, round: nextRound }));
+          startNewRound(nextRound);
+        }
+      }, 2000);
+
+      return () => clearTimeout(moveToNextRound);
+    }
+  }, [
+    gameState.showResult,
+    gameState.userAnswer,
+    gameState.round,
+    gameState.gameStarted,
+    gameState.gameEnded,
+    gameState.score,
+    gameImages.length,
+    saveGameScoreWhenEnded,
+    startNewRound,
+  ]);
+
   if (gameState.gameEnded) {
     return (
       <GameResultsScreen
@@ -346,66 +436,65 @@ const BlurGuessGame: React.FC = () => {
 
   if (!gameState.gameStarted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-        
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '0s' }}>❄</div>
-          <div className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse" style={{ animationDelay: '1s' }}>❄</div>
-          <div className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse" style={{ animationDelay: '2s' }}>❄</div>
-          <div className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '1.5s' }}>❄</div>
-        </div>
-
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20 relative z-10">
-          <h1 className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : 'Gjett bildet'}
-          </h1>
-          
-          <div className="mb-4 p-4 bg-green-500/20 border border-green-400/50 rounded-lg">
-            <p className="text-green-200 font-semibold">
-              Første forsøk teller!
-            </p>
-            <p className="text-red-100 text-sm mt-1">
-              Din første poengsum blir sendt inn til topplisten.
-            </p>
-          </div>
-          <p className="text-red-100 mb-6">
-            Se bildet bli gradvis klarere og gjett hva det er så raskt som mulig!
-          </p>
-          <button
-            onClick={startGame}
-            disabled={loading}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg border-2 border-green-500"
-          >
-            {loading ? 'Laster...' : 'Start spill'}
-          </button>
-          
-          {error && (
-            <div className="mt-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
-              <p className="text-red-200 text-sm">{error}</p>
-            </div>
-          )}
-        </div>
-      </div>
+      <StartGameScreen
+        title={
+          dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : "Gjett bildet"
+        }
+        description="Se bildet bli gradvis klarere og gjett hva det er så raskt som mulig!"
+        howToPlay={[
+          "• Bildet starter med sterk uskarphet",
+          "• Bildet blir gradvis klarere over tid",
+          "• Velg riktig svar fra alternativene",
+          `• ${gameImages.length} bilder totalt`,
+          "• Jo raskere du gjetter, desto mer poeng!",
+        ]}
+        previousScore={
+          gameState.hasPlayedToday ? gameState.previousScore : undefined
+        }
+        onClickStartGame={startGame}
+      />
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden p-4">
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-      
+
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '0s' }}>❄</div>
-        <div className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse" style={{ animationDelay: '1s' }}>❄</div>
-        <div className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse" style={{ animationDelay: '2s' }}>❄</div>
-        <div className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '1.5s' }}>❄</div>
+        <div
+          className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse"
+          style={{ animationDelay: "0s" }}
+        >
+          ❄
+        </div>
+        <div
+          className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        >
+          ❄
+        </div>
+        <div
+          className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        >
+          ❄
+        </div>
+        <div
+          className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse"
+          style={{ animationDelay: "1.5s" }}
+        >
+          ❄
+        </div>
       </div>
 
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : 'Gjett bildet'}
+          <h1
+            className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
+            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+          >
+            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : "Gjett bildet"}
           </h1>
           <div className="flex justify-center gap-8 text-red-100">
             <span>
@@ -446,9 +535,7 @@ const BlurGuessGame: React.FC = () => {
                           ? "Riktig! 🎄"
                           : "Feil! ❄️"}
                       </p>
-                      <p className="text-lg">
-                        Svar: {gameState.correctAnswer}
-                      </p>
+                      <p className="text-lg">Svar: {gameState.correctAnswer}</p>
                     </div>
                   </div>
                 )}
@@ -459,7 +546,7 @@ const BlurGuessGame: React.FC = () => {
           {/* Options */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-white mb-4">
-              {gameState.currentImage?.question || 'Hva ser du?'}
+              {gameState.currentImage?.question || "Hva ser du?"}
             </h2>
             <div className="grid grid-cols-2 gap-3">
               {gameState.currentImage?.options.map((option, index) => (
