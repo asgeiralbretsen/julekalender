@@ -75,15 +75,17 @@ interface SanityDay {
   songGuessGameData?: {
     title: string;
     description: string;
-    songFile: {
-      asset: {
-        _ref: string;
-        url?: string;
+    songs: Array<{
+      songFile: {
+        asset: {
+          _ref: string;
+          url?: string;
+        };
       };
-    };
-    answers: string[];
-    correctAnswerIndex: number;
-    clipDuration: number;
+      answers: string[];
+      correctAnswerIndex: number;
+      clipDuration: number;
+    }>;
     scoringSettings?: {
       correctAnswerPoints?: number;
       timeBonusPerSecond?: number;

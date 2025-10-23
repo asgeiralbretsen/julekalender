@@ -6,13 +6,18 @@ import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
 import { client } from "../lib/sanity";
 
-interface GameState {
+interface SongData {
   songUrl: string;
   correctAnswer: string;
   answerOptions: string[];
   clipDuration: number;
+}
+
+interface GameState {
+  currentSong: SongData | null;
   timeRemaining: number;
   score: number;
+  round: number;
   gameStarted: boolean;
   gameEnded: boolean;
   userAnswer: string | null;
@@ -27,15 +32,17 @@ interface GameState {
 interface SongGuessGameData {
   title?: string;
   description?: string;
-  songFile: {
-    asset: {
-      _ref: string;
-      url?: string;
+  songs: Array<{
+    songFile: {
+      asset: {
+        _ref: string;
+        url?: string;
+      };
     };
-  };
-  answers: string[];
-  correctAnswerIndex: number;
-  clipDuration: number;
+    answers: string[];
+    correctAnswerIndex: number;
+    clipDuration: number;
+  }>;
   scoringSettings?: {
     correctAnswerPoints?: number;
     timeBonusPerSecond?: number;
@@ -59,17 +66,16 @@ const SongGuessGame: React.FC = () => {
   const timerRef = useRef<number | null>(null);
 
   const [gameData, setGameData] = useState<SongGuessGameData | null>(null);
+  const [allSongs, setAllSongs] = useState<SongData[]>([]);
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
     null
   );
 
   const [gameState, setGameState] = useState<GameState>({
-    songUrl: "",
-    correctAnswer: "",
-    answerOptions: [],
-    clipDuration: 10,
+    currentSong: null,
     timeRemaining: 10,
     score: 0,
+    round: 1,
     gameStarted: false,
     gameEnded: false,
     userAnswer: null,
@@ -131,19 +137,27 @@ const SongGuessGame: React.FC = () => {
     checkPlayStatus();
   }, [dayInfo, user, hasUserPlayedGame, getUserScoreForDay]);
 
+  // Helper function to shuffle array
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   // Initialize game state when game data loads
   useEffect(() => {
-    if (gameData && gameData.songFile?.asset?._ref && gameData.answers) {
-      const songUrl = getFileUrl(gameData.songFile.asset._ref);
-      const correctAnswer = gameData.answers[gameData.correctAnswerIndex];
-      setGameState((prev) => ({
-        ...prev,
-        songUrl,
-        correctAnswer,
-        answerOptions: shuffleArray([...gameData.answers]),
-        clipDuration: gameData.clipDuration,
-        timeRemaining: gameData.clipDuration,
+    if (gameData && gameData.songs && gameData.songs.length > 0) {
+      // Convert all songs to SongData format
+      const songs: SongData[] = gameData.songs.map((song) => ({
+        songUrl: getFileUrl(song.songFile.asset._ref),
+        correctAnswer: song.answers[song.correctAnswerIndex],
+        answerOptions: shuffleArray([...song.answers]),
+        clipDuration: song.clipDuration,
       }));
+      setAllSongs(songs);
     }
   }, [gameData]);
 
@@ -177,35 +191,56 @@ const SongGuessGame: React.FC = () => {
     }
   }, [gameState.timeRemaining, gameState.isPlaying, stopAudio]);
 
-  const shuffleArray = <T,>(array: T[]): T[] => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
+  const loadSong = useCallback(
+    (roundNumber: number, autoPlay: boolean = false) => {
+      const songIndex = roundNumber - 1;
+      const song = allSongs[songIndex];
 
-  const playAudio = useCallback(() => {
-    if (audioRef.current && gameData) {
+      if (!song) {
+        console.error("No song found for round", roundNumber);
+        return;
+      }
+
+      setGameState((prev) => ({
+        ...prev,
+        currentSong: song,
+        timeRemaining: song.clipDuration,
+        timeElapsed: 0,
+        userAnswer: null,
+        showResult: false,
+        isPlaying: autoPlay,
+        gameStarted: autoPlay ? true : prev.gameStarted,
+      }));
+    },
+    [allSongs]
+  );
+
+  // Auto-play audio when game starts
+  useEffect(() => {
+    if (gameState.gameStarted && gameState.isPlaying && audioRef.current && gameState.currentSong) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play();
-      setGameState((prev) => ({ ...prev, isPlaying: true, gameStarted: true }));
+      audioRef.current.play().catch((error) => {
+        console.error("Error playing audio:", error);
+      });
     }
-  }, [gameData]);
+  }, [gameState.gameStarted, gameState.isPlaying, gameState.currentSong]);
 
   const handleStartGame = () => {
-    playAudio();
+    if (allSongs.length === 0) {
+      console.error("No songs available to play");
+      return;
+    }
+    loadSong(1, true); // Load first song and auto-play
   };
 
   const handleAnswer = async (answer: string) => {
-    if (gameState.gameEnded || gameState.userAnswer) return;
+    if (gameState.gameEnded || gameState.userAnswer || !gameState.currentSong) return;
 
     stopAudio();
-    const isCorrect = answer === gameState.correctAnswer;
+    const isCorrect = answer === gameState.currentSong.correctAnswer;
 
-    // Calculate score
-    let finalScore = 0;
+    // Calculate score for this round
+    let roundScore = 0;
     if (isCorrect && gameData && gameData.scoringSettings) {
       const baseScore = gameData.scoringSettings.correctAnswerPoints || 1000;
       const timeBonusPerSecond =
@@ -215,60 +250,77 @@ const SongGuessGame: React.FC = () => {
         Math.floor(gameState.timeRemaining * timeBonusPerSecond),
         maxTimeBonus
       );
-      finalScore = baseScore + timeBonus;
+      roundScore = baseScore + timeBonus;
     }
 
     // Update game state with answer
     setGameState((prev) => ({
       ...prev,
       userAnswer: answer,
-      score: finalScore,
+      score: prev.score + roundScore,
+      showResult: true,
     }));
 
-    // Save score if user hasn't played today and answer is correct
-    if (isCorrect && dayInfo && user && !gameState.hasPlayedToday) {
-      try {
-        const result = await saveGameScore({
-          day: dayInfo.day,
-          gameType: "songGuessGame",
-          score: finalScore,
-        });
-        if (result) {
-          setGameState((prev) => ({
-            ...prev,
-            scoreSaved: true,
-            hasPlayedToday: true,
-            previousScore: result.score,
-            gameEnded: true,
-          }));
+    // Wait 2 seconds to show result, then move to next song or end game
+    setTimeout(() => {
+      if (gameState.round >= allSongs.length) {
+        // Game is over - all songs completed
+        const finalScore = gameState.score + roundScore;
+        
+        // Save score if user hasn't played today
+        if (dayInfo && user && !gameState.hasPlayedToday) {
+          saveGameScore({
+            day: dayInfo.day,
+            gameType: "songGuessGame",
+            score: finalScore,
+          })
+            .then((result) => {
+              if (result) {
+                setGameState((prev) => ({
+                  ...prev,
+                  scoreSaved: true,
+                  hasPlayedToday: true,
+                  previousScore: result.score,
+                  gameEnded: true,
+                }));
+              } else {
+                setGameState((prev) => ({ ...prev, gameEnded: true }));
+              }
+            })
+            .catch((error) => {
+              console.error("Error saving score:", error);
+              setGameState((prev) => ({ ...prev, gameEnded: true }));
+            });
         } else {
           setGameState((prev) => ({ ...prev, gameEnded: true }));
         }
-      } catch (error) {
-        console.error("Error saving score:", error);
-        setGameState((prev) => ({ ...prev, gameEnded: true }));
+      } else {
+        // Move to next song
+        const nextRound = gameState.round + 1;
+        setGameState((prev) => ({ ...prev, round: nextRound }));
+        loadSong(nextRound, true); // Load and auto-play next song
       }
-    } else {
-      // If already played or wrong answer, just end the game
-      setGameState((prev) => ({ ...prev, gameEnded: true }));
-    }
+    }, 2000);
   };
 
   const handlePlayAgain = () => {
-    if (!gameData || !gameData.songFile?.asset?._ref || !gameData.answers)
-      return;
+    if (!gameData || !gameData.songs || gameData.songs.length === 0) return;
 
-    const songUrl = getFileUrl(gameData.songFile.asset._ref);
-    const correctAnswer = gameData.answers[gameData.correctAnswerIndex];
+    // Reshuffle all songs
+    const songs: SongData[] = gameData.songs.map((song) => ({
+      songUrl: getFileUrl(song.songFile.asset._ref),
+      correctAnswer: song.answers[song.correctAnswerIndex],
+      answerOptions: shuffleArray([...song.answers]),
+      clipDuration: song.clipDuration,
+    }));
+    setAllSongs(songs);
 
     // Reset game state to start fresh
     setGameState({
-      songUrl,
-      correctAnswer,
-      answerOptions: shuffleArray([...gameData.answers]),
-      clipDuration: gameData.clipDuration,
-      timeRemaining: gameData.clipDuration,
+      currentSong: null,
+      timeRemaining: 10,
       score: 0,
+      round: 1,
       gameStarted: false,
       gameEnded: false,
       userAnswer: null,
@@ -282,7 +334,9 @@ const SongGuessGame: React.FC = () => {
   };
 
   // Render audio element at component level so it's always available
-  const audioElement = <audio ref={audioRef} src={gameState.songUrl} />;
+  const audioElement = (
+    <audio ref={audioRef} src={gameState.currentSong?.songUrl || ""} />
+  );
 
   if (gameState.gameEnded) {
     return (
@@ -305,14 +359,14 @@ const SongGuessGame: React.FC = () => {
     );
   }
 
-  if (!gameData) {
+  if (!gameData || allSongs.length === 0) {
     return (
       <>
         {audioElement}
         <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20">
             <div className="text-6xl mb-4">🎵</div>
-            <p className="text-red-100">Laster sang...</p>
+            <p className="text-red-100">Laster sanger...</p>
           </div>
         </div>
       </>
@@ -335,7 +389,8 @@ const SongGuessGame: React.FC = () => {
             "Lytt til klippet og gjett hvilken julesang det er!"
           }
           howToPlay={[
-            `• Lytt til sangklippet (${gameState.clipDuration} sekunder)`,
+            `• ${allSongs.length} ${allSongs.length === 1 ? "sang" : "sanger"} totalt`,
+            "• Lytt til hvert sangklipp",
             "• Velg riktig julesang",
             "• Rask gjetning gir bonuspoeng",
             "• Første forsøk teller!",
@@ -367,8 +422,10 @@ const SongGuessGame: React.FC = () => {
                 : gameData.title || "Gjett julesangen!"}
             </h1>
             <div className="flex justify-center gap-8 text-red-100">
-              <span>🎵 Gjett sangen</span>
-              {gameState.score > 0 && <span>Poeng: {gameState.score}</span>}
+              <span>
+                Sang {gameState.round}/{allSongs.length}
+              </span>
+              <span>Poeng: {gameState.score}</span>
             </div>
           </div>
 
@@ -380,7 +437,7 @@ const SongGuessGame: React.FC = () => {
                 <div className="text-8xl">🎵</div>
               </div>
 
-              {gameState.gameStarted && (
+              {gameState.gameStarted && gameState.currentSong && (
                 <div className="mt-4">
                   <div className="text-white text-2xl font-bold mb-2">
                     {gameState.timeRemaining.toFixed(1)}s
@@ -389,7 +446,7 @@ const SongGuessGame: React.FC = () => {
                     <div
                       className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-100"
                       style={{
-                        width: `${(gameState.timeRemaining / gameState.clipDuration) * 100}%`,
+                        width: `${(gameState.timeRemaining / gameState.currentSong.clipDuration) * 100}%`,
                       }}
                     />
                   </div>
@@ -399,16 +456,41 @@ const SongGuessGame: React.FC = () => {
 
             {/* Answer Options */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {gameState.answerOptions.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleAnswer(option)}
-                  disabled={gameState.userAnswer !== null}
-                  className="bg-white/20 hover:bg-white/30 disabled:bg-white/10 text-white p-6 rounded-lg font-semibold border-2 border-white/30 hover:border-white/50 transition-all duration-200 disabled:cursor-not-allowed"
-                >
-                  {option}
-                </button>
-              ))}
+              {gameState.currentSong?.answerOptions.map((option, index) => {
+                const isUserAnswer = gameState.userAnswer === option;
+                const isCorrectAnswer =
+                  gameState.currentSong?.correctAnswer === option;
+                const showFeedback = gameState.showResult;
+
+                let buttonClass =
+                  "bg-white/20 hover:bg-white/30 text-white p-6 rounded-lg font-semibold border-2 border-white/30 hover:border-white/50 transition-all duration-200";
+
+                if (showFeedback) {
+                  if (isCorrectAnswer) {
+                    buttonClass =
+                      "bg-green-600/50 text-white p-6 rounded-lg font-semibold border-2 border-green-400";
+                  } else if (isUserAnswer) {
+                    buttonClass =
+                      "bg-red-600/50 text-white p-6 rounded-lg font-semibold border-2 border-red-400";
+                  } else {
+                    buttonClass =
+                      "bg-white/10 text-white/50 p-6 rounded-lg font-semibold border-2 border-white/20";
+                  }
+                }
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswer(option)}
+                    disabled={gameState.userAnswer !== null}
+                    className={`${buttonClass} disabled:cursor-not-allowed`}
+                  >
+                    {option}
+                    {showFeedback && isCorrectAnswer && " ✓"}
+                    {showFeedback && isUserAnswer && !isCorrectAnswer && " ✗"}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
