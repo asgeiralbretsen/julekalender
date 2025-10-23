@@ -31,7 +31,7 @@ docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f ||
 echo "🔨 Building images with no cache..."
 docker compose -f docker-compose.prod.yml build --no-cache --pull || docker-compose -f docker-compose.prod.yml build --no-cache --pull
 
-# Start production containers
+# Start production containers (migrations will run automatically in backend)
 echo "🚀 Starting production containers..."
 docker compose -f docker-compose.prod.yml up -d || docker-compose -f docker-compose.prod.yml up -d
 
