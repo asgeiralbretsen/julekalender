@@ -14,7 +14,8 @@ interface TeamsNotificationProps {
   duration?: number; // Animation duration in ms (default: 500)
   side?: "left" | "right"; // Side to slide in from (default: "right")
   delay?: number; // Delay before animation starts in ms (default: 0)
-  yPosition?: number; // Position on the x-axis (default: 20)
+  xPosition?: number; // Position on the x-axis (default: 40)
+  yPosition?: number; // Position on the y-axis (default: bottom)
   animate?: boolean; // Whether to animate the notification (default: false)
   displayDuration?: number; // How long to display before auto-hide in ms (default: 0 = never hide)
   onDismiss?: () => void; // Callback when notification is dismissed
@@ -52,9 +53,9 @@ export function TeamsNotification(props: TeamsNotificationProps) {
     contextMenuIcon,
     duration = 500,
     side = "right",
-    // Use screen height - 20px
-    yPosition = window.innerHeight - 300,
     delay = 0,
+    xPosition = 40,
+    yPosition = window.innerHeight - 300,
     animate = false,
     displayDuration = 0,
     onDismiss,
@@ -69,10 +70,8 @@ export function TeamsNotification(props: TeamsNotificationProps) {
       // Slide out
       setIsVisible(false);
       // Remove from DOM after animation completes
-      setTimeout(() => {
-        setShouldRender(false);
-        onClick();
-      }, duration);
+      setShouldRender(false);
+      onClick();
     }
   };
 
@@ -113,39 +112,20 @@ export function TeamsNotification(props: TeamsNotificationProps) {
   const sendMessageIconUrl = sendMessageIcon || "";
   const contextMenuIconUrl = contextMenuIcon || "";
 
-  // Calculate animation styles
-  // Right side: slide from right (positive translateX)
-  // Left side: slide from left (negative translateX)
-  console.log("Side:", side, "isVisible:", isVisible);
-  const slideFrom = side === "right" ? "100%" : "-100%";
-  console.log("Slide from:", slideFrom);
-  const animationStyle = {
-    transform: animate
-      ? isVisible
-        ? "translateX(0)"
-        : `translateX(${slideFrom})`
-      : "translateX(0)",
-    transition: `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-    opacity: isVisible ? 1 : 0,
-  };
-
   return (
-    // Make this div take the full width of the container
-
     <div
       style={{
         backgroundColor: TeamsColor,
-        position: "absolute",
-        left: side === "left" ? 40 : "auto",
-        right: side === "right" ? 40 : "auto",
+        position: "fixed",
+        left: xPosition,
         top: yPosition,
         color: "white",
         maxWidth: "500px",
         minWidth: "500px",
         cursor: onClick ? "pointer" : "default",
-        ...animationStyle,
+        zIndex: 1,
       }}
-      className="p-4 rounded-lg gap-4 flex flex-col hover:shadow-2xl transition-shadow"
+      className="p-4 rounded-lg gap-4 flex flex-col"
     >
       <div className="flex flex-row justify-between">
         <div className="flex flex-row justify-between gap-3">
