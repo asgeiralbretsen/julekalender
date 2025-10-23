@@ -308,54 +308,23 @@ const ChristmasWordScramble = () => {
   // Game ended - show results
   if (gameEnded) {
     return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-            <h1 className="text-4xl font-bold text-white mb-6">
-              Spillet er ferdig!
-            </h1>
-
-            <div className="mb-6 p-6 bg-white/10 rounded-xl">
-              <div className="text-5xl font-bold text-yellow-300 mb-2">
-                {score}
-              </div>
-              <div className="text-white/80 text-sm">poeng</div>
-            </div>
-
-            <div className="mb-6 space-y-2 text-white/80">
-              <p>
-                Riktige svar: {correctAnswers} / {gameData.words.length}
-              </p>
-              {scoreSaved && (
-                <div className="mt-4 p-3 bg-green-500/20 border border-green-400/50 rounded-lg">
-                  <p className="text-green-200 text-sm">Poengsum lagret!</p>
-                </div>
-              )}
-              {hasPlayedToday && !scoreSaved && (
-                <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
-                  <p className="text-yellow-200 text-sm">
-                    Øvingsrunde - Poengsum ikke lagret
-                  </p>
-                  <p className="text-white/60 text-xs mt-1">
-                    Din innsendte poengsum: {previousScore} poeng
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={() => {
-                setGameEnded(false);
-                setShowResultsScreen(false);
-                startGame();
-              }}
-              className="w-full bg-gradient-to-r from-red-500 to-green-500 text-white px-6 py-3 rounded-full font-semibold hover:from-red-600 hover:to-green-600 transition-all duration-300"
-            >
-              {hasPlayedToday ? "Spill igjen (for moro skyld)" : "Prøv igjen"}
-            </button>
-          </div>
-        </div>
-      </ChristmasBackground>
+      <GameResultsScreen
+        isFirstAttempt={!hasPlayedToday}
+        currentScore={score}
+        previousScore={previousScore}
+        scoreSaved={scoreSaved}
+        loading={scoreLoading}
+        error={scoreError}
+        dayInfo={dayInfo}
+        gameType="wordScrambleGame"
+        gameName="Juleord Scramble"
+        onPlayAgain={() => {
+          setGameEnded(false);
+          setShowResultsScreen(false);
+          startGame();
+        }}
+        scoreLabel="poeng"
+      />
     );
   }
 
@@ -464,7 +433,7 @@ const ChristmasWordScramble = () => {
             <button
               onClick={handleSubmit}
               disabled={!userInput.trim() || feedback !== null}
-              className="flex-1 text-white px-6 py-3 rounded-full font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Sjekk svar
             </button>
