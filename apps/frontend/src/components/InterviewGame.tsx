@@ -55,6 +55,8 @@ export default function InterviewGame() {
   const [finalTime, setFinalTime] = useState<number | null>(null);
   const [gotJob, setGotJob] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [userStream, setUserStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState(false);
 
   useEffect(() => {
     const gameDataStr = sessionStorage.getItem('currentGameData');
@@ -83,6 +85,21 @@ export default function InterviewGame() {
       }
     }
 
+    // Request camera access for Teams-like experience
+    const requestCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 640, height: 480 }, 
+          audio: false 
+        });
+        setUserStream(stream);
+      } catch (error) {
+        console.log('Camera access denied or not available');
+        setCameraError(true);
+      }
+    };
+
+    requestCamera();
     setLoading(false);
   }, []);
 
@@ -110,6 +127,15 @@ export default function InterviewGame() {
 
     checkIfPlayedToday();
   }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
+
+  // Cleanup camera stream
+  useEffect(() => {
+    return () => {
+      if (userStream) {
+        userStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [userStream]);
 
   const startGame = () => {
     if (!gameData) return;
@@ -287,116 +313,154 @@ export default function InterviewGame() {
 
   return (
     <div className="min-h-screen bg-gray-900 relative overflow-hidden">
-      {/* Teams-like background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-gray-800 to-blue-900" />
-      
       {/* Teams call interface */}
       <div className="relative z-10 min-h-screen flex flex-col">
-        {/* Header with meeting info */}
-        <div className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-white font-medium">Intervju - {currentInterviewer?.name || 'Laster...'}</span>
+        {/* Teams header */}
+        <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <span className="text-white text-sm font-medium">Recording</span>
             </div>
-            <div className="flex items-center space-x-2 text-gray-300 text-sm">
-              <span>Spørsmål {currentQuestion + 1} / {gameData.questions.length}</span>
-              <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-              <span className="text-green-400">🎯 Alle riktig = jobb!</span>
-              <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-              <span className="text-red-400">❌ 1 feil = ut!</span>
+            <div className="w-px h-4 bg-gray-600"></div>
+            <span className="text-white text-sm">Intervju med {currentInterviewer?.name || 'Laster...'}</span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-300 text-xs">Spørsmål {currentQuestion + 1}/{gameData.questions.length}</span>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-green-400 text-xs">Live</span>
             </div>
           </div>
         </div>
 
-        {/* Main video area */}
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="max-w-6xl w-full">
-            <div className="grid lg:grid-cols-3 gap-8 items-center">
-              
-              {/* Interviewer video (main speaker) */}
-              <div className="lg:col-span-2">
-                <div className="relative bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-600">
-                  {/* Video placeholder with interviewer */}
-                  <div className="aspect-video bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center relative">
-                    {currentInterviewer && (
-                      <div className="text-center">
-                        <img
-                          src={`https://cdn.sanity.io/images/54fixmwv/production/${currentInterviewer.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}`}
-                          alt={currentInterviewer.image.alt || currentInterviewer.name}
-                          className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-blue-400 shadow-lg"
-                        />
-                        <h3 className="text-2xl font-bold text-white mt-4 mb-2">
-                          {currentInterviewer.name}
-                        </h3>
-                        {currentInterviewer.role && (
-                          <p className="text-blue-300 text-lg">
-                            {currentInterviewer.role}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Speaking indicator */}
-                    <div className="absolute top-4 left-4 flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-white text-sm font-medium">Snakker</span>
-                    </div>
-                  </div>
-                  
-                  {/* Subtitles */}
-                  <div className="bg-black/80 backdrop-blur-sm p-6">
+        {/* Main video grid - Teams style */}
+        <div className="flex-1 p-4">
+          <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-4">
+            
+            {/* Interviewer video (main speaker) - takes up 2/3 on large screens */}
+            <div className="lg:col-span-2 relative">
+              <div className="h-full bg-gray-800 rounded-lg overflow-hidden relative">
+                {/* Interviewer video */}
+                <div className="h-full flex items-center justify-center relative">
+                  {currentInterviewer && (
                     <div className="text-center">
-                      <p className="text-white text-xl font-medium leading-relaxed">
-                        {question.questionText}
-                      </p>
+                      <img
+                        src={`https://cdn.sanity.io/images/54fixmwv/production/${currentInterviewer.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}`}
+                        alt={currentInterviewer.image.alt || currentInterviewer.name}
+                        className="w-40 h-40 rounded-full mx-auto object-cover border-4 border-blue-400 shadow-2xl"
+                      />
+                      <h3 className="text-2xl font-bold text-white mt-4 mb-2">
+                        {currentInterviewer.name}
+                      </h3>
+                      {currentInterviewer.role && (
+                        <p className="text-blue-300 text-lg">
+                          {currentInterviewer.role}
+                        </p>
+                      )}
                     </div>
+                  )}
+                  
+                  {/* Speaking indicator */}
+                  <div className="absolute top-4 left-4 flex items-center space-x-2 bg-black/50 rounded-full px-3 py-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-white text-sm font-medium">Speaking</span>
+                  </div>
+                </div>
+                
+                {/* Subtitles overlay */}
+                <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-4">
+                  <div className="text-center">
+                    <p className="text-white text-lg font-medium leading-relaxed">
+                      {question.questionText}
+                    </p>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Answer options (your responses) */}
-              <div className="space-y-4">
-                <h3 className="text-white text-lg font-semibold mb-4 text-center">
-                  Ditt svar:
-                </h3>
+            {/* Your video (smaller) */}
+            <div className="relative">
+              <div className="h-full bg-gray-800 rounded-lg overflow-hidden relative">
+                {userStream ? (
+                  <video
+                    ref={(video) => {
+                      if (video && userStream) {
+                        video.srcObject = userStream;
+                        video.play();
+                      }
+                    }}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    {cameraError ? (
+                      <div className="text-center text-gray-400">
+                        <div className="text-4xl mb-2">📷</div>
+                        <p className="text-sm">Camera not available</p>
+                      </div>
+                    ) : (
+                      <div className="text-center text-gray-400">
+                        <div className="text-4xl mb-2">👤</div>
+                        <p className="text-sm">You</p>
+                      </div>
+                    )}
+                  </div>
+                )}
                 
-                {question.answers.map((answer, index) => {
-                  let buttonStyle = 'bg-gray-700 hover:bg-gray-600 border-gray-600 text-white';
-                  
-                  if (showResult) {
-                    if (index === question.correctAnswerIndex) {
-                      buttonStyle = 'bg-green-600 border-green-500 text-white';
-                    } else if (index === selectedAnswer) {
-                      buttonStyle = 'bg-red-600 border-red-500 text-white';
-                    } else {
-                      buttonStyle = 'bg-gray-600 border-gray-500 text-gray-300';
-                    }
-                  } else if (selectedAnswer === index) {
-                    buttonStyle = 'bg-blue-600 border-blue-500 text-white';
-                  }
-
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleAnswerClick(index)}
-                      disabled={selectedAnswer !== null || showResult}
-                      className={`w-full p-4 rounded-lg font-medium border-2 transition-all duration-200 ${buttonStyle} disabled:cursor-not-allowed text-left`}
-                    >
-                      <span className="font-bold mr-2">{String.fromCharCode(65 + index)}.</span>
-                      {answer}
-                    </button>
-                  );
-                })}
+                {/* Your name label */}
+                <div className="absolute bottom-2 left-2 bg-black/50 rounded px-2 py-1">
+                  <span className="text-white text-sm font-medium">You</span>
+                </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Answer options - Teams style bottom panel */}
+        <div className="bg-gray-800 border-t border-gray-700 p-4">
+          <div className="max-w-4xl mx-auto">
+            <h3 className="text-white text-lg font-semibold mb-4 text-center">
+              Svar på spørsmålet:
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {question.answers.map((answer, index) => {
+                let buttonStyle = 'bg-gray-700 hover:bg-gray-600 border-gray-600 text-white';
+                
+                if (showResult) {
+                  if (index === question.correctAnswerIndex) {
+                    buttonStyle = 'bg-green-600 border-green-500 text-white';
+                  } else if (index === selectedAnswer) {
+                    buttonStyle = 'bg-red-600 border-red-500 text-white';
+                  } else {
+                    buttonStyle = 'bg-gray-600 border-gray-500 text-gray-300';
+                  }
+                } else if (selectedAnswer === index) {
+                  buttonStyle = 'bg-blue-600 border-blue-500 text-white';
+                }
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswerClick(index)}
+                    disabled={selectedAnswer !== null || showResult}
+                    className={`p-4 rounded-lg font-medium border-2 transition-all duration-200 ${buttonStyle} disabled:cursor-not-allowed text-left`}
+                  >
+                    <span className="font-bold mr-3 text-lg">{String.fromCharCode(65 + index)}.</span>
+                    {answer}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
         {/* Result overlay */}
         {showResult && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-20">
-            <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-20">
+            <div className="bg-white rounded-xl p-8 max-w-lg mx-4 text-center shadow-2xl">
               {isCorrect ? (
                 <div>
                   <div className="text-6xl mb-4">✅</div>
