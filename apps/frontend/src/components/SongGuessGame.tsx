@@ -55,7 +55,7 @@ const SongGuessGame: React.FC = () => {
     useGameScore();
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   const [gameData, setGameData] = useState<SongGuessGameData | null>(null);
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
@@ -399,14 +399,16 @@ const SongGuessGame: React.FC = () => {
                     <p className="text-xl text-white mb-4">
                       The answer was: <span className="font-bold">{gameState.correctAnswer}</span>
                     </p>
-                    <div className="bg-yellow-500/20 border-2 border-yellow-400 rounded-xl p-6 mb-4">
-                      <p className="text-4xl font-bold text-yellow-300">
+                    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20 mb-4">
+                      <p className="text-4xl font-bold text-white">
                         {gameState.score} points
                       </p>
                       {!gameState.hasPlayedToday && (
-                        <p className="text-green-300 text-sm mt-2">
-                          ✅ Score saved to leaderboard!
-                        </p>
+                        <div className="mt-2 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+                          <p className="text-red-200 text-sm">
+                            ✅ Score saved to leaderboard!
+                          </p>
+                        </div>
                       )}
                     </div>
                   </>
@@ -429,14 +431,14 @@ const SongGuessGame: React.FC = () => {
                 )}
 
                 {gameState.hasPlayedToday && gameState.previousScore !== null && (
-                  <div className="bg-blue-500/20 border-2 border-blue-400 rounded-xl p-4 mt-4">
+                  <div className="bg-red-500/20 border-2 border-red-400 rounded-xl p-4 mt-4">
                     <p className="text-white font-semibold text-sm">
                       Your Submitted Score (First Attempt)
                     </p>
-                    <p className="text-yellow-300 text-2xl font-bold">
+                    <p className="text-red-300 text-2xl font-bold">
                       {gameState.previousScore} points
                     </p>
-                    <p className="text-blue-200 text-xs mt-1">
+                    <p className="text-red-200 text-xs mt-1">
                       This is the score on the leaderboard
                     </p>
                   </div>

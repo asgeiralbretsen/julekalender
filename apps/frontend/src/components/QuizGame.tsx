@@ -210,7 +210,7 @@ export default function QuizGame() {
                 {isFirstAttempt && !hasPlayedToday ? 'Quiz fullført!' : 'Din poengsum'}
               </h1>
               
-              <div className="mb-6">
+              <div className="mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
                 <p className="text-red-200 text-sm mb-2">
                   {isFirstAttempt && !hasPlayedToday ? 'Din poengsum (innsendt)' : 'Din innsendte poengsum'}
                 </p>
@@ -221,20 +221,24 @@ export default function QuizGame() {
               </div>
               
               {scoreSaved && (
-                <p className="text-green-300 mb-4">
-                  ✅ Poengsum lagret!
-                </p>
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+                  <p className="text-red-200 text-center text-sm">
+                    ✅ Poengsum lagret!
+                  </p>
+                </div>
               )}
               
               {scoreLoading && (
-                <p className="text-yellow-300 mb-4">
-                  💾 Lagrer poengsum...
-                </p>
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+                  <p className="text-red-200 text-center text-sm">
+                    💾 Lagrer poengsum...
+                  </p>
+                </div>
               )}
               
               {hasPlayedToday && !scoreSaved && (
-                <div className="mb-4 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
-                  <p className="text-yellow-200 text-sm">
+                <div className="mb-4 p-4 bg-red-500/20 border border-red-400/50 rounded-lg">
+                  <p className="text-red-200 text-sm">
                     Du har allerede spilt denne quizen i dag!
                   </p>
                   <p className="text-red-200 text-xs mt-1">

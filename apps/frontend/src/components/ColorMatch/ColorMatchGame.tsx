@@ -481,7 +481,7 @@ export function ColorMatchGame() {
                   </h3>
 
                   {/* Overall Score */}
-                  <div className="text-center mb-6">
+                  <div className="text-center mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
                     <div className="text-3xl font-bold text-white mb-2">
                       {overallScore}%
                     </div>
@@ -491,26 +491,30 @@ export function ColorMatchGame() {
                   </div>
 
                   {scoreSaved && (
-                    <p className="text-green-300 text-center mb-4 text-sm">
-                      ✅ Poengsum lagret på topplisten!
-                    </p>
+                    <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+                      <p className="text-red-200 text-center text-sm">
+                        ✅ Poengsum lagret på topplisten!
+                      </p>
+                    </div>
                   )}
                   
                   {!scoreSaved && hasPlayedToday && previousScore !== null && (
-                    <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-                      <p className="text-blue-200 text-xs mb-1">
+                    <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+                      <p className="text-red-200 text-xs mb-1">
                         Øvingsrunde - Poengsum ikke lagret
                       </p>
                       <p className="text-white/80 text-xs">
-                        Din innsendte poengsum: <span className="font-bold text-yellow-300">{previousScore}%</span>
+                        Din innsendte poengsum: <span className="font-bold text-red-300">{previousScore}%</span>
                       </p>
                     </div>
                   )}
                   
                   {scoreLoading && (
-                    <p className="text-yellow-300 text-center mb-4 text-sm">
-                      💾 Lagrer poengsum...
-                    </p>
+                    <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+                      <p className="text-red-200 text-center text-sm">
+                        💾 Lagrer poengsum...
+                      </p>
+                    </div>
                   )}
                   
                   {scoreError && (

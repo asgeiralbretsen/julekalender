@@ -337,13 +337,13 @@ const BlurGuessGame: React.FC = () => {
         <div className="max-w-6xl w-full relative z-10">
           <div className="grid md:grid-cols-2 gap-6 items-start">
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20">
-              <h1 className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+              <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                 {isFirstAttempt ? 'Spillet er over!' : 'Din poengsum'}
               </h1>
               
               {isFirstAttempt ? (
                 <>
-                  <div className="mb-6">
+                  <div className="mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
                     <p className="text-red-200 text-sm mb-2">
                       Din poengsum (innsendt)
                     </p>
@@ -353,23 +353,27 @@ const BlurGuessGame: React.FC = () => {
                   </div>
                   
                   {gameState.scoreSaved && (
-                    <p className="text-green-300 mb-4">
-                      ✅ Poengsum lagret!
-                    </p>
+                    <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+                      <p className="text-red-200 text-center text-sm">
+                        ✅ Poengsum lagret!
+                      </p>
+                    </div>
                   )}
                   
                   {loading && (
-                    <p className="text-yellow-300 mb-4">
-                      💾 Lagrer poengsum...
-                    </p>
+                    <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+                      <p className="text-red-200 text-center text-sm">
+                        💾 Lagrer poengsum...
+                      </p>
+                    </div>
                   )}
                 </>
               ) : (
-                <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
-                  <p className="text-yellow-200 text-sm mb-2">
+                <div className="mb-6 p-4 bg-red-500/20 border border-red-400/50 rounded-lg">
+                  <p className="text-red-200 text-sm mb-2">
                     Din innsendte poengsum:
                   </p>
-                  <p className="text-yellow-300 text-4xl font-bold">
+                  <p className="text-white text-4xl font-bold">
                     {displayScore}
                   </p>
                   <p className="text-red-200 text-xs mt-2">
@@ -386,14 +390,14 @@ const BlurGuessGame: React.FC = () => {
               
               <button
                 onClick={resetGame}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
+                className="bg-green-800 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-700"
               >
                 {isFirstAttempt ? 'Spill igjen' : 'Spill igjen (for moro skyld)'}
               </button>
               
               {!isFirstAttempt && (
                 <p className="text-red-200 text-sm mt-4">
-                  ⚠️ Bare første poengsum teller på topplisten
+                  Bare første poengsum teller på topplisten
                 </p>
               )}
             </div>

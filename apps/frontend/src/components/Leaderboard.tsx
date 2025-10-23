@@ -70,8 +70,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
   if (loading && scores.length === 0) {
     return (
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20">
-        <h2 className="text-2xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>{title}</h2>
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
+        <h2 className="text-2xl font-bold text-red-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>{title}</h2>
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
         </div>
@@ -81,8 +81,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
   if (error) {
     return (
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20">
-        <h2 className="text-2xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>{title}</h2>
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
+        <h2 className="text-2xl font-bold text-red-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>{title}</h2>
         <div className="p-4 bg-red-500/20 border border-red-400/50 rounded-lg">
           <p className="text-red-200 text-sm">{error}</p>
         </div>
@@ -92,8 +92,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
   if (scores.length === 0) {
     return (
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20">
-        <h2 className="text-2xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>{title}</h2>
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
+        <h2 className="text-2xl font-bold text-red-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>{title}</h2>
         <div className="text-center py-8">
           <p className="text-red-100">Ingen poengsummer ennå. Bli den første til å spille!</p>
         </div>
@@ -102,12 +102,12 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
   }
 
   return (
-    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20">
-      <h2 className="text-2xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>{title}</h2>
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
+      <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>{title}</h2>
       
       {currentUserRank && (
-        <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
-          <p className="text-yellow-200 text-sm text-center">
+        <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
+          <p className="text-red-200 text-sm text-center">
             Din plassering: <span className="font-bold">#{currentUserRank}</span>
           </p>
         </div>
@@ -123,7 +123,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
               key={score.id}
               className={`flex items-center justify-between p-4 rounded-lg transition-all duration-200 ${
                 isCurrent
-                  ? 'bg-yellow-500/30 border border-yellow-400/50'
+                  ? 'bg-red-500/30 border border-red-400/50'
                   : 'bg-white/5 hover:bg-white/10'
               }`}
             >
@@ -148,7 +148,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                   >
                     {getDisplayName(score)}
                     {isCurrent && (
-                      <span className="ml-2 text-xs text-yellow-300">(Deg)</span>
+                      <span className="ml-2 text-xs text-red-300">(Deg)</span>
                     )}
                   </p>
                   <p className="text-xs text-red-200">
@@ -166,7 +166,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                 <div
                   className={`px-4 py-2 rounded-lg font-bold ${
                     isCurrent
-                      ? 'bg-yellow-500/40 text-white border border-yellow-400/50'
+                      ? 'bg-red-500/40 text-white border border-red-400/50'
                       : 'bg-white/10 text-white/90'
                   }`}
                 >
