@@ -237,7 +237,7 @@ const SnowflakeCatchGame: React.FC = () => {
           "• Catch snowflakes: +10 points",
           "• Miss a snowflake = game over!",
           `• Lives: ${MAX_LIVES}`,
-          "• Snowflakes spawn faster and move faster over time"
+          "• Snowflakes spawn faster and move faster over time",
         ]}
         previousScore={undefined}
         onClickStartGame={startGame}

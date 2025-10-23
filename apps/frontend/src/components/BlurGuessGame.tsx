@@ -389,16 +389,20 @@ const BlurGuessGame: React.FC = () => {
   if (!gameState.gameStarted) {
     return (
       <StartGameScreen
-        title={dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : "Gjett bildet"}
+        title={
+          dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : "Gjett bildet"
+        }
         description="Se bildet bli gradvis klarere og gjett hva det er så raskt som mulig!"
         howToPlay={[
           "• Bildet starter med sterk uskarphet",
           "• Bildet blir gradvis klarere over tid",
           "• Velg riktig svar fra alternativene",
           `• ${gameImages.length} bilder totalt`,
-          "• Jo raskere du gjetter, desto mer poeng!"
+          "• Jo raskere du gjetter, desto mer poeng!",
         ]}
-        previousScore={gameState.hasPlayedToday ? gameState.previousScore : undefined}
+        previousScore={
+          gameState.hasPlayedToday ? gameState.previousScore : undefined
+        }
         onClickStartGame={startGame}
       />
     );
