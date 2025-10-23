@@ -5,6 +5,7 @@ import imageUrlBuilder from "@sanity/image-url";
 import { animate } from "animejs";
 import { Timer } from "./Timer";
 import { useGameScore } from "../hooks/useGameScore";
+import logoIcon from '../assets/unimicro-logoikon-hvit_RGB.png';
 
 const builder = imageUrlBuilder(client);
 
@@ -378,7 +379,7 @@ function DayCell({
 export default function AdventCalendar() {
   const navigate = useNavigate();
   const today = new Date();
-  const currentDay = today.getMonth() === 9 ? today.getDate() : 1; // December only; otherwise start at 1
+  const currentDay = today.getMonth() === 9 ? today.getDate() - 6 : 1; // December only; otherwise start at 1
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [sanityDays, setSanityDays] = useState<SanityDay[]>([]);
@@ -613,30 +614,6 @@ export default function AdventCalendar() {
         );
         navigate("/game/snowflakeCatchGame");
         return;
-      } else if (
-        sanityDay.gameType === "songGuessGame" &&
-        sanityDay.songGuessGameData
-      ) {
-        console.log(
-          "Navigating to SongGuessGame with data:",
-          sanityDay.songGuessGameData
-        );
-        sessionStorage.setItem(
-          "currentGameData",
-          JSON.stringify({
-            songGuessGameData: sanityDay.songGuessGameData,
-          })
-        );
-        sessionStorage.setItem("currentGameType", sanityDay.gameType);
-        sessionStorage.setItem(
-          "currentDayInfo",
-          JSON.stringify({
-            day: sanityDay.dayNumber,
-            title: sanityDay.title,
-          })
-        );
-        navigate("/game/songGuessGame");
-        return;
       } else {
         console.log("Game type found but no game data available");
       }
@@ -690,9 +667,14 @@ export default function AdventCalendar() {
         className="max-w-7xl mx-auto px-4 py-10 relative z-10"
       >
         <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow">
-            🎄 Julekalender
-          </h1>
+        <h1 className="text-4xl md:text-5xl font-extrabold text-red-100 drop-shadow flex justify-center items-center space-x-3">
+          <img 
+            src={logoIcon} 
+            alt="Logo" 
+            className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md"
+          />
+          <span>Julekalender</span>
+        </h1>
           <Timer
             mode="up"
             durationMs={10000}
