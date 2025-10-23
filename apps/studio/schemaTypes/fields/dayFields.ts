@@ -55,6 +55,7 @@ export const gameTypeField = defineField({
       {title: 'Intervju', value: 'interviewGame'},
       {title: 'Song Guess Game', value: 'songGuessGame'},
       {title: 'Snowflake Catch Game', value: 'snowflakeCatchGame'},
+      {title: 'Juleord Scramble', value: 'wordScrambleGame'},
     ],
     layout: 'radio',
   },

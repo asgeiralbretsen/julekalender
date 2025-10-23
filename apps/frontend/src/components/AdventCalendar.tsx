@@ -5,7 +5,7 @@ import imageUrlBuilder from "@sanity/image-url";
 import { animate } from "animejs";
 import { Timer } from "./Timer";
 import { useGameScore } from "../hooks/useGameScore";
-import logoIcon from '../assets/unimicro-logoikon-hvit_RGB.png';
+import logoIcon from "../assets/unimicro-logoikon-hvit_RGB.png";
 
 const builder = imageUrlBuilder(client);
 
@@ -44,7 +44,8 @@ interface SanityDay {
     | "teamsNotificationGame"
     | "interviewGame"
     | "songGuessGame"
-    | "snowflakeCatchGame";
+    | "snowflakeCatchGame"
+    | "wordScrambleGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -174,6 +175,19 @@ interface SanityDay {
   };
   snowflakeCatchGameData?: {
     title: string;
+  };
+  wordScrambleGameData?: {
+    title: string;
+    description?: string;
+    words: Array<{
+      word: string;
+      hint?: string;
+    }>;
+    timeLimit: number;
+    scoringSettings: {
+      correctAnswerPoints: number;
+      timeBonusPerSecond: number;
+    };
   };
   isUnlocked: boolean;
 }
@@ -430,6 +444,7 @@ export default function AdventCalendar() {
           teamsNotificationGameData,
           interviewGameData,
           snowflakeCatchGameData,
+          wordScrambleGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
@@ -665,6 +680,54 @@ export default function AdventCalendar() {
         );
         navigate("/game/snowflakeCatchGame");
         return;
+      } else if (
+        sanityDay.gameType === "songGuessGame" &&
+        sanityDay.songGuessGameData
+      ) {
+        console.log(
+          "Navigating to SongGuessGame with data:",
+          sanityDay.songGuessGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            songGuessGameData: sanityDay.songGuessGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/songGuessGame");
+        return;
+      } else if (
+        sanityDay.gameType === "wordScrambleGame" &&
+        sanityDay.wordScrambleGameData
+      ) {
+        console.log(
+          "Navigating to WordScrambleGame with data:",
+          sanityDay.wordScrambleGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            wordScrambleGameData: sanityDay.wordScrambleGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/wordScrambleGame");
+        return;
       } else {
         console.log("Game type found but no game data available");
       }
@@ -718,14 +781,14 @@ export default function AdventCalendar() {
         className="max-w-7xl mx-auto px-4 py-10 relative z-10"
       >
         <div className="text-center mb-10">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-red-100 drop-shadow flex justify-center items-center space-x-3">
-          <img 
-            src={logoIcon} 
-            alt="Logo" 
-            className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md"
-          />
-          <span>Julekalender</span>
-        </h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-red-100 drop-shadow flex justify-center items-center space-x-3">
+            <img
+              src={logoIcon}
+              alt="Logo"
+              className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md"
+            />
+            <span>Julekalender</span>
+          </h1>
           <p className="mt-3 text-red-100">
             Tell ned til jul med daglige overraskelser
           </p>
