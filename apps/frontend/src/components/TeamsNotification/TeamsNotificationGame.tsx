@@ -431,13 +431,6 @@ export function TeamsNotificationGame() {
           </div>
         </div>
 
-        {gameStarted && (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-yellow-300 mb-4 drop-shadow-lg">
-              {/* Klikk på varslene for å fjerne dem! */}
-            </h2>
-          </div>
-        )}
 
         {/* Render active notifications */}
         {Array.from(activeNotifications.entries()).map(([id, notification]) => (
