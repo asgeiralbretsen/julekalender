@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "@clerk/clerk-react";
-import { useGameScore } from "../hooks/useGameScore";
-import Leaderboard from "./Leaderboard";
-import GameResultsScreen from "./GameResultsScreen";
 import { useNavigate } from "react-router-dom";
+import { useGameScore } from "../hooks/useGameScore";
+import GameResultsScreen from "./GameResultsScreen";
 import { client } from "../lib/sanity";
 
 interface GameState {
@@ -166,13 +165,19 @@ const SongGuessGame: React.FC = () => {
       };
     }
   }, [gameState.isPlaying, gameState.timeRemaining]);
+  
+  const stopAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setGameState((prev) => ({ ...prev, isPlaying: false }));
+    }
+  }, []);
 
-  // Stop audio when time runs out
   useEffect(() => {
     if (gameState.timeRemaining <= 0 && gameState.isPlaying) {
       stopAudio();
     }
-  }, [gameState.timeRemaining, gameState.isPlaying]);
+  }, [gameState.timeRemaining, gameState.isPlaying, stopAudio]);
 
   const shuffleArray = <T,>(array: T[]): T[] => {
     const shuffled = [...array];
@@ -190,13 +195,6 @@ const SongGuessGame: React.FC = () => {
       setGameState((prev) => ({ ...prev, isPlaying: true, gameStarted: true }));
     }
   }, [gameData]);
-
-  const stopAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setGameState((prev) => ({ ...prev, isPlaying: false }));
-    }
-  }, []);
 
   const handleStartGame = () => {
     playAudio();
@@ -221,15 +219,14 @@ const SongGuessGame: React.FC = () => {
       finalScore = baseScore + timeBonus;
     }
 
+    // Update game state with answer
     setGameState((prev) => ({
       ...prev,
       userAnswer: answer,
       score: finalScore,
-      showResult: true,
-      gameEnded: true,
     }));
 
-    // Save score if user hasn't played today
+    // Save score if user hasn't played today and answer is correct
     if (isCorrect && dayInfo && user && !gameState.hasPlayedToday) {
       try {
         const result = await saveGameScore({
@@ -242,12 +239,19 @@ const SongGuessGame: React.FC = () => {
             ...prev, 
             scoreSaved: true,
             hasPlayedToday: true,
-            previousScore: result.score 
+            previousScore: result.score,
+            gameEnded: true,
           }));
+        } else {
+          setGameState((prev) => ({ ...prev, gameEnded: true }));
         }
       } catch (error) {
         console.error("Error saving score:", error);
+        setGameState((prev) => ({ ...prev, gameEnded: true }));
       }
+    } else {
+      // If already played or wrong answer, just end the game
+      setGameState((prev) => ({ ...prev, gameEnded: true }));
     }
   };
 
@@ -256,6 +260,8 @@ const SongGuessGame: React.FC = () => {
 
     const songUrl = getFileUrl(gameData.songFile.asset._ref);
     const correctAnswer = gameData.answers[gameData.correctAnswerIndex];
+    
+    // Reset game state to start fresh
     setGameState({
       songUrl,
       correctAnswer,
@@ -275,86 +281,123 @@ const SongGuessGame: React.FC = () => {
     });
   };
 
+  // Render audio element at component level so it's always available
+  const audioElement = <audio ref={audioRef} src={gameState.songUrl} />;
+
   if (gameState.gameEnded) {
     return (
-      <GameResultsScreen
-        isFirstAttempt={!gameState.hasPlayedToday}
-        currentScore={gameState.score}
-        previousScore={gameState.previousScore}
-        scoreSaved={gameState.scoreSaved}
-        loading={false}
-        error={null}
-        dayInfo={dayInfo}
-        gameType="songGuessGame"
-        gameName="Gjett julesangen"
-        onPlayAgain={handlePlayAgain}
-        scoreLabel="poeng"
-      />
+      <>
+        {audioElement}
+        <GameResultsScreen
+          isFirstAttempt={!gameState.hasPlayedToday}
+          currentScore={gameState.score}
+          previousScore={gameState.previousScore}
+          scoreSaved={gameState.scoreSaved}
+          loading={false}
+          error={null}
+          dayInfo={dayInfo}
+          gameType="songGuessGame"
+          gameName="Gjett julesangen"
+          onPlayAgain={handlePlayAgain}
+          scoreLabel="poeng"
+        />
+      </>
     );
   }
 
   if (!gameData) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
-        <div className="text-white text-center">
-          <div className="text-6xl mb-4">🎵</div>
-          <h2 className="text-2xl font-bold mb-2">Loading Game...</h2>
-          <p className="text-red-200">Please wait while we load the song!</p>
+      <>
+        {audioElement}
+        <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20">
+            <div className="text-6xl mb-4">🎵</div>
+            <p className="text-red-100">Laster sang...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Pre-game screen
+  if (!gameState.gameStarted) {
+    return (
+      <>
+        {audioElement}
+        <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
+        
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '0s' }}>❄</div>
+          <div className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse" style={{ animationDelay: '1s' }}>❄</div>
+          <div className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse" style={{ animationDelay: '2s' }}>❄</div>
+          <div className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '1.5s' }}>❄</div>
+        </div>
+
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20 relative z-10">
+          
+          <h1 className="text-4xl font-bold text-red-100 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title || "Gjett julesangen!"}
+          </h1>
+          
+          <p className="text-red-100 mb-6">
+            {gameData.description || "Lytt til klippet og gjett hvilken julesang det er!"}
+          </p>
+          
+          <div className="mb-6 p-4 bg-red-500/20 border border-red-400/50 rounded-lg">
+            <p className="text-red-100 font-semibold mb-2">Spillregler:</p>
+            <ul className="text-red-100 text-sm space-y-1">
+              <li>• Lytt til sangklippet ({gameState.clipDuration} sekunder)</li>
+              <li>• Velg riktig julesang</li>
+              <li>• Rask gjetning gir bonuspoeng</li>
+              {!gameState.hasPlayedToday && <li>• Første forsøk teller!</li>}
+            </ul>
+          </div>
+
+          {gameState.hasPlayedToday && (
+            <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
+              <p className="text-yellow-200 font-semibold mb-1">⚠️ Allerede spilt</p>
+              <p className="text-red-100 text-sm">
+                Din poengsum: {gameState.previousScore} poeng
+              </p>
+              <p className="text-red-200 text-xs mt-1">
+                Du kan spille igjen for gøy!
+              </p>
+            </div>
+          )}
+          
+          <button
+            onClick={handleStartGame}
+            className="bg-green-700 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
+          >
+            {gameState.hasPlayedToday ? "Spill igjen (for gøy)" : "Start spill"}
+          </button>
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 py-8 px-4">
-      <audio ref={audioRef} src={gameState.songUrl} />
-
-      <div className="max-w-4xl mx-auto">
+    <>
+      {audioElement}
+      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden p-4">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
+        
+        <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
-            {gameData.title || "🎵 Guess the Christmas Song!"}
+          <h1 className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title || "Gjett julesangen!"}
           </h1>
-          {dayInfo && (
-            <p className="text-red-200 text-lg">
-              Day {dayInfo.day} - {dayInfo.title}
-            </p>
-          )}
-          <p className="text-red-100 mt-2">
-            {gameData.description ||
-              "Listen to the clip and guess which Christmas song it is!"}
-          </p>
+          <div className="flex justify-center gap-8 text-red-100">
+            <span>🎵 Gjett sangen</span>
+            {gameState.score > 0 && <span>Poeng: {gameState.score}</span>}
+          </div>
         </div>
 
-        {/* First Attempt Notice */}
-        {!gameState.gameStarted && !gameState.hasPlayedToday && (
-          <div className="bg-green-500/20 border-2 border-green-400 rounded-xl p-4 mb-6">
-            <p className="text-center text-white font-semibold">
-              🎯 First Attempt Counts!
-            </p>
-            <p className="text-center text-green-100 text-sm mt-1">
-              Your first score will be submitted to the leaderboard
-            </p>
-          </div>
-        )}
-
-        {/* Previous Score Notice */}
-        {!gameState.gameStarted && gameState.hasPlayedToday && (
-          <div className="bg-blue-500/20 border-2 border-blue-400 rounded-xl p-4 mb-6">
-            <p className="text-center text-white font-semibold">
-              ⚠️ Only First Attempt Counts!
-            </p>
-            <p className="text-center text-blue-100 text-sm mt-1">
-              Your submitted score: {gameState.previousScore} points
-            </p>
-            <p className="text-center text-blue-200 text-xs mt-1">
-              You can play again for fun, but your score won't change
-            </p>
-          </div>
-        )}
-
         {/* Game Area */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl border-2 border-white/20 mb-8">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-yellow-400/20">
           {/* Audio Player Visual */}
           <div className="text-center mb-8">
             <div className="inline-block p-8 bg-gradient-to-br from-green-600 via-green-700 to-green-800 rounded-full shadow-2xl mb-4">
@@ -378,121 +421,23 @@ const SongGuessGame: React.FC = () => {
             )}
           </div>
 
-          {/* Start/Play Again Button */}
-          {!gameState.gameStarted && !gameState.showResult && (
-            <div className="text-center mb-8">
-              <button
-                onClick={handleStartGame}
-                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 py-4 rounded-xl text-xl font-bold shadow-lg transform hover:scale-105 transition-all duration-200"
-              >
-                {gameState.hasPlayedToday ? "🔄 Play Again (For Fun)" : "▶️ Start Game"}
-              </button>
-            </div>
-          )}
-
           {/* Answer Options */}
-          {gameState.gameStarted && !gameState.showResult && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {gameState.answerOptions.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleAnswer(option)}
-                  disabled={gameState.userAnswer !== null}
-                  className="bg-white/20 hover:bg-white/30 disabled:bg-white/10 text-white p-6 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-105 hover:shadow-lg border-2 border-white/30 hover:border-white/50 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Result */}
-          {gameState.showResult && (
-            <div className="text-center">
-              <div className="mb-6">
-                {gameState.userAnswer === gameState.correctAnswer ? (
-                  <>
-                    <div className="text-6xl mb-4">🎉</div>
-                    <h2 className="text-3xl font-bold text-green-300 mb-2">
-                      Correct!
-                    </h2>
-                    <p className="text-xl text-white mb-4">
-                      The answer was: <span className="font-bold">{gameState.correctAnswer}</span>
-                    </p>
-                    <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20 mb-4">
-                      <p className="text-4xl font-bold text-white">
-                        {gameState.score} points
-                      </p>
-                      {!gameState.hasPlayedToday && (
-                        <div className="mt-2 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
-                          <p className="text-red-200 text-sm">
-                            ✅ Score saved to leaderboard!
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-6xl mb-4">😔</div>
-                    <h2 className="text-3xl font-bold text-red-300 mb-2">
-                      Not quite!
-                    </h2>
-                    <p className="text-xl text-white mb-2">
-                      The correct answer was:
-                    </p>
-                    <p className="text-2xl font-bold text-green-300 mb-4">
-                      {gameState.correctAnswer}
-                    </p>
-                    <p className="text-lg text-red-200">
-                      You answered: {gameState.userAnswer}
-                    </p>
-                  </>
-                )}
-
-                {gameState.hasPlayedToday && gameState.previousScore !== null && (
-                  <div className="bg-red-500/20 border-2 border-red-400 rounded-xl p-4 mt-4">
-                    <p className="text-white font-semibold text-sm">
-                      Your Submitted Score (First Attempt)
-                    </p>
-                    <p className="text-red-300 text-2xl font-bold">
-                      {gameState.previousScore} points
-                    </p>
-                    <p className="text-red-200 text-xs mt-1">
-                      This is the score on the leaderboard
-                    </p>
-                  </div>
-                )}
-              </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {gameState.answerOptions.map((option, index) => (
               <button
-                onClick={handlePlayAgain}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-4 rounded-xl text-xl font-bold shadow-lg transform hover:scale-105 transition-all duration-200"
+                key={index}
+                onClick={() => handleAnswer(option)}
+                disabled={gameState.userAnswer !== null}
+                className="bg-white/20 hover:bg-white/30 disabled:bg-white/10 text-white p-6 rounded-lg font-semibold border-2 border-white/30 hover:border-white/50 transition-all duration-200 disabled:cursor-not-allowed"
               >
-                🔄 Play Again
+                {option}
               </button>
-            </div>
-          )}
-        </div>
-
-        {/* Leaderboard */}
-        {dayInfo && gameState.gameEnded && (
-          <div className="mb-8">
-            <Leaderboard day={dayInfo.day} gameType="songGuessGame" />
+            ))}
           </div>
-        )}
-
-        {/* Back Button */}
-        <div className="text-center">
-          <button
-            onClick={() => navigate("/calendar")}
-            className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 border-2 border-white/30"
-          >
-            ← Back to Calendar
-          </button>
         </div>
       </div>
     </div>
+    </>
   );
 };
 
