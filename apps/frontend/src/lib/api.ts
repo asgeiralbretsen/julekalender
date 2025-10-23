@@ -118,4 +118,19 @@ export class GameScoreAPI {
 
     return response.json();
   }
+
+  static async getTotalLeaderboard(getToken: () => Promise<string | null>): Promise<any[]> {
+    const headers = await this.getAuthHeaders(getToken);
+    
+    const response = await fetch(
+      `${API_BASE_URL}/api/gamescore/leaderboard/total`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get total leaderboard: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }

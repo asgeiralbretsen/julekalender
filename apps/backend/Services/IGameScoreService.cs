@@ -10,4 +10,5 @@ public interface IGameScoreService
     Task<List<GameScore>> GetScoresForDayAsync(int day);
     Task<bool> HasUserPlayedGameTodayAsync(int userId, int day, string gameType);
     Task<List<GameScore>> GetLeaderboardAsync(int day, string gameType);
+    Task<List<object>> GetTotalLeaderboardAsync();
 }
