@@ -82,14 +82,6 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
                   <p className="text-red-200 text-sm">{scoreLabel}</p>
                 </div>
                 
-                {scoreSaved && (
-                  <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
-                    <p className="text-red-200 text-center text-sm">
-                      ✅ Poengsum lagret!
-                    </p>
-                  </div>
-                )}
-                
                 {loading && (
                   <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
                     <p className="text-red-200 text-center text-sm">
@@ -140,6 +132,8 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
               title={`Dag ${dayInfo.day} toppliste`}
               showRank={true}
               maxEntries={10}
+              scoreSaved={scoreSaved}
+              isFirstAttempt={isFirstAttempt}
             />
           )}
         </div>
