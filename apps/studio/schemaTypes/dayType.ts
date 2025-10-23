@@ -6,6 +6,7 @@ import {songGuessGameFields} from './fields/songGuessFields'
 import {quizGameFields} from './fields/quizGameFields'
 import {teamsNotificationGameFields} from './fields/TeamsNotificationFields'
 import {interviewGameFields} from './fields/interviewGameFields'
+import {snowflakeCatchGameFields} from './fields/snowflakeCatchFields'
 
 export const dayType = defineType({
   name: 'day',
@@ -20,6 +21,7 @@ export const dayType = defineType({
     teamsNotificationGameFields,
     interviewGameFields,
     ...songGuessGameFields,
+    snowflakeCatchGameFields,
     ...additionalFields,
   ],
   preview: {

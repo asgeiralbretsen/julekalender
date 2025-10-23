@@ -1,6 +1,7 @@
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import logoIcon from '../assets/unimicro-logoikon-hvit_RGB.png';
 
 export default function Header() {
   const location = useLocation();
@@ -41,10 +42,14 @@ export default function Header() {
           <div className="flex items-center space-x-8">
             <Link 
               to="/" 
-              className="text-xl font-bold text-yellow-300 hover:text-yellow-200 transition-all duration-300 drop-shadow-lg flex items-center space-x-2 hover:scale-105"
+              className="text-xl font-bold text-red-100 hover:text-red-200 transition-all duration-300 drop-shadow-lg flex items-center space-x-2 hover:scale-105"
               style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
             >
-              <span className="text-2xl">🎄</span>
+              <img 
+                src={logoIcon}
+                alt="Logo" 
+                className="w-8 h-8 object-contain drop-shadow-md"
+              />
               <span>Julekalender</span>
             </Link>
             
@@ -59,7 +64,7 @@ export default function Header() {
                   }`}
                   style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
                 >
-                  📅 Kalender
+                  Kalender
                 </Link>
               </nav>
             </SignedIn>

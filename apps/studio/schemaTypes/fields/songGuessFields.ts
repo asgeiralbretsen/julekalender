@@ -3,27 +3,27 @@ import { defineField } from 'sanity';
 export const songGuessGameFields = [
   defineField({
     name: 'songGuessGameData',
-    title: 'Gjett julesangen data',
+    title: 'Song Guess Game Data',
     type: 'object',
     hidden: ({parent}) => parent?.gameType !== 'songGuessGame',
     fields: [
       {
         name: 'title',
-        title: 'Spilltittel',
+        title: 'Game Title',
         type: 'string',
-        initialValue: 'Gjett julesangen! 🎵',
+        initialValue: 'Guess the Christmas Song! 🎵',
       },
       {
         name: 'description',
-        title: 'Spillbeskrivelse',
+        title: 'Game Description',
         type: 'text',
-        initialValue: 'Lytt til klippet og gjett hvilken julesang det er!',
+        initialValue: 'Listen to the clip and guess which Christmas song it is!',
       },
       {
         name: 'songFile',
-        title: 'Sang-lydfil (.mp3)',
+        title: 'Song Audio File (.mp3)',
         type: 'file',
-        description: 'Last opp MP3-lydfilen for sangklippet',
+        description: 'Upload the MP3 audio file for the song clip',
         options: {
           accept: 'audio/mpeg,.mp3',
         },
@@ -54,36 +54,36 @@ export const songGuessGameFields = [
       }),
       {
         name: 'clipDuration',
-        title: 'Klippvarighet (sekunder)',
+        title: 'Clip Duration (seconds)',
         type: 'number',
-        description: 'Hvor lenge lydklippet spiller',
+        description: 'How long the audio clip plays',
         initialValue: 10,
         validation: (Rule) => Rule.required().min(5).max(30),
       },
       {
         name: 'scoringSettings',
-        title: 'Poenginnstillinger',
+        title: 'Scoring Settings',
         type: 'object',
         validation: (Rule) => Rule.required(),
         fields: [
           {
             name: 'correctAnswerPoints',
-            title: 'Poeng for riktig svar',
+            title: 'Points for Correct Answer',
             type: 'number',
             initialValue: 1000,
             validation: (Rule) => Rule.required().min(0),
           },
           {
             name: 'timeBonusPerSecond',
-            title: 'Tidsbonus per sekund gjenstående',
+            title: 'Time Bonus Per Second Remaining',
             type: 'number',
-            description: 'Bonuspoeng per sekund som er igjen',
+            description: 'Bonus points per second remaining',
             initialValue: 50,
             validation: (Rule) => Rule.required().min(0),
           },
           {
             name: 'maxTimeBonus',
-            title: 'Maks tidsbonus',
+            title: 'Maximum Time Bonus',
             type: 'number',
             initialValue: 500,
             validation: (Rule) => Rule.required().min(0),

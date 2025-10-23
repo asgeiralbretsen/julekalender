@@ -13,6 +13,7 @@ import { ColorMatchGame } from "./components/ColorMatch/ColorMatchGame";
 import QuizGame from "./components/QuizGame";
 import { TeamsNotificationGame } from "./components/TeamsNotification/TeamsNotificationGame";
 import InterviewGame from "./components/InterviewGame";
+import SnowflakeCatchGame from "./components/SnowflakeCatchGame";
 
 function App() {
   // This will automatically sync users when they log in
@@ -56,14 +57,14 @@ function App() {
             }
           />
           <Route
-            path="/game/ColorMatchGame"
+            path="/game/colorMatchGame"
             element={
               <ProtectedRoute>
                 <ColorMatchGame />
               </ProtectedRoute>
             }
           />
-         <Route
+          <Route
             path="/game/songGuessGame"
             element={
               <ProtectedRoute>
@@ -71,21 +72,21 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/game/quizGame"
             element={
               <ProtectedRoute>
-      <QuizGame />
+                <QuizGame />
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/game/teamsNotificationGame"
             element={
               <ProtectedRoute>
-      <TeamsNotificationGame />
+                <TeamsNotificationGame />
               </ProtectedRoute>
             }
           />
@@ -94,6 +95,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <InterviewGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/game/snowflakeCatchGame"
+            element={
+              <ProtectedRoute>
+                <SnowflakeCatchGame />
               </ProtectedRoute>
             }
           />
