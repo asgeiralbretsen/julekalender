@@ -41,7 +41,8 @@ interface SanityDay {
     | "colorMatchGame"
     | "quizGame"
     | "teamsNotificationGame"
-    | "songGuessGame";
+    | "songGuessGame"
+    | "snowflakeCatchGame";
   blurGuessGameData?: {
     images: Array<{
       image: {
@@ -143,6 +144,9 @@ interface SanityDay {
         _ref: string;
       };
     };
+  };
+  snowflakeCatchGameData?: {
+    title: string;
   };
   isUnlocked: boolean;
 }
@@ -374,7 +378,7 @@ function DayCell({
 export default function AdventCalendar() {
   const navigate = useNavigate();
   const today = new Date();
-  const currentDay = today.getMonth() === 9 ? today.getDate() -10 : 1; // December only; otherwise start at 1
+  const currentDay = today.getMonth() === 9 ? today.getDate() : 1; // December only; otherwise start at 1
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [sanityDays, setSanityDays] = useState<SanityDay[]>([]);
@@ -397,6 +401,7 @@ export default function AdventCalendar() {
           songGuessGameData,
           quizGameData,
           teamsNotificationGameData,
+          snowflakeCatchGameData,
           isUnlocked
         }`;
         const data = await client.fetch(query);
@@ -587,6 +592,53 @@ export default function AdventCalendar() {
         );
         navigate("/game/teamsNotificationGame");
         return;
+      } else if (sanityDay.gameType === "snowflakeCatchGame") {
+        console.log(
+          "Navigating to SnowflakeCatchGame with data:",
+          sanityDay.snowflakeCatchGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            snowflakeCatchGameData: sanityDay.snowflakeCatchGameData || {},
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/snowflakeCatchGame");
+        return;
+      } else if (
+        sanityDay.gameType === "songGuessGame" &&
+        sanityDay.songGuessGameData
+      ) {
+        console.log(
+          "Navigating to SongGuessGame with data:",
+          sanityDay.songGuessGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            songGuessGameData: sanityDay.songGuessGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/songGuessGame");
+        return;
+      } else {
+        console.log("Game type found but no game data available");
       }
     } else {
       console.log("No game type or game type is none");
