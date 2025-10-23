@@ -1,0 +1,100 @@
+import {defineField} from 'sanity'
+
+export const colorMatchGameFields = defineField({
+  name: 'colorMatchGameData',
+  title: 'Fargetilpasning spilldata',
+  type: 'object',
+  hidden: ({parent}) => parent?.gameType !== 'colorMatchGame',
+  fields: [
+    defineField({
+      name: 'title',
+      title: 'Spilltittel',
+      type: 'string',
+      // validation: (rule) => rule.required().max(100),
+      description: 'Tittelen på dette fargetilpasningsspillet',
+    }),
+    defineField({
+      name: 'description',
+      title: 'Beskrivelse',
+      type: 'text',
+      rows: 3,
+      description: 'Kort beskrivelse av spillet',
+    }),
+    defineField({
+      name: 'stockingColors',
+      title: 'Sokkefarger',
+      type: 'object',
+      fields: [
+        defineField({
+          name: 'topColor',
+          title: 'Toppfarge',
+          type: 'color',
+          // validation: (rule) => rule.required(),
+          description: 'Fargen på toppdelen av sokken',
+        }),
+        defineField({
+          name: 'topStripesColor',
+          title: 'Toppstripefarge',
+          type: 'color',
+          // validation: (rule) => rule.required(),
+          description: 'Fargen på stripene i toppdelen',
+        }),
+        defineField({
+          name: 'mainColor',
+          title: 'Hovedfarge',
+          type: 'color',
+          // validation: (rule) => rule.required(),
+          description: 'Hovedfargen på sokken',
+        }),
+        defineField({
+          name: 'heelColor',
+          title: 'Hælfarge',
+          type: 'color',
+          // validation: (rule) => rule.required(),
+          description: 'Fargen på hælen',
+        }),
+        defineField({
+          name: 'stripesColor',
+          title: 'Stripefarge',
+          type: 'color',
+          // validation: (rule) => rule.required(),
+          description: 'Fargen på de dekorative stripene',
+        }),
+      ],
+      // validation: (rule) => rule.required(),
+      description: 'Definer fargene for målsokken som spillere skal matche',
+    }),
+    defineField({
+      name: 'scoringSettings',
+      title: 'Poengsuminnstillinger',
+      type: 'object',
+      fields: [
+        defineField({
+          name: 'perfectMatchBonus',
+          title: 'Perfekt match-bonus',
+          type: 'number',
+          initialValue: 50,
+          // validation: (rule) => rule.required().min(0).max(1000),
+          description: 'Bonuspoeng for perfekte fargetreff',
+        }),
+        defineField({
+          name: 'closeMatchThreshold',
+          title: 'Nærme match-terskel',
+          type: 'number',
+          initialValue: 80,
+          // validation: (rule) => rule.required().min(0).max(100),
+          description: 'Prosentvis terskel for å vurdere et treff som "nært"',
+        }),
+        defineField({
+          name: 'timeBonus',
+          title: 'Tidsbonusmultiplikator',
+          type: 'number',
+          initialValue: 1.5,
+          // validation: (rule) => rule.required().min(0).max(5),
+          description: 'Multiplikator for tidsbaserte bonuser',
+        }),
+      ],
+      description: 'Konfigurer hvordan poengsum fungerer for dette spillet',
+    }),
+  ],
+})

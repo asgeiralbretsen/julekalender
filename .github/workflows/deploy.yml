@@ -1,23 +1,64 @@
-name: Deploy to VPS
+name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  build:
+    name: Build Docker Images
     runs-on: ubuntu-latest
     
     steps:
-    - name: Deploy to VPS
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        script: |
-          cd /opt/julekalender
-          git pull origin main
-          docker-compose down
-          docker-compose up -d --build
-          docker system prune -f
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Clean Docker resources
+        run: |
+          echo "🧹 Cleaning Docker resources..."
+          docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
+          docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f || true
+          docker builder prune -af || true
+
+      - name: Build images
+        run: |
+          echo "🔨 Building images with no cache..."
+          docker compose -f docker-compose.prod.yml build --no-cache --pull
+
+      - name: Verify build
+        run: |
+          echo "✅ Build completed successfully"
+          docker images | grep julekalender
+
+      - name: Summary
+        run: echo "🎉 Build verification completed!"
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH || '/opt/julekalender' }}
+            echo "📥 Pulling latest code..."
+            git pull origin main
+            echo "🚀 Running deployment script..."
+            chmod +x deploy.sh
+            ./deploy.sh
+
+      - name: Summary
+        run: echo "🎉 Deployed to server!"

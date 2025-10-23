@@ -1,0 +1,106 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: julekalender-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - julekalender-network
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile.prod
+    container_name: julekalender-frontend
+    # No external port exposure - only accessible via Caddy internally
+    expose:
+      - "80"
+    depends_on:
+      - backend
+    networks:
+      - julekalender-network
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: julekalender-backend
+    # No external port exposure - only accessible via Caddy internally
+    expose:
+      - "5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=julekalender;Username=postgres;Password=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - julekalender-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: julekalender-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=julekalender
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - julekalender-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d julekalender"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  studio:
+    build:
+      context: ./apps/studio
+      dockerfile: Dockerfile
+    container_name: julekalender-studio
+    ports:
+      - "3333:3333"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - julekalender-network
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: julekalender-pgadmin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@julekalender.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "8081:80"
+    depends_on:
+      - postgres
+    networks:
+      - julekalender-network
+
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+
+networks:
+  julekalender-network:
+    driver: bridge

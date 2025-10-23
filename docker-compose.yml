@@ -27,7 +27,7 @@ services:
       - ./apps/frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=https://julekalender.albretsen.no
+      - VITE_API_URL=http://localhost:5002
       - VITE_CLERK_PUBLISHABLE_KEY=pk_test_cHJvbXB0LWRvbHBoaW4tMzguY2xlcmsuYWNjb3VudHMuZGV2JA
     depends_on:
       - backend
@@ -44,6 +44,24 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=julekalender;Username=postgres;Password=postgres
+    depends_on:
+      - postgres
+    networks:
+      - julekalender-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: julekalender-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=julekalender
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     networks:
       - julekalender-network
 
@@ -60,10 +78,25 @@ services:
       - julekalender-network
     restart: unless-stopped
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: julekalender-pgadmin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@julekalender.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - julekalender-network
+
 
 volumes:
   caddy_data:
   caddy_config:
+  postgres_data:
 
 networks:
   julekalender-network:
