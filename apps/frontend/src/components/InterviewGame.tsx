@@ -286,118 +286,154 @@ export default function InterviewGame() {
   const isCorrect = selectedAnswer === question.correctAnswerIndex;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden p-4">
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
+    <div className="min-h-screen bg-gray-900 relative overflow-hidden">
+      {/* Teams-like background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-gray-800 to-blue-900" />
       
-      <div className="max-w-4xl mx-auto relative z-10">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
-          </h1>
-          <div className="flex justify-center gap-8 text-red-100">
-            <span>Spørsmål {currentQuestion + 1} / {gameData.questions.length}</span>
-            <span className="text-green-300 font-bold">🎯 Alle riktig = jobb!</span>
-            <span className="text-red-300 font-bold">❌ 1 feil = ut!</span>
+      {/* Teams call interface */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Header with meeting info */}
+        <div className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-white font-medium">Intervju - {currentInterviewer?.name || 'Laster...'}</span>
+            </div>
+            <div className="flex items-center space-x-2 text-gray-300 text-sm">
+              <span>Spørsmål {currentQuestion + 1} / {gameData.questions.length}</span>
+              <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+              <span className="text-green-400">🎯 Alle riktig = jobb!</span>
+              <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+              <span className="text-red-400">❌ 1 feil = ut!</span>
+            </div>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 items-start">
-          {/* Interviewer */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-yellow-400/20">
-            <div className="text-center">
-              {currentInterviewer && (
-                <>
-                  <div className="mb-4">
-                    <img
-                      src={`https://cdn.sanity.io/images/54fixmwv/production/${currentInterviewer.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}`}
-                      alt={currentInterviewer.image.alt || currentInterviewer.name}
-                      className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-yellow-400/50"
-                    />
+        {/* Main video area */}
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-6xl w-full">
+            <div className="grid lg:grid-cols-3 gap-8 items-center">
+              
+              {/* Interviewer video (main speaker) */}
+              <div className="lg:col-span-2">
+                <div className="relative bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border-4 border-gray-600">
+                  {/* Video placeholder with interviewer */}
+                  <div className="aspect-video bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center relative">
+                    {currentInterviewer && (
+                      <div className="text-center">
+                        <img
+                          src={`https://cdn.sanity.io/images/54fixmwv/production/${currentInterviewer.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}`}
+                          alt={currentInterviewer.image.alt || currentInterviewer.name}
+                          className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-blue-400 shadow-lg"
+                        />
+                        <h3 className="text-2xl font-bold text-white mt-4 mb-2">
+                          {currentInterviewer.name}
+                        </h3>
+                        {currentInterviewer.role && (
+                          <p className="text-blue-300 text-lg">
+                            {currentInterviewer.role}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Speaking indicator */}
+                    <div className="absolute top-4 left-4 flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-white text-sm font-medium">Snakker</span>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-1">
-                    {currentInterviewer.name}
-                  </h3>
-                  {currentInterviewer.role && (
-                    <p className="text-yellow-200 text-sm mb-4">
-                      {currentInterviewer.role}
-                    </p>
-                  )}
-                </>
-              )}
+                  
+                  {/* Subtitles */}
+                  <div className="bg-black/80 backdrop-blur-sm p-6">
+                    <div className="text-center">
+                      <p className="text-white text-xl font-medium leading-relaxed">
+                        {question.questionText}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Answer options (your responses) */}
+              <div className="space-y-4">
+                <h3 className="text-white text-lg font-semibold mb-4 text-center">
+                  Ditt svar:
+                </h3>
+                
+                {question.answers.map((answer, index) => {
+                  let buttonStyle = 'bg-gray-700 hover:bg-gray-600 border-gray-600 text-white';
+                  
+                  if (showResult) {
+                    if (index === question.correctAnswerIndex) {
+                      buttonStyle = 'bg-green-600 border-green-500 text-white';
+                    } else if (index === selectedAnswer) {
+                      buttonStyle = 'bg-red-600 border-red-500 text-white';
+                    } else {
+                      buttonStyle = 'bg-gray-600 border-gray-500 text-gray-300';
+                    }
+                  } else if (selectedAnswer === index) {
+                    buttonStyle = 'bg-blue-600 border-blue-500 text-white';
+                  }
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleAnswerClick(index)}
+                      disabled={selectedAnswer !== null || showResult}
+                      className={`w-full p-4 rounded-lg font-medium border-2 transition-all duration-200 ${buttonStyle} disabled:cursor-not-allowed text-left`}
+                    >
+                      <span className="font-bold mr-2">{String.fromCharCode(65 + index)}.</span>
+                      {answer}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Question */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-yellow-400/20">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
-              {question.questionText}
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {question.answers.map((answer, index) => {
-                let buttonStyle = 'bg-white/20 hover:bg-white/30 border-white/30';
-                
-                if (showResult) {
-                  if (index === question.correctAnswerIndex) {
-                    buttonStyle = 'bg-green-600 border-green-500';
-                  } else if (index === selectedAnswer) {
-                    buttonStyle = 'bg-red-600 border-red-500';
-                  } else {
-                    buttonStyle = 'bg-gray-600 border-gray-500';
-                  }
-                } else if (selectedAnswer === index) {
-                  buttonStyle = 'bg-yellow-500 border-yellow-400';
-                }
-
-                return (
-                  <button
-                    key={index}
-                    onClick={() => handleAnswerClick(index)}
-                    disabled={selectedAnswer !== null || showResult}
-                    className={`p-6 rounded-lg font-semibold text-white border-2 transition-all duration-200 ${buttonStyle} disabled:cursor-not-allowed`}
-                  >
-                    {answer}
-                  </button>
-                );
-              })}
-            </div>
-
-            {showResult && (
-              <div className="mt-6 text-center">
-                {isCorrect ? (
-                  <div>
-                    <p className="text-2xl font-bold text-green-300">
-                      ✅ Riktig!
-                    </p>
-                    {currentQuestion + 1 >= gameData.questions.length ? (
-                      <div className="mt-4 p-4 bg-green-500/20 border border-green-400/50 rounded-lg">
-                        <p className="text-green-300 font-bold text-xl">
-                          🎉 Gratulerer! Du fikk jobben!
-                        </p>
-                        <p className="text-green-200 text-sm mt-1">
-                          Poeng basert på hastighet
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-yellow-300 mt-2">
-                        Fortsett til neste spørsmål...
+        {/* Result overlay */}
+        {showResult && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-20">
+            <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
+              {isCorrect ? (
+                <div>
+                  <div className="text-6xl mb-4">✅</div>
+                  <h2 className="text-2xl font-bold text-green-600 mb-4">
+                    Riktig svar!
+                  </h2>
+                  {currentQuestion + 1 >= gameData.questions.length ? (
+                    <div className="p-4 bg-green-100 rounded-lg">
+                      <p className="text-green-800 font-bold text-xl">
+                        🎉 Gratulerer! Du fikk jobben!
                       </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-4 p-4 bg-red-500/20 border border-red-400/50 rounded-lg">
-                    <p className="text-red-300 font-bold text-xl">
-                      ❌ Feil svar!
+                      <p className="text-green-600 text-sm mt-2">
+                        Poeng basert på hastighet
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">
+                      Fortsett til neste spørsmål...
                     </p>
-                    <p className="text-red-200 text-sm mt-1">
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <div className="text-6xl mb-4">❌</div>
+                  <h2 className="text-2xl font-bold text-red-600 mb-4">
+                    Feil svar!
+                  </h2>
+                  <div className="p-4 bg-red-100 rounded-lg">
+                    <p className="text-red-800 font-bold text-lg">
                       Du ble sendt ut av intervjuet
                     </p>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
