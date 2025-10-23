@@ -15,19 +15,9 @@ FROM build AS publish
 RUN dotnet publish -c Release -o /app/publish
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-
-# Install EF Core tools for migrations
-RUN dotnet tool install --global dotnet-ef
-ENV PATH="${PATH}:/root/.dotnet/tools"
-
-# Copy source files needed for migrations
-COPY --from=build /src/*.csproj ./
-COPY --from=build /src/Migrations ./Migrations
-COPY --from=build /src/Data ./Data
-COPY --from=build /src/Models ./Models
 
 # Expose port
 EXPOSE 5000
