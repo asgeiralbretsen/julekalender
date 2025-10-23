@@ -375,13 +375,16 @@ export function TeamsNotificationGame() {
     return (
       <StartGameScreen
         title={gameData.title || dayInfo?.title || "Teams Varsel Spill"}
-        description={gameData.description || "Klikk på Teams-varslene så raskt som mulig for å fjerne dem!"}
+        description={
+          gameData.description ||
+          "Klikk på Teams-varslene så raskt som mulig for å fjerne dem!"
+        }
         howToPlay={[
           "• Teams-varsler dukker opp på skjermen",
           "• Klikk på varslene for å fjerne dem",
           "• +1 poeng per varslet du lukker",
           "• 30 sekunder spilletid",
-          "• Varslene dukker opp raskere og raskere!"
+          "• Varslene dukker opp raskere og raskere!",
         ]}
         previousScore={hasPlayedToday ? previousScore : undefined}
         onClickStartGame={() => setGameStarted(true)}
@@ -420,25 +423,12 @@ export function TeamsNotificationGame() {
             </div>
           </div>
 
-          {!gameStarted && (
-            <button
-              onClick={() => setGameStarted(true)}
-              className="w-full py-4 bg-green-700 hover:bg-green-700 text-white text-xl font-bold rounded-lg transition-colors"
-            >
-              {hasPlayedToday
-                ? "Spill Igjen (for moro skyld)"
-                : "Start Spillet"}
-            </button>
-          )}
-
-          {gameStarted && (
-            <div className="text-center">
-              <p className="text-red-200 text-sm mb-2">Spillet pågår...</p>
-              <p className="text-white/80 text-xs">
-                Klikk på varslene for å fjerne dem!
-              </p>
-            </div>
-          )}
+          <div className="text-center">
+            <p className="text-red-200 text-sm mb-2">Spillet pågår...</p>
+            <p className="text-white/80 text-xs">
+              Klikk på varslene for å fjerne dem!
+            </p>
+          </div>
         </div>
 
         {gameStarted && (
