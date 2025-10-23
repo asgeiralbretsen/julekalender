@@ -170,7 +170,6 @@ app.Use(async (context, next) =>
 });
 
 app.UseCors("AllowFrontend");
-app.UseHttpsRedirection();
 
 // Enable authentication and authorization
 app.UseAuthentication();
