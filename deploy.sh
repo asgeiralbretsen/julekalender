@@ -51,7 +51,7 @@ done
 
 # Run database migrations
 echo "🔄 Running database migrations..."
-docker compose -f docker-compose.prod.yml run --rm backend dotnet ef database update || docker-compose -f docker-compose.prod.yml run --rm backend dotnet ef database update
+docker compose -f docker-compose.prod.yml run --rm --entrypoint="" backend bash -c "dotnet ef database update" || docker-compose -f docker-compose.prod.yml run --rm --entrypoint="" backend bash -c "dotnet ef database update"
 echo "✅ Migrations completed"
 
 # Start all other services
