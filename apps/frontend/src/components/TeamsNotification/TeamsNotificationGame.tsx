@@ -367,9 +367,9 @@ export function TeamsNotificationGame() {
   return (
     <ChristmasBackground>
       <div className="min-h-screen p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-yellow-400/20 mb-6 z-10 max-w-md">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-red-400/20 mb-6 z-10 max-w-md">
           <h1
-            className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg text-center"
+            className="text-4xl font-bold text-white mb-4 drop-shadow-lg text-center"
             style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
           >
             {gameData.title || dayInfo?.title || "Teams Varsel Spill"}
@@ -381,12 +381,12 @@ export function TeamsNotificationGame() {
           )}
 
           <div className="grid grid-cols-2 gap-4 text-center mb-4">
-            <div className="bg-white/10 rounded-lg p-4">
-              <p className="text-yellow-300 font-bold">Poeng</p>
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-red-400/20">
+              <p className="text-red-200 text-sm mb-1">Poeng</p>
               <p className="text-white text-4xl font-bold">{score}</p>
             </div>
-            <div className="bg-white/10 rounded-lg p-4">
-              <p className="text-yellow-300 font-bold">Tid Igjen</p>
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-red-400/20">
+              <p className="text-red-200 text-sm mb-1">Tid Igjen</p>
               <p
                 className={`text-3xl font-bold ${timeRemaining <= 10 ? "text-red-400" : "text-white"}`}
               >
@@ -398,27 +398,21 @@ export function TeamsNotificationGame() {
           {!gameStarted && (
             <button
               onClick={() => setGameStarted(true)}
-              className="w-full py-4 bg-green-600 hover:bg-green-700 text-white text-xl font-bold rounded-lg transition-colors"
+              className="w-full py-4 bg-green-700 hover:bg-green-700 text-white text-xl font-bold rounded-lg transition-colors"
             >
               {hasPlayedToday ? "Spill Igjen (for moro skyld)" : "Start Spillet"}
             </button>
           )}
 
           {gameStarted && (
-            <button
-              onClick={() => {
-                setGameStarted(false);
-                setGameOver(false);
-                setScore(0);
-                setNextNotificationId(0);
-                setSpawnInterval(1000);
-                setTimeRemaining(30);
-                setActiveNotifications(new Map());
-              }}
-              className="w-full py-4 bg-red-600 hover:bg-red-700 text-white text-xl font-bold rounded-lg transition-colors"
-            >
-              Nullstill Spillet
-            </button>
+            <div className="text-center">
+              <p className="text-red-200 text-sm mb-2">
+                Spillet pågår...
+              </p>
+              <p className="text-white/80 text-xs">
+                Klikk på varslene for å fjerne dem!
+              </p>
+            </div>
           )}
         </div>
 
