@@ -218,12 +218,19 @@ const BlurGuessGame: React.FC = () => {
     checkIfPlayedToday();
   }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
 
-  const startNewRound = useCallback(() => {
-    const randomImage =
-      gameImages[Math.floor(Math.random() * gameImages.length)];
+  const startNewRound = useCallback((roundNumber: number) => {
+    // Use round number as index (round is 1-based, array is 0-based)
+    const imageIndex = roundNumber - 1;
+    const nextImage = gameImages[imageIndex];
+    
+    if (!nextImage) {
+      console.error('No image found for round', roundNumber);
+      return;
+    }
+    
     setGameState((prev) => ({
       ...prev,
-      currentImage: randomImage,
+      currentImage: nextImage,
       blurLevel: MAX_BLUR,
       timeElapsed: 0,
       correctAnswer: null,
@@ -232,7 +239,7 @@ const BlurGuessGame: React.FC = () => {
     }));
   }, [gameImages]);
 
-  const saveGameScoreWhenEnded = async (finalScore: number) => {
+  const saveGameScoreWhenEnded = useCallback(async (finalScore: number) => {
     if (!user || !dayInfo) return;
 
     if (gameState.hasPlayedToday) {
@@ -257,7 +264,7 @@ const BlurGuessGame: React.FC = () => {
     } catch (err) {
       console.error("Error saving game score:", err);
     }
-  };
+  }, [user, dayInfo, gameState.hasPlayedToday, saveGameScore]);
 
   const startGame = () => {
     setGameState((prev) => ({
@@ -267,7 +274,7 @@ const BlurGuessGame: React.FC = () => {
       score: 0,
       round: 1,
     }));
-    startNewRound();
+    startNewRound(1); // Start with first image
   };
 
   const resetGame = () => {
@@ -320,8 +327,9 @@ const BlurGuessGame: React.FC = () => {
         // Save the score when game ends
         saveGameScoreWhenEnded(finalScore);
       } else {
-        setGameState((prev) => ({ ...prev, round: prev.round + 1 }));
-        startNewRound();
+        const nextRound = gameState.round + 1;
+        setGameState((prev) => ({ ...prev, round: nextRound }));
+        startNewRound(nextRound); // Load next image in sequence
       }
     }, 2000);
   };
@@ -367,6 +375,25 @@ const BlurGuessGame: React.FC = () => {
     gameState.showResult,
     gameState.currentImage,
   ]);
+
+  // Handle moving to next round when time runs out
+  useEffect(() => {
+    if (gameState.showResult && !gameState.userAnswer && gameState.gameStarted && !gameState.gameEnded) {
+      // Time ran out (no user answer)
+      const moveToNextRound = setTimeout(() => {
+        if (gameState.round >= gameImages.length) {
+          setGameState((prev) => ({ ...prev, gameEnded: true }));
+          saveGameScoreWhenEnded(gameState.score);
+        } else {
+          const nextRound = gameState.round + 1;
+          setGameState((prev) => ({ ...prev, round: nextRound }));
+          startNewRound(nextRound);
+        }
+      }, 2000);
+      
+      return () => clearTimeout(moveToNextRound);
+    }
+  }, [gameState.showResult, gameState.userAnswer, gameState.round, gameState.gameStarted, gameState.gameEnded, gameState.score, gameImages.length, saveGameScoreWhenEnded, startNewRound]);
 
   if (gameState.gameEnded) {
     return (

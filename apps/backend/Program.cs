@@ -126,6 +126,25 @@ builder.Services.AddAuthentication("Bearer")
 
 var app = builder.Build();
 
+// Apply database migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        logger.LogInformation("Applying database migrations...");
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
+        logger.LogInformation("Database migrations applied successfully");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while migrating the database");
+        throw;
+    }
+}
+
 // Configure Swagger UI
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
@@ -151,7 +170,6 @@ app.Use(async (context, next) =>
 });
 
 app.UseCors("AllowFrontend");
-app.UseHttpsRedirection();
 
 // Enable authentication and authorization
 app.UseAuthentication();
