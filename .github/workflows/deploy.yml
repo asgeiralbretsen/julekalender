@@ -48,12 +48,12 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
           script: |
-            cd ${{ secrets.DEPLOY_PATH || '/opt/julekalender' }}
+            cd /opt/julekalender
             echo "📥 Pulling latest code..."
             git pull origin main
             echo "🚀 Running deployment script..."
