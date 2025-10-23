@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { useGameScore } from '../hooks/useGameScore';
 import Leaderboard from './Leaderboard';
+import GameResultsScreen from './GameResultsScreen';
 
 interface Interviewer {
   name: string;
@@ -35,13 +36,11 @@ interface InterviewGameData {
 
 export default function InterviewGame() {
   const { user } = useUser();
-  const { saveGameScore, hasUserPlayedGame, getUserScoreForDay, loading: scoreLoading, error: scoreError } = useGameScore();
+  const { saveGameScore, hasUserPlayedGame, getUserScoreForDay } = useGameScore();
   
   const [gameData, setGameData] = useState<InterviewGameData | null>(null);
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -52,6 +51,10 @@ export default function InterviewGame() {
   const [loading, setLoading] = useState(true);
   const [checkingPlayStatus, setCheckingPlayStatus] = useState(true);
   const [currentInterviewer, setCurrentInterviewer] = useState<Interviewer | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [finalTime, setFinalTime] = useState<number | null>(null);
+  const [gotJob, setGotJob] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const gameDataStr = sessionStorage.getItem('currentGameData');
@@ -108,38 +111,22 @@ export default function InterviewGame() {
     checkIfPlayedToday();
   }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
 
-  useEffect(() => {
-    if (gameStarted && !showResult && !gameEnded && timeLeft > 0) {
-      const timer = setTimeout(() => {
-        setTimeLeft(timeLeft - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && gameStarted && !showResult && !gameEnded) {
-      handleTimeout();
-    }
-  }, [gameStarted, timeLeft, showResult, gameEnded]);
-
   const startGame = () => {
     if (!gameData) return;
     setGameStarted(true);
     setGameEnded(false);
     setCurrentQuestion(0);
-    setScore(0);
-    setTimeLeft(gameData.questions[0].timeLimit);
     setSelectedAnswer(null);
     setShowResult(false);
     setScoreSaved(false);
+    setGotJob(false);
+    setFailed(false);
+    setStartTime(Date.now());
+    setFinalTime(null);
     // Set first interviewer
     if (gameData.interviewers && gameData.interviewers.length > 0) {
       setCurrentInterviewer(gameData.interviewers[0]);
     }
-  };
-
-  const handleTimeout = () => {
-    setShowResult(true);
-    setTimeout(() => {
-      nextQuestion();
-    }, 2000);
   };
 
   const handleAnswerClick = (answerIndex: number) => {
@@ -151,51 +138,55 @@ export default function InterviewGame() {
     const question = gameData.questions[currentQuestion];
     const isCorrect = answerIndex === question.correctAnswerIndex;
     
-    if (isCorrect) {
-      const points = gameData.scoringSettings.correctAnswerPoints + (timeLeft * gameData.scoringSettings.timeBonus);
-      setScore(score + points);
+    if (!isCorrect) {
+      // Wrong answer = immediate failure
+      setFailed(true);
+      setTimeout(() => {
+        endGame();
+      }, 2000);
+      return;
     }
 
-    setTimeout(() => {
-      nextQuestion();
-    }, 2000);
+    // Correct answer - check if this was the last question
+    if (currentQuestion + 1 >= gameData.questions.length) {
+      // All questions answered correctly - got the job!
+      setGotJob(true);
+      setFinalTime(Date.now());
+      setTimeout(() => {
+        endGame();
+      }, 2000);
+    } else {
+      // Move to next question
+      setTimeout(() => {
+        nextQuestion();
+      }, 1500);
+    }
   };
 
   const nextQuestion = () => {
     if (!gameData) return;
 
-    if (currentQuestion + 1 < gameData.questions.length) {
-      const nextQuestionIndex = currentQuestion + 1;
-      setCurrentQuestion(nextQuestionIndex);
-      setTimeLeft(gameData.questions[nextQuestionIndex].timeLimit);
-      setSelectedAnswer(null);
-      setShowResult(false);
-      
-      // Switch interviewer for variety (alternate between the two)
-      if (gameData.interviewers && gameData.interviewers.length >= 2) {
-        setCurrentInterviewer(gameData.interviewers[nextQuestionIndex % 2]);
-      }
-    } else {
-      endGame();
+    const nextQuestionIndex = currentQuestion + 1;
+    setCurrentQuestion(nextQuestionIndex);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    
+    // Switch interviewer for variety (alternate between the two)
+    if (gameData.interviewers && gameData.interviewers.length >= 2) {
+      setCurrentInterviewer(gameData.interviewers[nextQuestionIndex % 2]);
     }
   };
 
   const endGame = async () => {
     setGameEnded(true);
     
-    if (user && dayInfo && !hasPlayedToday) {
+    if (user && dayInfo && !hasPlayedToday && gotJob && startTime && finalTime) {
       try {
-        // Check if all questions were answered correctly for perfect score bonus
-        let finalScore = score;
-        if (gameData) {
-          const allCorrect = gameData.questions.every((_, index) => {
-            // This is a simplified check - in a real implementation you'd track correct answers
-            return true; // For now, assume perfect score if they reach the end
-          });
-          if (allCorrect) {
-            finalScore += gameData.scoringSettings.perfectScoreBonus;
-          }
-        }
+        // Calculate score based on speed (faster = higher score)
+        const timeTaken = (finalTime - startTime) / 1000; // seconds
+        const maxTime = gameData.questions.length * 30; // Assume 30 seconds per question max
+        const speedBonus = Math.max(0, maxTime - timeTaken);
+        const finalScore = Math.round(1000 + speedBonus * 10); // Base score + speed bonus
 
         const result = await saveGameScore({
           day: dayInfo.day,
@@ -236,79 +227,23 @@ export default function InterviewGame() {
   }
 
   if (gameEnded) {
-    const displayScore = hasPlayedToday && previousScore !== null ? previousScore : score;
+    const displayScore = hasPlayedToday && previousScore !== null ? previousScore : (gotJob ? 1000 : 0);
     const isFirstAttempt = !hasPlayedToday || scoreSaved;
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-        
-        <div className="max-w-6xl w-full relative z-10">
-          <div className="grid md:grid-cols-2 gap-6 items-start">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20">
-              <h1 className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-                {isFirstAttempt && !hasPlayedToday ? 'Intervju fullført!' : 'Din poengsum'}
-              </h1>
-              
-              <div className="mb-6">
-                <p className="text-red-200 text-sm mb-2">
-                  {isFirstAttempt && !hasPlayedToday ? 'Din poengsum (innsendt)' : 'Din innsendte poengsum'}
-                </p>
-                <p className="text-6xl text-white font-bold mb-2">
-                  {displayScore}
-                </p>
-                <p className="text-red-200 text-sm">poeng</p>
-              </div>
-              
-              {scoreSaved && (
-                <p className="text-green-300 mb-4">
-                  ✅ Poengsum lagret!
-                </p>
-              )}
-              
-              {scoreLoading && (
-                <p className="text-yellow-300 mb-4">
-                  💾 Lagrer poengsum...
-                </p>
-              )}
-              
-              {hasPlayedToday && !scoreSaved && (
-                <div className="mb-4 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
-                  <p className="text-yellow-200 text-sm">
-                    Du har allerede spilt dette intervjuet i dag!
-                  </p>
-                  <p className="text-red-200 text-xs mt-1">
-                    Bare første poengsum teller på topplisten
-                  </p>
-                </div>
-              )}
-              
-              {scoreError && (
-                <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
-                  <p className="text-red-200 text-sm">{scoreError}</p>
-                </div>
-              )}
-              
-              <button
-                onClick={startGame}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
-              >
-                {isFirstAttempt && !hasPlayedToday ? 'Spill igjen' : 'Spill igjen (for moro skyld)'}
-              </button>
-            </div>
-
-            {dayInfo && (
-              <Leaderboard
-                day={dayInfo.day}
-                gameType="interviewGame"
-                title={`Dag ${dayInfo.day} toppliste`}
-                showRank={true}
-                maxEntries={10}
-              />
-            )}
-          </div>
-        </div>
-      </div>
+      <GameResultsScreen
+        isFirstAttempt={isFirstAttempt}
+        currentScore={gotJob ? 1000 : 0}
+        previousScore={previousScore}
+        scoreSaved={scoreSaved}
+        loading={false}
+        error={null}
+        dayInfo={dayInfo}
+        gameType="interviewGame"
+        gameName="Intervju Spill"
+        onPlayAgain={startGame}
+        scoreLabel="poeng"
+      />
     );
   }
 
@@ -324,12 +259,14 @@ export default function InterviewGame() {
           
           <p className="text-red-100 mb-6">{gameData.description}</p>
           
-          <div className="mb-6 p-4 bg-blue-500/20 border border-blue-400/50 rounded-lg">
-            <p className="text-blue-200 font-semibold mb-2">Intervju-regler:</p>
+          <div className="mb-6 p-4 bg-red-500/20 border border-red-400/50 rounded-lg">
+            <p className="text-red-200 font-semibold mb-2">Intervju-regler:</p>
             <ul className="text-red-100 text-sm space-y-1">
               <li>• {gameData.questions.length} spørsmål</li>
               <li>• 4 svaralternativer hver</li>
-              <li>• Bonuspoeng for raske svar</li>
+              <li>• <span className="text-red-300 font-bold">1 feil = ut av intervjuet!</span></li>
+              <li>• <span className="text-green-300 font-bold">Alle riktig = du får jobben!</span></li>
+              <li>• Poeng basert på hastighet</li>
               <li>• Første forsøk teller!</li>
             </ul>
           </div>
@@ -359,10 +296,8 @@ export default function InterviewGame() {
           </h1>
           <div className="flex justify-center gap-8 text-red-100">
             <span>Spørsmål {currentQuestion + 1} / {gameData.questions.length}</span>
-            <span>Poeng: {score}</span>
-            <span className={timeLeft <= 5 ? 'text-red-300 font-bold animate-pulse' : ''}>
-              Tid: {timeLeft}s
-            </span>
+            <span className="text-green-300 font-bold">🎯 Alle riktig = jobb!</span>
+            <span className="text-red-300 font-bold">❌ 1 feil = ut!</span>
           </div>
         </div>
 
@@ -429,13 +364,35 @@ export default function InterviewGame() {
 
             {showResult && (
               <div className="mt-6 text-center">
-                <p className={`text-2xl font-bold ${isCorrect ? 'text-green-300' : 'text-red-300'}`}>
-                  {isCorrect ? '✅ Riktig!' : '❌ Feil!'}
-                </p>
-                {isCorrect && (
-                  <p className="text-yellow-300 mt-2">
-                    +{gameData.scoringSettings.correctAnswerPoints + (timeLeft * gameData.scoringSettings.timeBonus)} poeng
-                  </p>
+                {isCorrect ? (
+                  <div>
+                    <p className="text-2xl font-bold text-green-300">
+                      ✅ Riktig!
+                    </p>
+                    {currentQuestion + 1 >= gameData.questions.length ? (
+                      <div className="mt-4 p-4 bg-green-500/20 border border-green-400/50 rounded-lg">
+                        <p className="text-green-300 font-bold text-xl">
+                          🎉 Gratulerer! Du fikk jobben!
+                        </p>
+                        <p className="text-green-200 text-sm mt-1">
+                          Poeng basert på hastighet
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-yellow-300 mt-2">
+                        Fortsett til neste spørsmål...
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-4 p-4 bg-red-500/20 border border-red-400/50 rounded-lg">
+                    <p className="text-red-300 font-bold text-xl">
+                      ❌ Feil svar!
+                    </p>
+                    <p className="text-red-200 text-sm mt-1">
+                      Du ble sendt ut av intervjuet
+                    </p>
+                  </div>
                 )}
               </div>
             )}
