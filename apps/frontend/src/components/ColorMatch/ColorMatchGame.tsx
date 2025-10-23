@@ -7,6 +7,7 @@ import { useGameScore } from "../../hooks/useGameScore";
 import Leaderboard from "../Leaderboard";
 import { ChristmasBackground } from "../ChristmasBackground";
 import GameResultsScreen from "../GameResultsScreen";
+import { StartGameScreen } from "../StartGameScreen";
 
 interface Colors {
   topColor: string;
@@ -391,16 +392,28 @@ export function ColorMatchGame() {
     );
   }
 
+  if (!gameStarted) {
+    return (
+      <StartGameScreen
+        title={
+          dayInfo
+            ? `Dag ${dayInfo.day}: ${dayInfo.title}`
+            : gameData?.title || "🎨 Sokk fargetilpasning"
+        }
+        description={
+          gameData?.description || "Klikk på sokkedelene for å farge dem!"
+        }
+        previousScore={previousScore}
+        onClickStartGame={() => setGameStarted(true)}
+      />
+    );
+  }
+
   return (
     <ChristmasBackground>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            {dayInfo
-              ? `Dag ${dayInfo.day}: ${dayInfo.title}`
-              : gameData?.title || "🎨 Sokk fargetilpasning"}
-          </h1>
           <p className="text-white/80 text-lg">
             {gameData?.description || "Klikk på sokkedelene for å farge dem!"}
           </p>
@@ -436,40 +449,6 @@ export function ColorMatchGame() {
                     ⏰ Tiden er ute! Sjekk resultatet ditt.
                   </p>
                 </div>
-              )}
-            </div>
-          )}
-
-          {!showResults && (
-            <div className="mt-4 inline-block p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
-              <p className="text-green-200 font-semibold">
-                {hasPlayedToday
-                  ? "⚠️ Bare første forsøk teller!"
-                  : "🎯 Første forsøk teller!"}
-              </p>
-              {hasPlayedToday && previousScore !== null ? (
-                <div className="mt-2">
-                  <p className="text-white/80 text-sm">
-                    Din innsendte poengsum:{" "}
-                    <span className="font-bold text-yellow-300">
-                      {previousScore}%
-                    </span>
-                  </p>
-                  <p className="text-white/60 text-xs mt-1">
-                    Du kan spille igjen for moro skyld, men poengsummen din
-                    endres ikke
-                  </p>
-                  <button
-                    onClick={() => setShowLeaderboard(true)}
-                    className="mt-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 px-3 py-1 rounded-full text-xs font-medium transition-colors"
-                  >
-                    📊 Se toppliste
-                  </button>
-                </div>
-              ) : (
-                <p className="text-white/80 text-sm mt-1">
-                  Din første poengsum blir sendt inn til topplisten
-                </p>
               )}
             </div>
           )}
