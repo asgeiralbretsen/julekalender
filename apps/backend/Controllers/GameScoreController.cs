@@ -282,6 +282,33 @@ public class GameScoreController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gets the total score leaderboard across all games and days
+    /// </summary>
+    /// <returns>A list of users with their total accumulated scores</returns>
+    /// <remarks>
+    /// The total leaderboard shows all players ranked by their total score across all games and days.
+    /// Only the first score submission per user per game per day is included in the total.
+    /// </remarks>
+    /// <response code="200">Returns the total leaderboard</response>
+    /// <response code="401">If the user is not authenticated</response>
+    [HttpGet("leaderboard/total")]
+    [Authorize]
+    [ProducesResponseType(typeof(List<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<object>>> GetTotalLeaderboard()
+    {
+        try
+        {
+            var totalScores = await _gameScoreService.GetTotalLeaderboardAsync();
+            return Ok(totalScores);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Feil ved henting av total toppliste: {ex.Message}");
+        }
+    }
+
     private string? GetCurrentUserId()
     {
         // Try different claim types that Clerk might use

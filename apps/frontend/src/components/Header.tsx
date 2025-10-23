@@ -66,6 +66,17 @@ export default function Header() {
                 >
                   Kalender
                 </Link>
+                <Link 
+                  to="/leaderboard" 
+                  className={`text-sm font-semibold transition-all duration-300 px-3 py-2 rounded-lg ${
+                    isActive('/leaderboard') 
+                      ? 'text-yellow-300 bg-white/10 backdrop-blur-sm shadow-md' 
+                      : 'text-white hover:text-yellow-300 hover:bg-white/5'
+                  }`}
+                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                >
+                  Toppliste
+                </Link>
               </nav>
             </SignedIn>
           </div>
@@ -119,6 +130,17 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 📅 Kalender
+              </Link>
+              <Link
+                to="/leaderboard"
+                className={`block px-3 py-2 rounded-md text-base font-semibold ${
+                  isActive('/leaderboard')
+                    ? 'text-yellow-300 bg-white/10'
+                    : 'text-white hover:text-yellow-300 hover:bg-white/5'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                🏆 Toppliste
               </Link>
             </div>
           </div>

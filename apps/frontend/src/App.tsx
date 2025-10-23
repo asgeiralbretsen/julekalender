@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import CalendarPage from "./pages/CalendarPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import BlurGuessGame from "./components/BlurGuessGame";
 import SongGuessGame from "./components/SongGuessGame";
@@ -46,6 +47,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <LeaderboardPage />
               </ProtectedRoute>
             }
           />

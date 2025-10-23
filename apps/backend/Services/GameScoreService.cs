@@ -76,4 +76,23 @@ public class GameScoreService : IGameScoreService
             .OrderByDescending(gs => gs.Score)
             .ToListAsync();
     }
+
+    public async Task<List<object>> GetTotalLeaderboardAsync()
+    {
+        var totalScores = await _context.GameScores
+            .Include(gs => gs.User)
+            .GroupBy(gs => gs.UserId)
+            .Select(g => new
+            {
+                UserId = g.Key,
+                User = g.First().User,
+                TotalScore = g.Sum(gs => gs.Score),
+                GamesPlayed = g.Count(),
+                LastPlayed = g.Max(gs => gs.PlayedAt)
+            })
+            .OrderByDescending(x => x.TotalScore)
+            .ToListAsync();
+
+        return totalScores.Cast<object>().ToList();
+    }
 }

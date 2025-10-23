@@ -11,6 +11,7 @@ interface GameImage {
   src: string;
   answer: string;
   options: string[];
+  question?: string;
 }
 
 interface GameState {
@@ -35,36 +36,41 @@ const FALLBACK_IMAGES: GameImage[] = [
     id: "1",
     src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
     answer: "Mountain",
+    question: "Hva ser du?",
     options: ["Mountain", "Ocean", "Forest", "Desert", "City", "Lake"],
   },
   {
     id: "2",
     src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop",
     answer: "Forest",
+    question: "Hva ser du?",
     options: ["Forest", "Mountain", "Ocean", "Desert", "City", "Lake"],
   },
   {
     id: "3",
     src: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop",
     answer: "Ocean",
+    question: "Hva ser du?",
     options: ["Ocean", "Mountain", "Forest", "Desert", "City", "Lake"],
   },
   {
     id: "4",
     src: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop",
     answer: "City",
+    question: "Hva ser du?",
     options: ["City", "Mountain", "Forest", "Ocean", "Desert", "Lake"],
   },
   {
     id: "5",
     src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
     answer: "Lake",
+    question: "Hva ser du?",
     options: ["Lake", "Mountain", "Forest", "Ocean", "Desert", "City"],
   },
 ];
 
 const MAX_BLUR = 20;
-const BLUR_DECREASE_RATE = 0.5;
+const BLUR_DECREASE_RATE = 0.2;
 const MAX_TIME_PER_ROUND = 30000; // 30 seconds
 
 // Generate answer options dynamically
@@ -481,7 +487,7 @@ const BlurGuessGame: React.FC = () => {
           {/* Options */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-white mb-4">
-              Hva ser du?
+              {gameState.currentImage?.question || "Hva ser du?"}
             </h2>
             <div className="grid grid-cols-2 gap-3">
               {gameState.currentImage?.options.map((option, index) => (
