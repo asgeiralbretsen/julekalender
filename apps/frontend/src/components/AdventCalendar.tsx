@@ -675,17 +675,6 @@ export default function AdventCalendar() {
           />
           <span>Julekalender</span>
         </h1>
-          <Timer
-            mode="up"
-            durationMs={10000}
-            startFromMs={1000}
-            running={true}
-            isFinished={false}
-            onFinished={() => {
-              console.log("finished");
-            }}
-            className="text-red-100"
-          />
           <p className="mt-3 text-red-100">
             Tell ned til jul med daglige overraskelser
           </p>
