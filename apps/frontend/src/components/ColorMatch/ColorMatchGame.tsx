@@ -2,9 +2,10 @@ import Stocking from "./Stocking";
 import { useState, useEffect } from "react";
 import ColorPickerNoEyedropper from "./ColorPicker";
 import { createClient } from "@sanity/client";
-import { useUser } from '@clerk/clerk-react';
-import { useGameScore } from '../../hooks/useGameScore';
-import Leaderboard from '../Leaderboard';
+import { useUser } from "@clerk/clerk-react";
+import { useGameScore } from "../../hooks/useGameScore";
+import Leaderboard from "../Leaderboard";
+import { ChristmasBackground } from "../ChristmasBackground";
 
 interface Colors {
   topColor: string;
@@ -53,8 +54,14 @@ const client = createClient({
 
 export function ColorMatchGame() {
   const { user } = useUser();
-  const { saveGameScore, hasUserPlayedGame, getUserScoreForDay, loading: scoreLoading, error: scoreError } = useGameScore();
-  
+  const {
+    saveGameScore,
+    hasUserPlayedGame,
+    getUserScoreForDay,
+    loading: scoreLoading,
+    error: scoreError,
+  } = useGameScore();
+
   const [colorPickerColor, setColorPickerColor] = useState("gray");
   const [showResults, setShowResults] = useState(false);
   const [colorScores, setColorScores] = useState<ColorScore[]>([]);
@@ -68,6 +75,9 @@ export function ColorMatchGame() {
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
     null
   );
+  const [gameStarted, setGameStarted] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(45);
+  const [gameOver, setGameOver] = useState(false);
 
   const [originalColors, setOriginalColors] = useState<Colors>({
     topColor: "blue",
@@ -181,20 +191,42 @@ export function ColorMatchGame() {
     loadGameData();
   }, []);
 
+  // Game timer - counts down from 45 seconds
+  useEffect(() => {
+    if (gameStarted && !gameOver && timeRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev <= 1) {
+            setGameOver(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [gameStarted, gameOver, timeRemaining]);
+
   useEffect(() => {
     const checkIfPlayedToday = async () => {
       if (!user || !dayInfo) return;
 
       try {
-        const hasPlayed = await hasUserPlayedGame(dayInfo.day, 'colorMatchGame');
+        const hasPlayed = await hasUserPlayedGame(
+          dayInfo.day,
+          "colorMatchGame"
+        );
         if (hasPlayed) {
-          const previousScoreData = await getUserScoreForDay(dayInfo.day, 'colorMatchGame');
+          const previousScoreData = await getUserScoreForDay(
+            dayInfo.day,
+            "colorMatchGame"
+          );
           setHasPlayedToday(true);
           setPreviousScore(previousScoreData?.score || null);
           setShowLeaderboard(true); // Show leaderboard immediately if already played
         }
       } catch (err) {
-        console.error('Error checking if user has played today:', err);
+        console.error("Error checking if user has played today:", err);
       }
     };
 
@@ -210,6 +242,9 @@ export function ColorMatchGame() {
       | "stripesColor",
     color: string
   ) => {
+    // Only allow color changes if game is started and not over
+    if (!gameStarted || gameOver) return;
+
     setCurrentColors({
       ...currentColors,
       [whichColor]: color,
@@ -300,10 +335,10 @@ export function ColorMatchGame() {
       try {
         const result = await saveGameScore({
           day: dayInfo.day,
-          gameType: 'colorMatchGame',
+          gameType: "colorMatchGame",
           score: averageScore,
         });
-        
+
         if (result && result.score === averageScore) {
           setScoreSaved(true);
           setHasPlayedToday(true);
@@ -311,7 +346,7 @@ export function ColorMatchGame() {
           setShowLeaderboard(true); // Show leaderboard after first submission
         }
       } catch (err) {
-        console.error('Error saving game score:', err);
+        console.error("Error saving game score:", err);
       }
     }
   };
@@ -334,7 +369,7 @@ export function ColorMatchGame() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-900 via-green-900 to-blue-900 p-4">
+    <ChristmasBackground>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -344,22 +379,62 @@ export function ColorMatchGame() {
               : gameData?.title || "🎨 Sokk fargetilpasning"}
           </h1>
           <p className="text-white/80 text-lg">
-            {gameData?.description ||
-              "Klikk på sokkedelene for å farge dem!"}
+            {gameData?.description || "Klikk på sokkedelene for å farge dem!"}
           </p>
-          
+
+          {/* Timer and Start Button */}
+          {!showResults && (
+            <div className="mt-6 flex flex-col items-center gap-4">
+              {!gameStarted && !gameOver && (
+                <button
+                  onClick={() => setGameStarted(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-4 px-8 rounded-lg transition-colors shadow-lg"
+                >
+                  🎮 Start Spillet (45 sekunder)
+                </button>
+              )}
+
+              {gameStarted && !gameOver && (
+                <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border-2 border-yellow-400/20">
+                  <p className="text-yellow-300 font-bold text-sm mb-1">
+                    Tid Igjen
+                  </p>
+                  <p
+                    className={`text-4xl font-bold ${timeRemaining <= 10 ? "text-red-400" : "text-white"}`}
+                  >
+                    {timeRemaining}s
+                  </p>
+                </div>
+              )}
+
+              {gameOver && !showResults && (
+                <div className="bg-red-500/20 border border-red-400/50 rounded-lg p-4">
+                  <p className="text-red-200 text-xl font-bold text-center">
+                    ⏰ Tiden er ute! Sjekk resultatet ditt.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {!showResults && (
             <div className="mt-4 inline-block p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
               <p className="text-green-200 font-semibold">
-                {hasPlayedToday ? '⚠️ Bare første forsøk teller!' : '🎯 Første forsøk teller!'}
+                {hasPlayedToday
+                  ? "⚠️ Bare første forsøk teller!"
+                  : "🎯 Første forsøk teller!"}
               </p>
               {hasPlayedToday && previousScore !== null ? (
                 <div className="mt-2">
                   <p className="text-white/80 text-sm">
-                    Din innsendte poengsum: <span className="font-bold text-yellow-300">{previousScore}%</span>
+                    Din innsendte poengsum:{" "}
+                    <span className="font-bold text-yellow-300">
+                      {previousScore}%
+                    </span>
                   </p>
                   <p className="text-white/60 text-xs mt-1">
-                    Du kan spille igjen for moro skyld, men poengsummen din endres ikke
+                    Du kan spille igjen for moro skyld, men poengsummen din
+                    endres ikke
                   </p>
                   <button
                     onClick={() => setShowLeaderboard(true)}
@@ -443,6 +518,20 @@ export function ColorMatchGame() {
                 <h3 className="text-xl font-semibold text-white mb-4">
                   🎨 Fargevelger
                 </h3>
+                {!gameStarted && !gameOver && (
+                  <div className="mb-3 p-2 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
+                    <p className="text-yellow-200 text-xs text-center">
+                      ⚠️ Start spillet for å velge farger
+                    </p>
+                  </div>
+                )}
+                {gameOver && !showResults && (
+                  <div className="mb-3 p-2 bg-red-500/20 border border-red-400/50 rounded-lg">
+                    <p className="text-red-200 text-xs text-center">
+                      ⏰ Tiden er ute
+                    </p>
+                  </div>
+                )}
                 <ColorPickerNoEyedropper
                   value={colorPickerColor}
                   onChange={(color: string) => setColorPickerColor(color)}
@@ -450,9 +539,7 @@ export function ColorMatchGame() {
 
                 {/* Current Color Preview */}
                 <div className="mt-4 flex items-center gap-3">
-                  <div className="text-white text-sm font-medium">
-                    Valgt:
-                  </div>
+                  <div className="text-white text-sm font-medium">Valgt:</div>
                   <div
                     className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
                     style={{ backgroundColor: colorPickerColor }}
@@ -467,7 +554,12 @@ export function ColorMatchGame() {
               <div className="mb-6">
                 <button
                   onClick={calculateScores}
-                  className="w-full bg-gradient-to-r from-red-500 to-green-500 text-white px-6 py-3 rounded-full font-semibold hover:from-red-600 hover:to-green-600 transition-all duration-300 transform hover:scale-105"
+                  disabled={!gameStarted}
+                  className={`w-full px-6 py-3 rounded-full font-semibold transition-all duration-300 transform ${
+                    gameStarted
+                      ? "bg-gradient-to-r from-red-500 to-green-500 text-white hover:from-red-600 hover:to-green-600 hover:scale-105 cursor-pointer"
+                      : "bg-gray-500 text-gray-300 cursor-not-allowed opacity-50"
+                  }`}
                 >
                   ✅ Ferdig - Sjekk fargene mine!
                 </button>
@@ -486,7 +578,7 @@ export function ColorMatchGame() {
                       {overallScore}%
                     </div>
                     <p className="text-white/80 text-sm">
-                      {scoreSaved ? 'Innsendt poengsum' : 'Total nøyaktighet'}
+                      {scoreSaved ? "Innsendt poengsum" : "Total nøyaktighet"}
                     </p>
                   </div>
 
@@ -497,18 +589,21 @@ export function ColorMatchGame() {
                       </p>
                     </div>
                   )}
-                  
+
                   {!scoreSaved && hasPlayedToday && previousScore !== null && (
                     <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
                       <p className="text-red-200 text-xs mb-1">
                         Øvingsrunde - Poengsum ikke lagret
                       </p>
                       <p className="text-white/80 text-xs">
-                        Din innsendte poengsum: <span className="font-bold text-red-300">{previousScore}%</span>
+                        Din innsendte poengsum:{" "}
+                        <span className="font-bold text-red-300">
+                          {previousScore}%
+                        </span>
                       </p>
                     </div>
                   )}
-                  
+
                   {scoreLoading && (
                     <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
                       <p className="text-red-200 text-center text-sm">
@@ -516,7 +611,7 @@ export function ColorMatchGame() {
                       </p>
                     </div>
                   )}
-                  
+
                   {scoreError && (
                     <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
                       <p className="text-red-200 text-xs">{scoreError}</p>
@@ -554,6 +649,9 @@ export function ColorMatchGame() {
                         setOverallScore(0);
                         setScoreSaved(false);
                         setShowLeaderboard(false); // Hide leaderboard when playing again
+                        setGameStarted(false);
+                        setGameOver(false);
+                        setTimeRemaining(45);
                         setCurrentColors({
                           topColor: "gray",
                           topStripesColor: "white",
@@ -564,7 +662,9 @@ export function ColorMatchGame() {
                       }}
                       className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full font-semibold hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
                     >
-                      {hasPlayedToday ? '🔄 Spill igjen (for moro skyld)' : '🔄 Prøv igjen'}
+                      {hasPlayedToday
+                        ? "🔄 Spill igjen (for moro skyld)"
+                        : "🔄 Prøv igjen"}
                     </button>
                   </div>
                 </div>
@@ -586,6 +686,6 @@ export function ColorMatchGame() {
           </div>
         )}
       </div>
-    </div>
+    </ChristmasBackground>
   );
 }
