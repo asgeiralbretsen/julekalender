@@ -479,8 +479,7 @@ export function ColorMatchGame() {
             <div className="mt-8 flex justify-center">
               <button
                 onClick={submitColors}
-                disabled={gameOver}
-                className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-8 py-4 rounded-full font-bold text-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
               >
                 Send inn farger
               </button>
