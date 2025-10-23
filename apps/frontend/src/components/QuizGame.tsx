@@ -207,6 +207,7 @@ export default function QuizGame() {
         error={scoreError}
         dayInfo={dayInfo}
         gameType="quizGame"
+        gameName="Quiz"
         onPlayAgain={startGame}
         scoreLabel="poeng"
       />

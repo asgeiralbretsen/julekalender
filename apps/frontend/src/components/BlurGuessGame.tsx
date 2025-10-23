@@ -331,6 +331,7 @@ const BlurGuessGame: React.FC = () => {
         error={error}
         dayInfo={dayInfo}
         gameType="blurGuessGame"
+        gameName="Gjett bildet"
         onPlayAgain={resetGame}
         scoreLabel="poeng"
       />

@@ -13,6 +13,7 @@ interface GameResultsScreenProps {
   // Game info
   dayInfo: { day: number; title: string } | null;
   gameType: string;
+  gameName?: string;
   
   // Actions
   onPlayAgain: () => void;
@@ -31,6 +32,7 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
   error,
   dayInfo,
   gameType,
+  gameName,
   onPlayAgain,
   scoreLabel = "poeng",
   scoreSuffix = ""
@@ -49,12 +51,24 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
       </div>
 
       <div className="max-w-6xl w-full relative z-10">
+        {/* Game Title */}
+        {dayInfo && (
+          <div className="text-center mb-6">
+            <p className="text-red-200 text-lg mb-2">
+              Dag {dayInfo.day}
+            </p>
+            <h1 className="text-5xl md:text-6xl font-bold text-white drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+              {dayInfo.title}
+            </h1>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 gap-6 items-start">
           {/* Score Section */}
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20">
-            <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+            <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
               {isFirstAttempt ? 'Spillet er over!' : 'Din poengsum'}
-            </h1>
+            </h2>
             
             {isFirstAttempt ? (
               <>

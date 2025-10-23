@@ -286,8 +286,9 @@ const SongGuessGame: React.FC = () => {
         error={null}
         dayInfo={dayInfo}
         gameType="songGuessGame"
+        gameName="Gjett julesangen"
         onPlayAgain={handlePlayAgain}
-        scoreLabel="points"
+        scoreLabel="poeng"
       />
     );
   }

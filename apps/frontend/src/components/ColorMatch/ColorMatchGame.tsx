@@ -331,6 +331,7 @@ export function ColorMatchGame() {
         error={null}
         dayInfo={dayInfo}
         gameType="colorMatchGame"
+        gameName="Fargetilpasning"
         onPlayAgain={() => setShowResultsScreen(false)}
         scoreLabel="%"
         scoreSuffix="%"
@@ -595,18 +596,6 @@ export function ColorMatchGame() {
           </div>
         </div>
 
-        {/* Leaderboard Section */}
-        {showLeaderboard && dayInfo && (
-          <div className="mt-8 max-w-2xl mx-auto">
-            <Leaderboard
-              day={dayInfo.day}
-              gameType="colorMatchGame"
-              title={`Dag ${dayInfo.day} toppliste`}
-              showRank={true}
-              maxEntries={10}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
