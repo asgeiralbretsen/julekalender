@@ -8,38 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build Docker Images
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Clean Docker resources
-        run: |
-          echo "🧹 Cleaning Docker resources..."
-          docker compose -f docker-compose.prod.yml down --volumes --remove-orphans || true
-          docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f || true
-          docker builder prune -af || true
-
-      - name: Build images
-        run: |
-          echo "🔨 Building images with no cache..."
-          docker compose -f docker-compose.prod.yml build --no-cache --pull
-
-      - name: Verify build
-        run: |
-          echo "✅ Build completed successfully"
-          docker images | grep julekalender
-
-      - name: Summary
-        run: echo "🎉 Build verification completed!"
-
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
-    needs: build
     
     steps:
       - name: Checkout code

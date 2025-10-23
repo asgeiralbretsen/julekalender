@@ -31,13 +31,36 @@ docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f ||
 echo "🔨 Building images with no cache..."
 docker compose -f docker-compose.prod.yml build --no-cache --pull || docker-compose -f docker-compose.prod.yml build --no-cache --pull
 
-# Start production containers
-echo "🚀 Starting production containers..."
+# Start database first
+echo "🚀 Starting database..."
+docker compose -f docker-compose.prod.yml up -d postgres || docker-compose -f docker-compose.prod.yml up -d postgres
+
+# Wait for database to be ready
+echo "⏳ Waiting for database to be ready..."
+for i in {1..30}; do
+    if docker exec julekalender-postgres pg_isready -U postgres > /dev/null 2>&1; then
+        echo "✅ Database is ready"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        echo "❌ Database failed to start"
+        exit 1
+    fi
+    sleep 2
+done
+
+# Run database migrations
+echo "🔄 Running database migrations..."
+docker compose -f docker-compose.prod.yml run --rm backend dotnet ef database update || docker-compose -f docker-compose.prod.yml run --rm backend dotnet ef database update
+echo "✅ Migrations completed"
+
+# Start all other services
+echo "🚀 Starting all services..."
 docker compose -f docker-compose.prod.yml up -d || docker-compose -f docker-compose.prod.yml up -d
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to start..."
-sleep 15
+sleep 10
 
 # Show running containers
 echo "📋 Running containers:"
