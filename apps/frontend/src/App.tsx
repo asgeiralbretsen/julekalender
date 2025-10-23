@@ -12,6 +12,7 @@ import { useEffect, useMemo } from "react";
 import { ColorMatchGame } from "./components/ColorMatch/ColorMatchGame";
 import QuizGame from "./components/QuizGame";
 import { TeamsNotificationGame } from "./components/TeamsNotification/TeamsNotificationGame";
+import InterviewGame from "./components/InterviewGame";
 import SnowflakeCatchGame from "./components/SnowflakeCatchGame";
 import ChristmasWordScramble from "./components/ChristmasWordScramble";
 
@@ -87,6 +88,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TeamsNotificationGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/game/interviewGame"
+            element={
+              <ProtectedRoute>
+                <InterviewGame />
               </ProtectedRoute>
             }
           />

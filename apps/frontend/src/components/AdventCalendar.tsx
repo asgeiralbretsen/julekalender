@@ -5,6 +5,7 @@ import imageUrlBuilder from "@sanity/image-url";
 import { animate } from "animejs";
 import { Timer } from "./Timer";
 import { useGameScore } from "../hooks/useGameScore";
+import logoIcon from "../assets/unimicro-logoikon-hvit_RGB.png";
 
 const builder = imageUrlBuilder(client);
 
@@ -41,6 +42,7 @@ interface SanityDay {
     | "colorMatchGame"
     | "quizGame"
     | "teamsNotificationGame"
+    | "interviewGame"
     | "songGuessGame"
     | "snowflakeCatchGame"
     | "wordScrambleGame";
@@ -144,6 +146,31 @@ interface SanityDay {
       asset: {
         _ref: string;
       };
+    };
+  };
+  interviewGameData?: {
+    title: string;
+    description: string;
+    interviewers: Array<{
+      name: string;
+      image: {
+        asset: {
+          _ref: string;
+        };
+        alt?: string;
+      };
+      role?: string;
+    }>;
+    questions: Array<{
+      questionText: string;
+      answers: string[];
+      correctAnswerIndex: number;
+      timeLimit: number;
+    }>;
+    scoringSettings: {
+      correctAnswerPoints: number;
+      timeBonus: number;
+      perfectScoreBonus: number;
     };
   };
   snowflakeCatchGameData?: {
@@ -392,7 +419,7 @@ function DayCell({
 export default function AdventCalendar() {
   const navigate = useNavigate();
   const today = new Date();
-  const currentDay = today.getMonth() === 9 ? today.getDate() : 1; // December only; otherwise start at 1
+  const currentDay = today.getMonth() === 9 ? today.getDate() - 6 : 1; // December only; otherwise start at 1
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [sanityDays, setSanityDays] = useState<SanityDay[]>([]);
@@ -415,6 +442,7 @@ export default function AdventCalendar() {
           songGuessGameData,
           quizGameData,
           teamsNotificationGameData,
+          interviewGameData,
           snowflakeCatchGameData,
           wordScrambleGameData,
           isUnlocked
@@ -607,6 +635,30 @@ export default function AdventCalendar() {
         );
         navigate("/game/teamsNotificationGame");
         return;
+      } else if (
+        sanityDay.gameType === "interviewGame" &&
+        sanityDay.interviewGameData
+      ) {
+        console.log(
+          "Navigating to InterviewGame with data:",
+          sanityDay.interviewGameData
+        );
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            interviewGameData: sanityDay.interviewGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/interviewGame");
+        return;
       } else if (sanityDay.gameType === "snowflakeCatchGame") {
         console.log(
           "Navigating to SnowflakeCatchGame with data:",
@@ -729,20 +781,14 @@ export default function AdventCalendar() {
         className="max-w-7xl mx-auto px-4 py-10 relative z-10"
       >
         <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow">
-            🎄 Julekalender
+          <h1 className="text-4xl md:text-5xl font-extrabold text-red-100 drop-shadow flex justify-center items-center space-x-3">
+            <img
+              src={logoIcon}
+              alt="Logo"
+              className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md"
+            />
+            <span>Julekalender</span>
           </h1>
-          <Timer
-            mode="up"
-            durationMs={10000}
-            startFromMs={1000}
-            running={true}
-            isFinished={false}
-            onFinished={() => {
-              console.log("finished");
-            }}
-            className="text-red-100"
-          />
           <p className="mt-3 text-red-100">
             Tell ned til jul med daglige overraskelser
           </p>
