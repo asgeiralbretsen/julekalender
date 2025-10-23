@@ -64,6 +64,7 @@ export function ColorMatchGame() {
   const [scoreSaved, setScoreSaved] = useState(false);
   const [hasPlayedToday, setHasPlayedToday] = useState(false);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
     null
   );
@@ -190,6 +191,7 @@ export function ColorMatchGame() {
           const previousScoreData = await getUserScoreForDay(dayInfo.day, 'colorMatchGame');
           setHasPlayedToday(true);
           setPreviousScore(previousScoreData?.score || null);
+          setShowLeaderboard(true); // Show leaderboard immediately if already played
         }
       } catch (err) {
         console.error('Error checking if user has played today:', err);
@@ -306,6 +308,7 @@ export function ColorMatchGame() {
           setScoreSaved(true);
           setHasPlayedToday(true);
           setPreviousScore(averageScore);
+          setShowLeaderboard(true); // Show leaderboard after first submission
         }
       } catch (err) {
         console.error('Error saving game score:', err);
@@ -348,7 +351,7 @@ export function ColorMatchGame() {
           {!showResults && (
             <div className="mt-4 inline-block p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
               <p className="text-green-200 font-semibold">
-                {hasPlayedToday ? '⚠️ Bare første forsøk teller!' : 'Første forsøk teller!'}
+                {hasPlayedToday ? '⚠️ Bare første forsøk teller!' : '🎯 Første forsøk teller!'}
               </p>
               {hasPlayedToday && previousScore !== null ? (
                 <div className="mt-2">
@@ -358,6 +361,12 @@ export function ColorMatchGame() {
                   <p className="text-white/60 text-xs mt-1">
                     Du kan spille igjen for moro skyld, men poengsummen din endres ikke
                   </p>
+                  <button
+                    onClick={() => setShowLeaderboard(true)}
+                    className="mt-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 px-3 py-1 rounded-full text-xs font-medium transition-colors"
+                  >
+                    📊 Se toppliste
+                  </button>
                 </div>
               ) : (
                 <p className="text-white/80 text-sm mt-1">
@@ -540,6 +549,7 @@ export function ColorMatchGame() {
                         setColorScores([]);
                         setOverallScore(0);
                         setScoreSaved(false);
+                        setShowLeaderboard(false); // Hide leaderboard when playing again
                         setCurrentColors({
                           topColor: "gray",
                           topStripesColor: "white",
@@ -560,7 +570,7 @@ export function ColorMatchGame() {
         </div>
 
         {/* Leaderboard Section */}
-        {showResults && dayInfo && (
+        {showLeaderboard && dayInfo && (
           <div className="mt-8 max-w-2xl mx-auto">
             <Leaderboard
               day={dayInfo.day}
