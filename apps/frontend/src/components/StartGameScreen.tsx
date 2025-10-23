@@ -23,15 +23,15 @@ export function StartGameScreen({
           <h1 className="text-4xl font-bold text-white mb-4">{title}</h1>
           <p className="text-white/80 mb-6">{description}</p>
 
-          {previousScore !== null && (
-            <p>
+          {previousScore !== null && previousScore !== undefined && (
+            <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
               <p className="text-yellow-200 text-sm">
                 Bare første forsøk teller!
               </p>
               <p className="text-white/70 text-xs mt-1">
                 Din innsendte poengsum: {previousScore} poeng
               </p>
-            </p>
+            </div>
           )}
 
           {howToPlay && (

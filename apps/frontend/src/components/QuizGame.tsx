@@ -3,6 +3,7 @@ import { useUser } from '@clerk/clerk-react';
 import { useGameScore } from '../hooks/useGameScore';
 import Leaderboard from './Leaderboard';
 import GameResultsScreen from './GameResultsScreen';
+import { StartGameScreen } from './StartGameScreen';
 
 interface Question {
   questionText: string;
@@ -216,34 +217,18 @@ export default function QuizGame() {
 
   if (!gameStarted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-        
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20 relative z-10">
-          <h1 className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
-          </h1>
-          
-          <p className="text-red-100 mb-6">{gameData.description}</p>
-          
-          <div className="mb-6 p-4 bg-blue-500/20 border border-blue-400/50 rounded-lg">
-            <p className="text-blue-200 font-semibold mb-2">Quiz-regler:</p>
-            <ul className="text-red-100 text-sm space-y-1">
-              <li>• {gameData.questions.length} spørsmål</li>
-              <li>• 4 svaralternativer hver</li>
-              <li>• Bonuspoeng for raske svar</li>
-              <li>• Første forsøk teller!</li>
-            </ul>
-          </div>
-          
-          <button
-            onClick={startGame}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
-          >
-            Start quiz
-          </button>
-        </div>
-      </div>
+      <StartGameScreen
+        title={dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
+        description={gameData.description}
+        howToPlay={[
+          `• ${gameData.questions.length} spørsmål`,
+          "• 4 svaralternativer hver",
+          "• Bonuspoeng for raske svar",
+          "• Første forsøk teller!"
+        ]}
+        previousScore={hasPlayedToday ? previousScore : undefined}
+        onClickStartGame={startGame}
+      />
     );
   }
 

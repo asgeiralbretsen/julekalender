@@ -3,6 +3,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
+import { StartGameScreen } from "./StartGameScreen";
 import { client } from "../lib/sanity";
 
 interface GameState {
@@ -324,56 +325,18 @@ const SongGuessGame: React.FC = () => {
     return (
       <>
         {audioElement}
-        <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-        
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '0s' }}>❄</div>
-          <div className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse" style={{ animationDelay: '1s' }}>❄</div>
-          <div className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse" style={{ animationDelay: '2s' }}>❄</div>
-          <div className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse" style={{ animationDelay: '1.5s' }}>❄</div>
-        </div>
-
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20 relative z-10">
-          
-          <h1 className="text-4xl font-bold text-red-100 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title || "Gjett julesangen!"}
-          </h1>
-          
-          <p className="text-red-100 mb-6">
-            {gameData.description || "Lytt til klippet og gjett hvilken julesang det er!"}
-          </p>
-          
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-400/50 rounded-lg">
-            <p className="text-red-100 font-semibold mb-2">Spillregler:</p>
-            <ul className="text-red-100 text-sm space-y-1">
-              <li>• Lytt til sangklippet ({gameState.clipDuration} sekunder)</li>
-              <li>• Velg riktig julesang</li>
-              <li>• Rask gjetning gir bonuspoeng</li>
-              {!gameState.hasPlayedToday && <li>• Første forsøk teller!</li>}
-            </ul>
-          </div>
-
-          {gameState.hasPlayedToday && (
-            <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
-              <p className="text-yellow-200 font-semibold mb-1">⚠️ Allerede spilt</p>
-              <p className="text-red-100 text-sm">
-                Din poengsum: {gameState.previousScore} poeng
-              </p>
-              <p className="text-red-200 text-xs mt-1">
-                Du kan spille igjen for gøy!
-              </p>
-            </div>
-          )}
-          
-          <button
-            onClick={handleStartGame}
-            className="bg-green-700 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg"
-          >
-            {gameState.hasPlayedToday ? "Spill igjen (for gøy)" : "Start spill"}
-          </button>
-        </div>
-      </div>
+        <StartGameScreen
+          title={dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title || "Gjett julesangen!"}
+          description={gameData.description || "Lytt til klippet og gjett hvilken julesang det er!"}
+          howToPlay={[
+            `• Lytt til sangklippet (${gameState.clipDuration} sekunder)`,
+            "• Velg riktig julesang",
+            "• Rask gjetning gir bonuspoeng",
+            "• Første forsøk teller!"
+          ]}
+          previousScore={gameState.hasPlayedToday ? gameState.previousScore : undefined}
+          onClickStartGame={handleStartGame}
+        />
       </>
     );
   }

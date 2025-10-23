@@ -6,6 +6,7 @@ import { ChristmasBackground } from "../ChristmasBackground";
 import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../../hooks/useGameScore";
 import GameResultsScreen from "../GameResultsScreen";
+import { StartGameScreen } from "../StartGameScreen";
 
 const builder = imageUrlBuilder(client);
 
