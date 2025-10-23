@@ -9,6 +9,8 @@ interface TotalScoreEntry {
     id: number;
     unimicroId: string;
     email: string;
+    firstName?: string;
+    lastName?: string;
   };
   totalScore: number;
   gamesPlayed: number;
@@ -20,6 +22,13 @@ export default function LeaderboardPage() {
   const [totalScores, setTotalScores] = useState<TotalScoreEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const getDisplayName = (entry: TotalScoreEntry): string => {
+    if (entry.user.firstName || entry.user.lastName) {
+      return `${entry.user.firstName || ''} ${entry.user.lastName || ''}`.trim();
+    }
+    return entry.user.email.split('@')[0];
+  };
 
   useEffect(() => {
     const fetchTotalLeaderboard = async () => {
@@ -123,7 +132,7 @@ export default function LeaderboardPage() {
                           </div>
                           <div>
                             <h3 className="text-white font-bold text-lg">
-                              {entry.user.unimicroId}
+                              {getDisplayName(entry)}
                             </h3>
                             <p className="text-red-200 text-sm">
                               {entry.gamesPlayed} spill spilt
