@@ -120,7 +120,7 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
             
             <button
               onClick={onPlayAgain}
-              className="bg-green-800 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-700"
+              className="bg-green-700 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-700"
             >
               {isFirstAttempt ? 'Spill igjen' : 'Spill igjen (for moro skyld)'}
             </button>
