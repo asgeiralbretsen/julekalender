@@ -85,7 +85,7 @@ export default function Header() {
             <SignedOut>
               <SignInButton mode="modal">
                 <button className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-green-500">
-                  🎅 Logg inn
+                  Logg inn
                 </button>
               </SignInButton>
             </SignedOut>

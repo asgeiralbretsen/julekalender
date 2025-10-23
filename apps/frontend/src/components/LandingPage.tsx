@@ -1,4 +1,5 @@
 import { SignInButton } from '@clerk/clerk-react';
+import logoIcon from '../assets/unimicro-logoikon-hvit_RGB.png';
 
 export default function LandingPage() {
   return (
@@ -28,17 +29,16 @@ export default function LandingPage() {
 
       <div className="min-h-screen flex items-center justify-center relative z-10 px-4">
         <div className="text-center bg-white/10 backdrop-blur-lg rounded-3xl p-12 shadow-christmas-lg border-2 border-yellow-400/30 max-w-2xl">
-          <div className="mb-6 text-6xl">🎄</div>
-          <h1 className="text-5xl md:text-6xl font-extrabold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+          <h1 className="text-5xl md:text-6xl font-extrabold text-red-100 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
             Julekalender
           </h1>
           <p className="text-xl text-white mb-8 drop-shadow">
-            Tell ned til jul med daglige overraskelser! 🎁
+            Tell ned til jul med daglige overraskelser!
           </p>
           
           <SignInButton mode="modal">
             <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-lg font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-green-500">
-              🎅 Logg inn for å starte
+              Logg inn for å starte
             </button>
           </SignInButton>
         </div>
