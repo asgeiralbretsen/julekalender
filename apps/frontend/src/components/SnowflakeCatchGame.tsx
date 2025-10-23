@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { ChristmasBackground } from "./ChristmasBackground";
 
 interface FallingObject {
   id: string;
   x: number;
   y: number;
-  type: "snowflake" | "coal";
+  type: "snowflake";
   speed: number;
 }
 
@@ -16,6 +17,7 @@ interface GameState {
   playerX: number;
   playerY: number;
   fallingObjects: FallingObject[];
+  gameTime: number; // Time elapsed in seconds
 }
 
 const GAME_WIDTH = 800;
@@ -25,8 +27,7 @@ const PLAYER_HEIGHT = 20;
 const OBJECT_SIZE = 40;
 const PLAYER_SPEED = 8;
 const SNOWFLAKE_POINTS = 10;
-const COAL_PENALTY = -5;
-const MAX_LIVES = 3;
+const MAX_LIVES = 1;
 
 const SnowflakeCatchGame: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({
@@ -37,11 +38,11 @@ const SnowflakeCatchGame: React.FC = () => {
     playerX: GAME_WIDTH / 2 - PLAYER_WIDTH / 2,
     playerY: GAME_HEIGHT - 50,
     fallingObjects: [],
+    gameTime: 0,
   });
 
-
   const gameLoopRef = useRef<number | null>(null);
-  const keysPressed = useRef<Set<string>>(new Set());
+  const gameContainerRef = useRef<HTMLDivElement | null>(null);
 
   const startGame = () => {
     setGameState({
@@ -52,6 +53,7 @@ const SnowflakeCatchGame: React.FC = () => {
       playerX: GAME_WIDTH / 2 - PLAYER_WIDTH / 2,
       playerY: GAME_HEIGHT - 50,
       fallingObjects: [],
+      gameTime: 0,
     });
   };
 
@@ -67,34 +69,35 @@ const SnowflakeCatchGame: React.FC = () => {
       playerX: GAME_WIDTH / 2 - PLAYER_WIDTH / 2,
       playerY: GAME_HEIGHT - 50,
       fallingObjects: [],
+      gameTime: 0,
     });
   };
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    keysPressed.current.add(e.key);
-  }, []);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (
+        !gameContainerRef.current ||
+        !gameState.gameStarted ||
+        gameState.gameEnded
+      )
+        return;
 
-  const handleKeyUp = useCallback((e: KeyboardEvent) => {
-    keysPressed.current.delete(e.key);
-  }, []);
+      const rect = gameContainerRef.current.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
 
-  const spawnObject = useCallback(() => {
-    const type = Math.random() < 0.7 ? "snowflake" : "coal"; // 70% snowflakes, 30% coal
-    const speed = 2 + Math.random() * 3; // Speed between 2-5
+      // Calculate player position (center the player bar on the mouse)
+      let newPlayerX = mouseX - PLAYER_WIDTH / 2;
 
-    const newObject: FallingObject = {
-      id: Math.random().toString(36).substr(2, 9),
-      x: Math.random() * (GAME_WIDTH - OBJECT_SIZE),
-      y: -OBJECT_SIZE,
-      type,
-      speed,
-    };
+      // Keep player within game boundaries
+      newPlayerX = Math.max(0, Math.min(GAME_WIDTH - PLAYER_WIDTH, newPlayerX));
 
-    setGameState((prev) => ({
-      ...prev,
-      fallingObjects: [...prev.fallingObjects, newObject],
-    }));
-  }, []);
+      setGameState((prev) => ({
+        ...prev,
+        playerX: newPlayerX,
+      }));
+    },
+    [gameState.gameStarted, gameState.gameEnded]
+  );
 
   const checkCollision = (
     obj: FallingObject,
@@ -118,23 +121,30 @@ const SnowflakeCatchGame: React.FC = () => {
       let newScore = prev.score;
       let newLives = prev.lives;
       let newFallingObjects = [...prev.fallingObjects];
+      let newGameTime = prev.gameTime + 1 / 60; // Assuming 60 FPS
 
-      // Handle player movement
-      if (
-        keysPressed.current.has("ArrowLeft") ||
-        keysPressed.current.has("a")
-      ) {
-        newPlayerX = Math.max(0, newPlayerX - PLAYER_SPEED);
-      }
-      if (
-        keysPressed.current.has("ArrowRight") ||
-        keysPressed.current.has("d")
-      ) {
-        newPlayerX = Math.min(
-          GAME_WIDTH - PLAYER_WIDTH,
-          newPlayerX + PLAYER_SPEED
-        );
-      }
+      // Calculate difficulty based on game time
+      // Spawn rate increases from 0.5% to 4% over 60 seconds
+      const baseSpawnChance = 0.005;
+      const maxSpawnChance = 0.04;
+      const spawnRate = Math.min(
+        maxSpawnChance,
+        baseSpawnChance +
+          (newGameTime / 60) * (maxSpawnChance - baseSpawnChance)
+      );
+
+      // Speed increases from 1.5-3 to 4-7 over 60 seconds
+      const baseMinSpeed = 1.5;
+      const baseMaxSpeed = 3;
+      const maxMinSpeed = 4;
+      const maxMaxSpeed = 7;
+      const speedMultiplier = Math.min(1, newGameTime / 60);
+      const minSpeed =
+        baseMinSpeed + speedMultiplier * (maxMinSpeed - baseMinSpeed);
+      const maxSpeed =
+        baseMaxSpeed + speedMultiplier * (maxMaxSpeed - baseMaxSpeed);
+
+      // Player movement is now handled by mouse, so we just use the current position
 
       // Update falling objects
       newFallingObjects = newFallingObjects
@@ -145,34 +155,31 @@ const SnowflakeCatchGame: React.FC = () => {
         .filter((obj) => {
           // Check if object is still on screen
           if (obj.y > GAME_HEIGHT) {
+            // If a snowflake falls off screen, lose a life
+            if (obj.type === "snowflake") {
+              newLives -= 1;
+            }
             return false;
           }
 
           // Check collision with player
           if (checkCollision(obj, newPlayerX, newPlayerY)) {
-            if (obj.type === "snowflake") {
-              newScore += SNOWFLAKE_POINTS;
-            } else if (obj.type === "coal") {
-              newScore += COAL_PENALTY;
-              newLives -= 1;
-            }
+            newScore += SNOWFLAKE_POINTS;
             return false; // Remove the object
           }
 
           return true;
         });
 
-      // Spawn new objects occasionally
-      if (Math.random() < 0.02) {
-        // 2% chance per frame
-        const type = Math.random() < 0.7 ? "snowflake" : "coal";
-        const speed = 2 + Math.random() * 3;
+      // Spawn new objects with increasing frequency
+      if (Math.random() < spawnRate) {
+        const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
 
         newFallingObjects.push({
           id: Math.random().toString(36).substr(2, 9),
           x: Math.random() * (GAME_WIDTH - OBJECT_SIZE),
           y: -OBJECT_SIZE,
-          type,
+          type: "snowflake",
           speed,
         });
       }
@@ -188,6 +195,7 @@ const SnowflakeCatchGame: React.FC = () => {
         lives: newLives,
         fallingObjects: newFallingObjects,
         gameEnded,
+        gameTime: newGameTime,
       };
     });
   }, [gameState.gameStarted, gameState.gameEnded]);
@@ -209,29 +217,28 @@ const SnowflakeCatchGame: React.FC = () => {
   }, [gameState.gameStarted, gameState.gameEnded, updateGame]);
 
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    if (gameState.gameStarted && !gameState.gameEnded) {
+      window.addEventListener("mousemove", handleMouseMove);
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [handleKeyDown, handleKeyUp]);
+      return () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+      };
+    }
+  }, [handleMouseMove, gameState.gameStarted, gameState.gameEnded]);
 
   if (!gameState.gameStarted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+      <ChristmasBackground>
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
           <h1 className="text-4xl font-bold text-white mb-4">
             ❄️ Snowflake Catch
           </h1>
           <p className="text-white/80 mb-6">
-            Catch falling snowflakes ❄️ and avoid coal 🪨! Use arrow keys or A/D
-            to move.
+            Catch falling snowflakes ❄️! Move your mouse to control the paddle.
           </p>
           <div className="text-white/70 text-sm mb-6">
             <p>❄️ Snowflakes: +10 points</p>
-            <p>🪨 Coal: -5 points, -1 life</p>
+            <p>⚠️ Miss a snowflake = game over!</p>
             <p>Lives: {MAX_LIVES}</p>
           </div>
           <button
@@ -241,13 +248,13 @@ const SnowflakeCatchGame: React.FC = () => {
             Start Game
           </button>
         </div>
-      </div>
+      </ChristmasBackground>
     );
   }
 
   if (gameState.gameEnded) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+      <ChristmasBackground>
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
           <h1 className="text-4xl font-bold text-white mb-4">Game Over!</h1>
           <p className="text-2xl text-white/80 mb-6">
@@ -260,12 +267,12 @@ const SnowflakeCatchGame: React.FC = () => {
             Play Again
           </button>
         </div>
-      </div>
+      </ChristmasBackground>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
+    <ChristmasBackground>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -274,6 +281,7 @@ const SnowflakeCatchGame: React.FC = () => {
           </h1>
           <div className="flex justify-center gap-8 text-white/80">
             <span>Score: {gameState.score}</span>
+            <span>Time: {Math.floor(gameState.gameTime)}s</span>
             <span>Lives: {"❤️".repeat(gameState.lives)}</span>
           </div>
         </div>
@@ -281,6 +289,7 @@ const SnowflakeCatchGame: React.FC = () => {
         {/* Game Canvas */}
         <div className="flex justify-center">
           <div
+            ref={gameContainerRef}
             className="relative bg-gradient-to-b from-sky-200 to-blue-300 rounded-2xl overflow-hidden shadow-2xl"
             style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}
           >
@@ -299,9 +308,7 @@ const SnowflakeCatchGame: React.FC = () => {
             {gameState.fallingObjects.map((obj) => (
               <div
                 key={obj.id}
-                className={`absolute text-2xl ${
-                  obj.type === "snowflake" ? "text-white" : "text-gray-800"
-                }`}
+                className="absolute text-2xl text-white"
                 style={{
                   left: obj.x,
                   top: obj.y,
@@ -309,23 +316,23 @@ const SnowflakeCatchGame: React.FC = () => {
                   height: OBJECT_SIZE,
                 }}
               >
-                {obj.type === "snowflake" ? "❄️" : "🪨"}
+                ❄️
               </div>
             ))}
 
             {/* Instructions Overlay */}
             <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-2 rounded-lg text-sm">
-              Use ← → or A D to move
+              Move your mouse to control the paddle
             </div>
           </div>
         </div>
 
         {/* Game Stats */}
         <div className="mt-6 text-center text-white/70">
-          <p>Catch ❄️ snowflakes for points, avoid 🪨 coal!</p>
+          <p>Catch ❄️ snowflakes for points! Miss one = game over!</p>
         </div>
       </div>
-    </div>
+    </ChristmasBackground>
   );
 };
 
