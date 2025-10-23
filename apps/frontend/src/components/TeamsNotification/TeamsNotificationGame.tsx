@@ -1,20 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import imageUrlBuilder from "@sanity/image-url";
 import { client } from "../../lib/sanity";
 import { TeamsNotification } from "./TeamsNotification";
-
-interface TeamsNotificationGameData {
-  title?: string;
-  description?: string;
-  firstMessage?: string;
-  teamsMessages?: Array<{ message: string }>;
-  lastMessage?: string;
-  logo?: { asset?: { _ref?: string } };
-  contextMenuIcon?: { asset?: { _ref?: string } };
-  addEmojiIcon?: { asset?: { _ref?: string } };
-  closeMessageIcon?: { asset?: { _ref?: string } };
-  sendMessageIcon?: { asset?: { _ref?: string } };
-}
+import { ChristmasBackground } from "../ChristmasBackground";
+import { useUser } from "@clerk/clerk-react";
+import { useGameScore } from "../../hooks/useGameScore";
+import GameResultsScreen from "../GameResultsScreen";
 
 const builder = imageUrlBuilder(client);
 
@@ -33,143 +24,170 @@ function urlFromRef(
   }
 }
 
-type ProfileEntry = {
+interface ProfileEntry {
   name: string;
   ref: string;
-  side: "left" | "right";
+}
+
+interface NotificationData {
+  sender: string;
+  message: string;
+  profilePicture: string;
+  xPosition: number;
   yPosition: number;
-};
+}
+
+interface TeamsNotificationGameData {
+  title?: string;
+  description?: string;
+  firstMessage?: string;
+  teamsMessages?: Array<{ message: string }>;
+  lastMessage?: string;
+  logo?: { asset?: { _ref?: string } };
+  contextMenuIcon?: { asset?: { _ref?: string } };
+  addEmojiIcon?: { asset?: { _ref?: string } };
+  closeMessageIcon?: { asset?: { _ref?: string } };
+  sendMessageIcon?: { asset?: { _ref?: string } };
+}
 
 export function TeamsNotificationGame() {
-  const [data, setData] = useState<TeamsNotificationGameData | null>(null);
-  const [dayTitle, setDayTitle] = useState<string>("");
-  const [profileCatalog, setProfileCatalog] = useState<ProfileEntry[]>([]);
-  const [assignedProfiles, setAssignedProfiles] = useState<ProfileEntry[]>([]);
-  const [currentNotificationIndex, setCurrentNotificationIndex] = useState(0);
-  const [showNotifications, setShowNotifications] = useState<boolean[]>([]);
+  const { user } = useUser();
+  const { saveGameScore, hasUserPlayedGame, getUserScoreForDay } = useGameScore();
+  
+  const [profiles, setProfiles] = useState<ProfileEntry[]>([]);
+  const [gameData, setGameData] = useState<TeamsNotificationGameData | null>(
+    null
+  );
+  const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(null);
+  const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
-  const [baseDisplayDuration] = useState(10000); // Start with 10 seconds
-  const [minDisplayDuration] = useState(1000); // Minimum 1 second
+  const [activeNotifications, setActiveNotifications] = useState<
+    Map<number, NotificationData>
+  >(new Map());
+  const [nextNotificationId, setNextNotificationId] = useState(0);
+  const [spawnInterval, setSpawnInterval] = useState(1000); // Start at 2 seconds
   const [gameStarted, setGameStarted] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(60); // 60 seconds
+  const [timeRemaining, setTimeRemaining] = useState(30); // 30 seconds
   const [gameOver, setGameOver] = useState(false);
-  const [spawnInterval, setSpawnInterval] = useState(3000); // Start with 3 seconds between spawns
-  const [minSpawnInterval] = useState(500); // Minimum 0.5 seconds between spawns
+  const [scoreSaved, setScoreSaved] = useState(false);
+  const [hasPlayedToday, setHasPlayedToday] = useState(false);
+  const [previousScore, setPreviousScore] = useState<number | null>(null);
+  const minSpawnInterval = 500; // Minimum 0.5 seconds between spawns
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("currentGameData");
-    const dayInfoRaw = sessionStorage.getItem("currentDayInfo");
-    try {
-      if (dayInfoRaw) {
-        const parsed = JSON.parse(dayInfoRaw);
-        setDayTitle(parsed?.title || "");
-      }
-    } catch {
-      setDayTitle("");
-    }
-    if (!raw) return;
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed?.teamsNotificationGameData) {
-        setData(parsed.teamsNotificationGameData as TeamsNotificationGameData);
-      }
-    } catch {
-      // ignore parse errors
-    }
-  }, []);
-
-  // Load global profile pictures (independent library)
-  useEffect(() => {
-    const fetchProfilePictures = async () => {
+    const fetchData = async () => {
       try {
-        const docs: ProfileEntry[] = await client.fetch(
+        // Fetch profiles
+        const profileDocs: ProfileEntry[] = await client.fetch(
           `*[_type=="profilePicture"]{name,"ref":image.asset._ref}`
         );
-        console.log("Fetched profile pictures:", docs);
-        const filtered = docs.filter(
+        console.log("Fetched profiles:", profileDocs);
+        const filteredProfiles = profileDocs.filter(
           (d) => !!d?.ref && !!(d?.name || "").trim()
         );
-        console.log("Filtered profile pictures:", filtered);
-        setProfileCatalog(filtered as ProfileEntry[]);
+        setProfiles(filteredProfiles);
+
+        // Get game data from sessionStorage
+        const raw = sessionStorage.getItem("currentGameData");
+        const dayInfoRaw = sessionStorage.getItem("currentDayInfo");
+
+        if (dayInfoRaw) {
+          try {
+            const parsed = JSON.parse(dayInfoRaw);
+            setDayInfo(parsed);
+          } catch {
+            setDayInfo(null);
+          }
+        }
+
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed?.teamsNotificationGameData) {
+              console.log("Game data:", parsed.teamsNotificationGameData);
+              setGameData(
+                parsed.teamsNotificationGameData as TeamsNotificationGameData
+              );
+            }
+          } catch (error) {
+            console.error("Error parsing game data:", error);
+          }
+        }
       } catch (error) {
-        console.error("Error fetching profile pictures:", error);
-        setProfileCatalog([]);
+        console.error("Error fetching data:", error);
+        setProfiles([]);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchProfilePictures();
+
+    fetchData();
   }, []);
 
-  // Create a stable random assignment of profiles for the visible messages
+  // Check if user has played today
   useEffect(() => {
-    if (!data) {
-      console.log("No data yet, waiting...");
-      return;
-    }
-    const total =
-      (data.firstMessage ? 1 : 0) + (data.teamsMessages?.length || 0);
-    console.log("Total messages needed:", total);
-    if (total === 0) return;
-
-    // If no catalog, wait for it to load
-    if (!profileCatalog || profileCatalog.length === 0) {
-      console.log("No profile catalog yet, waiting...");
-      return;
-    }
-
-    // If we already have profiles assigned and catalog hasn't changed, keep them stable
-    if (assignedProfiles.length === total) {
-      console.log("Already have correct number of profiles assigned");
-      return;
-    }
-
-    // Generate random assignments with smart Y positioning
-    const randoms: ProfileEntry[] = [];
-    const notificationHeight = 300; // Each notification is ~300px tall
-    const spacing = 20; // Gap between notifications
-    const startY = 40; // Start from top of screen
-
-    // First entry is hardcoded
-    // Get image and name from the profile catalog
-    const hardcodedFirst = profileCatalog[3];
-    const hardcodedFirstEntry: ProfileEntry = {
-      name: hardcodedFirst.name,
-      ref: hardcodedFirst.ref,
-      side: hardcodedFirst.side,
-      yPosition: screen.height - 400,
+    const checkPlayStatus = async () => {
+      if (dayInfo && user) {
+        const hasPlayed = await hasUserPlayedGame(
+          dayInfo.day,
+          "teamsNotificationGame"
+        );
+        if (hasPlayed) {
+          const userScore = await getUserScoreForDay(
+            dayInfo.day,
+            "teamsNotificationGame"
+          );
+          setHasPlayedToday(true);
+          setPreviousScore(userScore?.score || null);
+          setGameOver(true); // Show results screen immediately if already played
+        }
+      }
     };
-    randoms.push(hardcodedFirstEntry);
+    checkPlayStatus();
+  }, [dayInfo, user, hasUserPlayedGame, getUserScoreForDay]);
 
-    // Generate random profiles for the rest
-    for (let i = 1; i < total; i++) {
-      const pick =
-        profileCatalog[Math.floor(Math.random() * profileCatalog.length)];
-
-      // Calculate Y position to avoid overlap
-      // Stack them vertically with spacing
-      //   make the y position a random position on the height of the screen
-      const yPosition = Math.random() * (screen.height - 200);
-      //   const yPosition = startY + i * (notificationHeight + spacing);
-
-      randoms.push({
-        ...pick,
-        side: Math.random() < 0.5 ? "left" : "right",
-        yPosition: yPosition,
-      });
+  // Function to generate a random notification on-the-fly
+  const generateRandomNotification = (): NotificationData => {
+    if (!gameData?.teamsMessages || profiles.length === 0) {
+      throw new Error("No data available");
     }
-    console.log("Assigned profiles:", randoms);
-    setAssignedProfiles(randoms);
-    // Initialize showNotifications array - start with enough slots
-    setShowNotifications(new Array(100).fill(false)); // Pre-allocate 100 slots for endless mode
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, profileCatalog.length]);
 
-  // Game timer - starts after first click
+    const notificationWidth = 500;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    // Calculate safe boundaries - full screen with small margins
+    const minX = 10;
+    const maxX = Math.max(10, screenWidth - notificationWidth - 10);
+    const minY = 200;
+    const maxY = Math.max(10, screenHeight - 310);
+
+    // Pick random profile
+    const profile = profiles[Math.floor(Math.random() * profiles.length)];
+
+    // Pick random message
+    const message =
+      gameData.teamsMessages[
+        Math.floor(Math.random() * gameData.teamsMessages.length)
+      ].message;
+
+    return {
+      sender: profile.name,
+      message: message,
+      profilePicture: profile.ref,
+      xPosition: Math.random() * (maxX - minX) + minX,
+      yPosition: Math.random() * (maxY - minY) + minY,
+    };
+  };
+
+  // Game timer - counts down from 30 seconds
   useEffect(() => {
     if (gameStarted && !gameOver && timeRemaining > 0) {
       const timer = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
             setGameOver(true);
+            setActiveNotifications(new Map()); // Clear all notifications
             return 0;
           }
           return prev - 1;
@@ -179,325 +197,254 @@ export function TeamsNotificationGame() {
     }
   }, [gameStarted, gameOver, timeRemaining]);
 
-  // Auto-spawn notifications with increasing frequency
+  // Save score when game ends
   useEffect(() => {
-    if (!gameStarted || gameOver) return;
-
-    const spawnTimer = setInterval(() => {
-      showNextNotification();
-
-      // Gradually decrease spawn interval (increase spawn rate)
-      setSpawnInterval((prev) => {
-        const newInterval = prev - 100; // Decrease by 100ms each spawn
-        return Math.max(newInterval, minSpawnInterval);
+    if (gameOver && !hasPlayedToday && dayInfo && user) {
+      saveGameScore({
+        day: dayInfo.day,
+        gameType: "teamsNotificationGame",
+        score: score,
+      }).then((result) => {
+        if (result) {
+          setScoreSaved(true);
+          setHasPlayedToday(true);
+          setPreviousScore(result.score);
+        }
+      }).catch((error) => {
+        console.error("Error saving score:", error);
       });
-    }, spawnInterval);
+    }
+  }, [gameOver, hasPlayedToday, dayInfo, user, score, saveGameScore]);
 
-    return () => clearInterval(spawnTimer);
-  }, [gameStarted, gameOver, spawnInterval, minSpawnInterval]);
+  // Auto-spawn notifications with decreasing interval
+  useEffect(() => {
+    if (
+      !gameStarted ||
+      gameOver ||
+      !gameData?.teamsMessages ||
+      profiles.length === 0
+    )
+      return;
 
-  const logoUrl = useMemo(() => urlFromRef(data?.logo ?? null), [data]);
+    const spawnNext = () => {
+      try {
+        // Generate a new random notification
+        const newNotification = generateRandomNotification();
+        const notificationId = nextNotificationId;
+
+        // Add to active notifications
+        setActiveNotifications((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(notificationId, newNotification);
+          return newMap;
+        });
+
+        setNextNotificationId((prev) => prev + 1);
+
+        // Decrease spawn interval for next spawn
+        setSpawnInterval((prev) => Math.max(prev - 100, minSpawnInterval));
+      } catch (error) {
+        console.error("Error generating notification:", error);
+      }
+    };
+
+    const timer = setTimeout(spawnNext, spawnInterval);
+
+    return () => clearTimeout(timer);
+  }, [
+    gameStarted,
+    gameOver,
+    spawnInterval,
+    nextNotificationId,
+    minSpawnInterval,
+    gameData,
+    profiles,
+  ]);
+
+  // Handle notification click - award point and remove notification
+  const handleNotificationClick = (notificationId: number) => {
+    setScore((prev) => prev + 1);
+    setActiveNotifications((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(notificationId);
+      return newMap;
+    });
+  };
+
+  // Get icon URLs
+  const logoUrl = useMemo(() => urlFromRef(gameData?.logo ?? null), [gameData]);
   const contextUrl = useMemo(
-    () => urlFromRef(data?.contextMenuIcon ?? null),
-    [data]
+    () => urlFromRef(gameData?.contextMenuIcon ?? null),
+    [gameData]
   );
   const emojiUrl = useMemo(
-    () => urlFromRef(data?.addEmojiIcon ?? null),
-    [data]
+    () => urlFromRef(gameData?.addEmojiIcon ?? null),
+    [gameData]
   );
   const closeUrl = useMemo(
-    () => urlFromRef(data?.closeMessageIcon ?? null),
-    [data]
+    () => urlFromRef(gameData?.closeMessageIcon ?? null),
+    [gameData]
   );
   const sendUrl = useMemo(
-    () => urlFromRef(data?.sendMessageIcon ?? null),
-    [data]
+    () => urlFromRef(gameData?.sendMessageIcon ?? null),
+    [gameData]
   );
 
-  if (!data) {
+  if (loading) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-2">Teams Notification Game</h1>
-        <p className="text-sm text-gray-500">
-          No game data found. Open a day with Teams Notification Game.
-        </p>
-      </div>
+      <ChristmasBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20 z-10">
+            <p className="text-white text-xl">Laster data...</p>
+          </div>
+        </div>
+      </ChristmasBackground>
     );
   }
 
-  const firstProfile = assignedProfiles[0] || {
-    name: "Unknown",
-    ref: "",
-    side: "right" as const,
-    yPosition: 40,
-  };
+  if (profiles.length === 0) {
+    return (
+      <ChristmasBackground>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20 max-w-md">
+            <p className="text-white text-xl">
+              Ingen profiler funnet i Sanity.
+            </p>
+          </div>
+        </div>
+      </ChristmasBackground>
+    );
+  }
 
-  // Get next profile (cycles through catalog for endless mode)
-  const getNextProfile = (index: number): ProfileEntry => {
-    if (!profileCatalog || profileCatalog.length === 0) {
-      return {
-        name: "Unknown",
-        ref: "",
-        side: "right" as const,
-        yPosition: 100,
-      };
-    }
+  if (!gameData) {
+    return (
+      <ChristmasBackground>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20 max-w-md">
+            <h1 className="text-2xl font-bold mb-4 text-yellow-300 drop-shadow-lg">
+              Teams Varsel Spill
+            </h1>
+            <p className="text-red-300">
+              Ingen spilldata funnet. Vennligst åpne dette spillet fra en
+              kalenderdag.
+            </p>
+          </div>
+        </div>
+      </ChristmasBackground>
+    );
+  }
 
-    // Cycle through catalog
-    const catalogIndex = index % profileCatalog.length;
-    const profile = profileCatalog[catalogIndex];
-    return {
-      ...profile,
-      side: Math.random() < 0.5 ? "left" : "right",
-      yPosition: Math.random() * (window.innerHeight - 400) + 100,
+  // Show results screen when game is over
+  if (gameOver && dayInfo) {
+    const handlePlayAgain = () => {
+      setGameStarted(false);
+      setGameOver(false);
+      setScore(0);
+      setNextNotificationId(0);
+      setSpawnInterval(1000);
+      setTimeRemaining(30);
+      setActiveNotifications(new Map());
+      setScoreSaved(false);
     };
-  };
 
-  // Function to show next notification (endless mode)
-  const showNextNotification = () => {
-    if (gameOver) return;
-
-    // Start game on first notification spawn
-    if (!gameStarted && currentNotificationIndex === 0) {
-      setGameStarted(true);
-    }
-
-    // Ensure we have enough slots in showNotifications
-    if (currentNotificationIndex >= showNotifications.length) {
-      setShowNotifications((prev) => [...prev, ...new Array(20).fill(false)]);
-    }
-
-    // Ensure we have the profile assigned
-    if (currentNotificationIndex >= assignedProfiles.length) {
-      const newProfile = getNextProfile(currentNotificationIndex);
-      setAssignedProfiles((prev) => [...prev, newProfile]);
-    }
-
-    setShowNotifications((prev) => {
-      const newState = [...prev];
-      newState[currentNotificationIndex] = true;
-      return newState;
-    });
-    setCurrentNotificationIndex((prev) => prev + 1);
-  };
-
-  // Function to show all notifications
-  const showAllNotifications = () => {
-    setShowNotifications(new Array(assignedProfiles.length).fill(true));
-    setCurrentNotificationIndex(assignedProfiles.length);
-  };
-
-  // Function to reset notifications
-  const resetNotifications = () => {
-    setShowNotifications(new Array(100).fill(false));
-    setCurrentNotificationIndex(0);
-    setScore(0);
-    setGameStarted(false);
-    setTimeRemaining(60);
-    setGameOver(false);
-    setSpawnInterval(3000); // Reset spawn interval to initial value
-  };
-
-  // Calculate display duration for a given index (decreases over time, min 1000ms)
-  const getDisplayDuration = (index: number): number => {
-    const decreasePerNotification = 500; // Decrease by 500ms each time
-    const duration = baseDisplayDuration - index * decreasePerNotification;
-    return Math.max(duration, minDisplayDuration);
-  };
-
-  // Handle notification click - award point and hide notification
-  const handleNotificationClick = (index: number) => {
-    // Don't allow clicks if game is over
-    if (gameOver) return;
-
-    // Award point
-    setScore((prev) => prev + 1);
-
-    // Hide current notification
-    setShowNotifications((prev) => {
-      const newState = [...prev];
-      newState[index] = false;
-      return newState;
-    });
-  };
+    return (
+      <GameResultsScreen
+        isFirstAttempt={!hasPlayedToday || scoreSaved}
+        currentScore={score}
+        previousScore={previousScore}
+        scoreSaved={scoreSaved}
+        loading={false}
+        error={null}
+        dayInfo={dayInfo}
+        gameType="teamsNotificationGame"
+        gameName="Teams Varsel Spill"
+        onPlayAgain={handlePlayAgain}
+        scoreLabel="poeng"
+      />
+    );
+  }
 
   return (
-    <div className="max-w-3xl mx-auto p-4 overflow-x-hidden">
-      <div className="flex items-center gap-3 mb-4">
-        {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt="Teams Logo"
-            className="h-8 w-8 object-contain"
-          />
-        ) : (
-          <span className="text-2xl" role="img" aria-label="logo">
-            💬
-          </span>
-        )}
-        <div>
-          <h1 className="text-xl font-bold">
-            {data.title || dayTitle || "Teams Notification"}
+    <ChristmasBackground>
+      <div className="min-h-screen p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-red-400/20 mb-6 z-10 max-w-md">
+          <h1
+            className="text-4xl font-bold text-white mb-4 drop-shadow-lg text-center"
+            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+          >
+            {gameData.title || dayInfo?.title || "Teams Varsel Spill"}
           </h1>
-          {data.description ? (
-            <p className="text-sm text-gray-600">{data.description}</p>
-          ) : null}
-        </div>
-      </div>
+          {gameData.description && (
+            <p className="text-white/90 text-center mb-4">
+              {gameData.description}
+            </p>
+          )}
 
-      {/* Score, Timer, and Control buttons */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-6">
-          <div className="text-2xl font-bold text-blue-600">Score: {score}</div>
-          <div
-            className={`text-2xl font-bold ${
-              timeRemaining <= 10 ? "text-red-600" : "text-green-600"
-            }`}
-          >
-            {gameStarted
-              ? `⏱️ ${timeRemaining}s`
-              : "⏱️ 60s (Click 'Show Next' to start!)"}
+          <div className="grid grid-cols-2 gap-4 text-center mb-4">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-red-400/20">
+              <p className="text-red-200 text-sm mb-1">Poeng</p>
+              <p className="text-white text-4xl font-bold">{score}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-red-400/20">
+              <p className="text-red-200 text-sm mb-1">Tid Igjen</p>
+              <p
+                className={`text-3xl font-bold ${timeRemaining <= 10 ? "text-red-400" : "text-white"}`}
+              >
+                {timeRemaining}s
+              </p>
+            </div>
           </div>
-          {gameStarted && (
-            <div
-              className={`text-lg font-semibold ${spawnInterval <= 1000 ? "text-orange-600" : "text-purple-600"}`}
+
+          {!gameStarted && (
+            <button
+              onClick={() => setGameStarted(true)}
+              className="w-full py-4 bg-green-700 hover:bg-green-700 text-white text-xl font-bold rounded-lg transition-colors"
             >
-              ⚡ Spawn: {(spawnInterval / 1000).toFixed(1)}s
+              {hasPlayedToday ? "Spill Igjen (for moro skyld)" : "Start Spillet"}
+            </button>
+          )}
+
+          {gameStarted && (
+            <div className="text-center">
+              <p className="text-red-200 text-sm mb-2">
+                Spillet pågår...
+              </p>
+              <p className="text-white/80 text-xs">
+                Klikk på varslene for å fjerne dem!
+              </p>
             </div>
           )}
-          {gameOver && (
-            <div className="text-2xl font-bold text-red-600 animate-pulse">
-              🎮 GAME OVER! Final Score: {score}
-            </div>
-          )}
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={showNextNotification}
-            disabled={gameOver}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            Show Next (#{currentNotificationIndex + 1})
-          </button>
-          <button
-            onClick={resetNotifications}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-          >
-            Reset
-          </button>
-        </div>
+
+        {gameStarted && (
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-yellow-300 mb-4 drop-shadow-lg">
+              {/* Klikk på varslene for å fjerne dem! */}
+            </h2>
+          </div>
+        )}
+
+        {/* Render active notifications */}
+        {Array.from(activeNotifications.entries()).map(([id, notification]) => (
+          <TeamsNotification
+            key={id}
+            sender={notification.sender}
+            message={notification.message}
+            logo={logoUrl || ""}
+            profilePicture={notification.profilePicture}
+            emojiIcon={emojiUrl || ""}
+            closeMessageIcon={closeUrl || ""}
+            sendMessageIcon={sendUrl || ""}
+            contextMenuIcon={contextUrl || ""}
+            xPosition={notification.xPosition}
+            yPosition={notification.yPosition}
+            animate={true}
+            duration={150}
+            displayDuration={0}
+            onClick={() => handleNotificationClick(id)}
+          />
+        ))}
       </div>
-
-      {/* Toolbar icons */}
-      <div className="flex items-center gap-3 mb-4">
-        {contextUrl && (
-          <img
-            src={contextUrl}
-            alt="Context menu"
-            className="h-5 w-5 object-contain"
-          />
-        )}
-        {emojiUrl && (
-          <img
-            src={emojiUrl}
-            alt="Add emoji"
-            className="h-5 w-5 object-contain"
-          />
-        )}
-        {closeUrl && (
-          <img
-            src={closeUrl}
-            alt="Close message"
-            className="h-5 w-5 object-contain"
-          />
-        )}
-        {sendUrl && (
-          <img
-            src={sendUrl}
-            alt="Send message"
-            className="h-5 w-5 object-contain"
-          />
-        )}
-      </div>
-
-      {/* First message */}
-      {data.firstMessage && showNotifications[0] && !gameOver ? (
-        <TeamsNotification
-          sender={firstProfile.name}
-          message={data.firstMessage}
-          logo={logoUrl || ""}
-          profilePicture={firstProfile.ref || ""}
-          emojiIcon={emojiUrl || ""}
-          closeMessageIcon={closeUrl || ""}
-          sendMessageIcon={sendUrl || ""}
-          contextMenuIcon={contextUrl || ""}
-          animate={true}
-          side={firstProfile.side}
-          yPosition={firstProfile.yPosition}
-          displayDuration={getDisplayDuration(0)}
-          onClick={() => handleNotificationClick(0)}
-          onDismiss={() => {
-            setShowNotifications((prev) => {
-              const newState = [...prev];
-              newState[0] = false;
-              return newState;
-            });
-          }}
-        />
-      ) : null}
-
-      {/* Dynamic notifications - cycles through messages infinitely */}
-      {assignedProfiles.length > 0 &&
-      data.teamsMessages &&
-      data.teamsMessages.length > 0 ? (
-        <div className="mt-3 space-y-3">
-          {assignedProfiles.slice(data.firstMessage ? 1 : 0).map((ap, idx) => {
-            const profileIndex = idx + (data.firstMessage ? 1 : 0);
-
-            // Cycle through messages infinitely
-            const messageIndex = idx % data.teamsMessages!.length;
-            const message = data.teamsMessages![messageIndex]?.message || "";
-
-            // Only render if this notification should be shown and game is not over
-            if (!showNotifications[profileIndex] || gameOver) {
-              return null;
-            }
-
-            return (
-              <TeamsNotification
-                key={`notification-${profileIndex}`}
-                sender={ap.name}
-                message={message}
-                logo={logoUrl || ""}
-                profilePicture={ap.ref || ""}
-                emojiIcon={emojiUrl || ""}
-                closeMessageIcon={closeUrl || ""}
-                sendMessageIcon={sendUrl || ""}
-                contextMenuIcon={contextUrl || ""}
-                animate={true}
-                side={ap.side}
-                yPosition={ap.yPosition}
-                displayDuration={getDisplayDuration(profileIndex)}
-                onClick={() => handleNotificationClick(profileIndex)}
-                onDismiss={() => {
-                  setShowNotifications((prev) => {
-                    const newState = [...prev];
-                    newState[profileIndex] = false;
-                    return newState;
-                  });
-                }}
-              />
-            );
-          })}
-        </div>
-      ) : null}
-
-      {/* Last message */}
-      {/* {data.lastMessage ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm mt-3">
-          <p className="text-gray-900">{data.lastMessage}</p>
-        </div>
-      ) : null} */}
-    </div>
+    </ChristmasBackground>
   );
 }

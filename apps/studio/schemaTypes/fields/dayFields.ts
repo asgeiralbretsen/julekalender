@@ -53,6 +53,7 @@ export const gameTypeField = defineField({
       {title: 'Quiz', value: 'quizGame'},
       {title: 'Teams Notification Game', value: 'teamsNotificationGame'},
       {title: 'Intervju', value: 'interviewGame'},
+      {title: 'Gjett julesangen', value: 'songGuessGame'},
     ],
     layout: 'radio',
   },

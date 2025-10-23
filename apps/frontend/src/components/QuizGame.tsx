@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { useGameScore } from '../hooks/useGameScore';
 import Leaderboard from './Leaderboard';
+import GameResultsScreen from './GameResultsScreen';
 
 interface Question {
   questionText: string;
@@ -196,79 +197,20 @@ export default function QuizGame() {
   }
 
   if (gameEnded) {
-    const displayScore = hasPlayedToday && previousScore !== null ? previousScore : score;
-    const isFirstAttempt = !hasPlayedToday || scoreSaved;
-
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-        
-        <div className="max-w-6xl w-full relative z-10">
-          <div className="grid md:grid-cols-2 gap-6 items-start">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20">
-              <h1 className="text-4xl font-bold text-yellow-300 mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-                {isFirstAttempt && !hasPlayedToday ? 'Quiz fullført!' : 'Din poengsum'}
-              </h1>
-              
-              <div className="mb-6">
-                <p className="text-red-200 text-sm mb-2">
-                  {isFirstAttempt && !hasPlayedToday ? 'Din poengsum (innsendt)' : 'Din innsendte poengsum'}
-                </p>
-                <p className="text-6xl text-white font-bold mb-2">
-                  {displayScore}
-                </p>
-                <p className="text-red-200 text-sm">poeng</p>
-              </div>
-              
-              {scoreSaved && (
-                <p className="text-green-300 mb-4">
-                  ✅ Poengsum lagret!
-                </p>
-              )}
-              
-              {scoreLoading && (
-                <p className="text-yellow-300 mb-4">
-                  💾 Lagrer poengsum...
-                </p>
-              )}
-              
-              {hasPlayedToday && !scoreSaved && (
-                <div className="mb-4 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
-                  <p className="text-yellow-200 text-sm">
-                    Du har allerede spilt denne quizen i dag!
-                  </p>
-                  <p className="text-red-200 text-xs mt-1">
-                    Bare første poengsum teller på topplisten
-                  </p>
-                </div>
-              )}
-              
-              {scoreError && (
-                <div className="mb-4 p-3 bg-red-500/20 border border-red-400/50 rounded-lg">
-                  <p className="text-red-200 text-sm">{scoreError}</p>
-                </div>
-              )}
-              
-              <button
-                onClick={startGame}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
-              >
-                {isFirstAttempt && !hasPlayedToday ? 'Spill igjen' : 'Spill igjen (for moro skyld)'}
-              </button>
-            </div>
-
-            {dayInfo && (
-              <Leaderboard
-                day={dayInfo.day}
-                gameType="quizGame"
-                title={`Dag ${dayInfo.day} toppliste`}
-                showRank={true}
-                maxEntries={10}
-              />
-            )}
-          </div>
-        </div>
-      </div>
+      <GameResultsScreen
+        isFirstAttempt={!hasPlayedToday || scoreSaved}
+        currentScore={score}
+        previousScore={previousScore}
+        scoreSaved={scoreSaved}
+        loading={scoreLoading}
+        error={scoreError}
+        dayInfo={dayInfo}
+        gameType="quizGame"
+        gameName="Quiz"
+        onPlayAgain={startGame}
+        scoreLabel="poeng"
+      />
     );
   }
 

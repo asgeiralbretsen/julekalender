@@ -2,6 +2,7 @@ import {defineType} from 'sanity'
 import {basicDayFields, gameTypeField, additionalFields} from './fields/dayFields'
 import {blurGuessGameFields} from './fields/blurGuessFields'
 import {colorMatchGameFields} from './fields/colorMatchFileds'
+import {songGuessGameFields} from './fields/songGuessFields'
 import {quizGameFields} from './fields/quizGameFields'
 import {teamsNotificationGameFields} from './fields/TeamsNotificationFields'
 import {interviewGameFields} from './fields/interviewGameFields'
@@ -18,6 +19,7 @@ export const dayType = defineType({
     quizGameFields,
     teamsNotificationGameFields,
     interviewGameFields,
+    ...songGuessGameFields,
     ...additionalFields,
   ],
   preview: {
