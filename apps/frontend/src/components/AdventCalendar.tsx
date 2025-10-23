@@ -853,13 +853,9 @@ export default function AdventCalendar() {
           {sanityDays.length > 0 && (
             <div className="mt-8 text-center text-red-100">
               <p>
-                {today.getMonth() === 11
+                {today.getMonth() === 9
                   ? `I dag er det ${currentDay}. desember. Dag 1-${currentDay} er låst opp! 🎄`
                   : "Kom tilbake i desember for å låse opp kalenderdager! 🎄"}
-              </p>
-              <p className="text-sm mt-2 text-red-200">
-                Viser {sanityDays.length} kalenderdag
-                {sanityDays.length !== 1 ? "er" : ""} fra Sanity
               </p>
             </div>
           )}
