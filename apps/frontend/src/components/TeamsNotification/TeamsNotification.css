@@ -1,0 +1,82 @@
+.teams-notification {
+    transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+.teams-notification.disintegrate {
+    animation: disintegrate 0.6s ease-out forwards;
+    pointer-events: none;
+    transform-origin: center;
+}
+
+@keyframes disintegrate {
+    0% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+        filter: blur(0px);
+    }
+
+    25% {
+        transform: scale(1.05) rotate(2deg);
+        opacity: 0.9;
+        filter: blur(1px);
+    }
+
+    50% {
+        transform: scale(0.95) rotate(-2deg);
+        opacity: 0.6;
+        filter: blur(2px);
+    }
+
+    75% {
+        transform: scale(0.8) rotate(5deg) translateY(10px);
+        opacity: 0.3;
+        filter: blur(4px);
+    }
+
+    100% {
+        transform: scale(0.5) rotate(10deg) translateY(30px) translateX(20px);
+        opacity: 0;
+        filter: blur(8px);
+    }
+}
+
+/* Add particle-like effect with pseudo-elements */
+.teams-notification.disintegrate::before,
+.teams-notification.disintegrate::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: inherit;
+    opacity: 0;
+    animation: particle-explode 0.6s ease-out forwards;
+}
+
+.teams-notification.disintegrate::before {
+    animation-delay: 0.1s;
+    transform-origin: top left;
+}
+
+.teams-notification.disintegrate::after {
+    animation-delay: 0.2s;
+    transform-origin: top right;
+}
+
+@keyframes particle-explode {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0;
+    }
+
+    50% {
+        transform: translate(var(--random-x, 30px), var(--random-y, -30px)) scale(0.3);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: translate(calc(var(--random-x, 30px) * 2), calc(var(--random-y, -30px) * 2)) scale(0.1);
+        opacity: 0;
+    }
+}

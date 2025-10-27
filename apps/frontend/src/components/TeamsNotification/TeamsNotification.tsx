@@ -1,6 +1,7 @@
 import imageUrlBuilder from "@sanity/image-url";
 import { client } from "../../lib/sanity";
 import { useEffect, useState } from "react";
+import "./TeamsNotification.css";
 
 interface TeamsNotificationProps {
   sender: string;
@@ -12,8 +13,6 @@ interface TeamsNotificationProps {
   sendMessageIcon: string;
   contextMenuIcon: string;
   duration?: number; // Animation duration in ms (default: 500)
-  side?: "left" | "right"; // Side to slide in from (default: "right")
-  delay?: number; // Delay before animation starts in ms (default: 0)
   xPosition?: number; // Position on the x-axis (default: 40)
   yPosition?: number; // Position on the y-axis (default: bottom)
   animate?: boolean; // Whether to animate the notification (default: false)
@@ -32,7 +31,7 @@ function buildImageUrl(ref: string): string {
   if (!ref) return "";
   try {
     return builder
-      .image({ _type: "image", asset: { _ref: ref } as any })
+      .image(ref)
       .width(400)
       .auto("format")
       .url();
@@ -52,11 +51,8 @@ export function TeamsNotification(props: TeamsNotificationProps) {
     sendMessageIcon,
     contextMenuIcon,
     duration = 500,
-    side = "right",
-    delay = 0,
     xPosition = 40,
     yPosition = window.innerHeight - 300,
-    animate = false,
     displayDuration = 0,
     onDismiss,
     onClick,
@@ -64,24 +60,19 @@ export function TeamsNotification(props: TeamsNotificationProps) {
 
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(true);
+  const [isClosing, setIsClosing] = useState(false);
 
   const handleClick = () => {
     if (onClick) {
-      // Slide out
-      setIsVisible(false);
+      // Trigger disintegration animation
+      setIsClosing(true);
       // Remove from DOM after animation completes
-      setShouldRender(false);
-      onClick();
+      setTimeout(() => {
+        setShouldRender(false);
+        onClick();
+      }, 600); // Match animation duration
     }
   };
-
-  // Slide in animation
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
 
   // Auto-dismiss after displayDuration
   useEffect(() => {
@@ -114,6 +105,7 @@ export function TeamsNotification(props: TeamsNotificationProps) {
 
   return (
     <div
+      draggable={false}
       style={{
         backgroundColor: TeamsColor,
         position: "fixed",
@@ -125,63 +117,72 @@ export function TeamsNotification(props: TeamsNotificationProps) {
         cursor: onClick ? "pointer" : "default",
         zIndex: 1,
       }}
-      className="p-4 rounded-lg gap-4 flex flex-col"
+      className={`p-4 rounded-lg gap-4 flex flex-col teams-notification ${isClosing ? 'disintegrate' : ''}`}
     >
       <div className="flex flex-row justify-between">
         <div className="flex flex-row justify-between gap-3">
           {logoUrl && (
-            <img src={logoUrl} alt="Logo" className="h-6 w-6 object-contain" />
+            <img draggable={false} src={logoUrl} alt="Logo" className="h-6 w-6 object-contain select-none" />
           )}
-          <p>Microsoft Teams</p>
+          <p className="select-none">Microsoft Teams</p>
         </div>
         <div className="flex flex-row justify-between gap-4">
           {contextMenuIconUrl && (
             <img
+              draggable={false}
               src={contextMenuIconUrl}
               alt="Context Menu"
-              className="h-6 w-6 object-contain"
+              className="h-6 w-6 object-contain select-none"
             />
           )}
           {emojiIconUrl && (
             <img
+              draggable={false}
               src={emojiIconUrl}
               alt="Emoji"
-              className="h-6 w-6 object-contain"
+              className="h-6 w-6 object-contain select-none"
             />
           )}
           {closeMessageIconUrl && (
-            <img
+            <button
               onClick={handleClick}
-              src={closeMessageIconUrl}
-              alt="Close Message"
-              className="h-6 w-6 object-contain"
-            />
+              className="p-2 -m-2 hover:bg-white/10 rounded transition-colors cursor-pointer"
+            >
+              <img
+                draggable={false}
+                src={closeMessageIconUrl}
+                alt="Close Message"
+                className="h-6 w-6 object-contain select-none"
+              />
+            </button>
           )}
         </div>
       </div>
       <div className="flex flex-row gap-3">
         {profilePictureUrl && (
           <img
+            draggable={false}
             src={profilePictureUrl}
             alt="Profile Picture"
-            className="w-16 h-16 rounded-full object-cover"
+            className="w-16 h-16 rounded-full object-cover select-none"
           />
         )}
         <div className="flex flex-col gap-1">
-          <p className="font-semibold">{sender}</p>
-          <p>{message}</p>
+          <p className="font-semibold select-none">{sender}</p>
+          <p className="select-none">{message}</p>
         </div>
       </div>
       <div
         style={{ backgroundColor: sendColor }}
-        className="flex flex-row justify-between gap-2 p-2 rounded-md p-2 px-4"
+        className="flex flex-row justify-between gap-2 rounded-md p-2 px-4"
       >
-        <p>Send et raskt svar</p>
+        <p className="select-none">Send et raskt svar</p>
         {sendMessageIconUrl && (
           <img
+            draggable={false}
             src={sendMessageIconUrl}
             alt="Send Message"
-            className="h-6 w-6 object-contain"
+            className="h-6 w-6 object-contain select-none"
           />
         )}
       </div>
