@@ -3,6 +3,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
+import { normalizeGameScore } from "../utils";
 
 interface GameImage {
   id: string;
@@ -26,6 +27,7 @@ interface GameState {
   scoreSaved: boolean;
   hasPlayedToday: boolean;
   previousScore: number | null;
+  timeBonus: number;
 }
 
 // Default fallback images if no game data is available
@@ -141,6 +143,7 @@ const BlurGuessGame: React.FC = () => {
     scoreSaved: false,
     hasPlayedToday: false,
     previousScore: null,
+    timeBonus: 0,
   });
 
   const [timer, setTimer] = useState<number | null>(null);
@@ -278,6 +281,7 @@ const BlurGuessGame: React.FC = () => {
       gameStarted: true,
       gameEnded: false,
       score: 0,
+      timeBonus: 0,
       round: 1,
     }));
     startNewRound(1); // Start with first image
@@ -302,6 +306,7 @@ const BlurGuessGame: React.FC = () => {
       scoreSaved: false,
       hasPlayedToday: prev.hasPlayedToday,
       previousScore: prev.previousScore,
+      timeBonus: 0,
     }));
   };
 
@@ -309,16 +314,21 @@ const BlurGuessGame: React.FC = () => {
     if (gameState.userAnswer || gameState.showResult) return;
 
     const isCorrect = answer === gameState.currentImage?.answer;
-    const timeBonus = Math.max(0, MAX_TIME_PER_ROUND - gameState.timeElapsed);
-    const points = isCorrect ? Math.floor(timeBonus / 100) + 100 : 0;
+    const timeBonus = isCorrect ?
+      Math.max(0, (MAX_TIME_PER_ROUND - gameState.timeElapsed) / MAX_TIME_PER_ROUND) / gameImages.length
+      : 0;
+    const points = isCorrect ? 1 : 0;
 
     setGameState((prev) => ({
       ...prev,
       userAnswer: answer,
       correctAnswer: prev.currentImage?.answer || null,
       showResult: true,
+      timeBonus: prev.timeBonus + timeBonus,
       score: prev.score + points,
     }));
+
+    console.log(gameState.score, gameState.timeBonus)
 
     if (timer) {
       clearInterval(timer);
@@ -328,7 +338,7 @@ const BlurGuessGame: React.FC = () => {
     // Show result for 2 seconds, then move to next round
     setTimeout(() => {
       if (gameState.round >= gameImages.length) {
-        const finalScore = gameState.score + points;
+        const finalScore = normalizeGameScore(gameState.score, gameImages.length, gameState.timeBonus);
         setGameState((prev) => ({ ...prev, gameEnded: true }));
         // Save the score when game ends
         saveGameScoreWhenEnded(finalScore);
