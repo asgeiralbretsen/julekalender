@@ -1,7 +1,6 @@
 import Stocking from "./Stocking";
 import { useState, useEffect } from "react";
 import ColorPickerNoEyedropper from "./ColorPicker";
-import { createClient } from "@sanity/client";
 import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../../hooks/useGameScore";
 import { ChristmasBackground } from "../ChristmasBackground";
@@ -32,14 +31,6 @@ interface GameData {
   };
 }
 
-// Initialize Sanity client
-const client = createClient({
-  projectId: "54fixmwv",
-  dataset: "production",
-  useCdn: true,
-  apiVersion: "2024-01-01",
-});
-
 export function ColorMatchGame() {
   const { user } = useUser();
   const {
@@ -59,7 +50,6 @@ export function ColorMatchGame() {
   const [scoreSaved, setScoreSaved] = useState(false);
   const [hasPlayedToday, setHasPlayedToday] = useState(false);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
-  const [showResultsScreen, setShowResultsScreen] = useState(false);
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
     null
   );
