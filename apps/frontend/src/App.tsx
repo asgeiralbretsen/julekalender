@@ -37,7 +37,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen">
+      <div style={{ marginTop: "65px" }}>
         <Header />
 
         <Routes>

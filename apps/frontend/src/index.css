@@ -2,14 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { --app-cursor: auto; }
+:root {
+  --app-cursor: auto;
+}
 
 /* Apply to whole app */
-html, body, #root { height: 100%; }
-html, body, #root { cursor: var(--app-cursor); }
+html,
+body,
+#root {
+  height: 100%;
+  overflow-x: hidden;
+}
+html,
+body,
+#root {
+  cursor: var(--app-cursor);
+}
+
+/* Prevent horizontal scrollbar */
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
 
 /* Make children inherit it */
-#root * { cursor: inherit; }
+#root * {
+  cursor: inherit;
+}
 
 /* (Optional) keep I-beam for typing areas */
-input, textarea, [contenteditable="true"] { cursor: text; }
+input,
+textarea,
+[contenteditable="true"] {
+  cursor: text;
+}
