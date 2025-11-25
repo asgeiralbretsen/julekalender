@@ -19,25 +19,25 @@ export const ChristmasBackground: React.FC<ChristmasBackgroundProps> = ({
       {/* Floating snowflakes */}
       <div className="absolute inset-0 pointer-events-none">
         <div
-          className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse"
+          className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse select-none"
           style={{ animationDelay: "0s" }}
         >
           ❄
         </div>
         <div
-          className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse"
+          className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse select-none"
           style={{ animationDelay: "1s" }}
         >
           ❄
         </div>
         <div
-          className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse"
+          className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse select-none"
           style={{ animationDelay: "2s" }}
         >
           ❄
         </div>
         <div
-          className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse"
+          className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse select-none"
           style={{ animationDelay: "1.5s" }}
         >
           ❄

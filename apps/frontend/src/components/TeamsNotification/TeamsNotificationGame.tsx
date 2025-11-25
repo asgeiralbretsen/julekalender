@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import imageUrlBuilder from "@sanity/image-url";
 import { client } from "../../lib/sanity";
 import { TeamsNotification } from "./TeamsNotification";
@@ -16,7 +16,7 @@ function urlFromRef(
   if (!imageLike?.asset?._ref) return undefined;
   try {
     return builder
-      .image({ _type: "image", asset: { _ref: imageLike.asset._ref } as any })
+      .image(imageLike.asset._ref)
       .auto("format")
       .fit("max")
       .url();
@@ -69,14 +69,15 @@ export function TeamsNotificationGame() {
     Map<number, NotificationData>
   >(new Map());
   const [nextNotificationId, setNextNotificationId] = useState(0);
-  const [spawnInterval, setSpawnInterval] = useState(1000); // Start at 2 seconds
+  const [spawnInterval, setSpawnInterval] = useState(1250); // Start at x seconds
   const [gameStarted, setGameStarted] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(30); // 30 seconds
   const [gameOver, setGameOver] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
   const [hasPlayedToday, setHasPlayedToday] = useState(false);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
-  const minSpawnInterval = 500; // Minimum 0.5 seconds between spawns
+  const minSpawnInterval = 550; // Minimum 0.x seconds between spawns
+  const [placedPositions, setPlacedPositions] = useState<Array<{ x: number; y: number }>>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -150,21 +151,49 @@ export function TeamsNotificationGame() {
     checkPlayStatus();
   }, [dayInfo, user, hasUserPlayedGame, getUserScoreForDay]);
 
-  // Function to generate a random notification on-the-fly
-  const generateRandomNotification = (): NotificationData => {
-    if (!gameData?.teamsMessages || profiles.length === 0) {
-      throw new Error("No data available");
-    }
-
+  // Poisson disc sampling for placement
+  const findValidPosition = useCallback((existingPositions: Array<{ x: number; y: number }>, minDistance: number): { x: number; y: number } | null => {
     const notificationWidth = 500;
+    const notificationHeight = 310;
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
 
-    // Calculate safe boundaries - full screen with small margins
     const minX = 10;
     const maxX = Math.max(10, screenWidth - notificationWidth - 10);
     const minY = 200;
-    const maxY = Math.max(10, screenHeight - 310);
+    const maxY = Math.max(10, screenHeight - notificationHeight - 10);
+
+    const maxAttempts = 30;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const candidateX = Math.random() * (maxX - minX) + minX;
+      const candidateY = Math.random() * (maxY - minY) + minY;
+
+      // Check if candidate is far enough from all existing positions
+      const isValid = existingPositions.every(pos => {
+        const dx = candidateX - pos.x;
+        const dy = candidateY - pos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance >= minDistance;
+      });
+
+      if (isValid) {
+        return { x: candidateX, y: candidateY };
+      }
+    }
+
+    // If we couldn't find a valid position after maxAttempts, return any position
+    return {
+      x: Math.random() * (maxX - minX) + minX,
+      y: Math.random() * (maxY - minY) + minY,
+    };
+  }, []);
+
+  // Function to generate a random notification on-the-fly
+  const generateRandomNotification = useCallback((): NotificationData => {
+    if (!gameData?.teamsMessages || profiles.length === 0) {
+      throw new Error("No data available");
+    }
 
     // Pick random profile
     const profile = profiles[Math.floor(Math.random() * profiles.length)];
@@ -175,14 +204,21 @@ export function TeamsNotificationGame() {
         Math.floor(Math.random() * gameData.teamsMessages.length)
       ].message;
 
+    // Find valid position using Poisson disc sampling (minimum 200px distance)
+    const position = findValidPosition(placedPositions, 200);
+
+    if (!position) {
+      throw new Error("Could not find valid position");
+    }
+
     return {
       sender: profile.name,
       message: message,
       profilePicture: profile.ref,
-      xPosition: Math.random() * (maxX - minX) + minX,
-      yPosition: Math.random() * (maxY - minY) + minY,
+      xPosition: position.x,
+      yPosition: position.y,
     };
-  };
+  }, [gameData?.teamsMessages, profiles, findValidPosition, placedPositions]);
 
   // Game timer - counts down from 30 seconds
   useEffect(() => {
@@ -192,6 +228,7 @@ export function TeamsNotificationGame() {
           if (prev <= 1) {
             setGameOver(true);
             setActiveNotifications(new Map()); // Clear all notifications
+            setPlacedPositions([]); // Clear all tracked positions
             return 0;
           }
           return prev - 1;
@@ -245,6 +282,12 @@ export function TeamsNotificationGame() {
           return newMap;
         });
 
+        // Track position for Poisson disc sampling
+        setPlacedPositions((prev) => [
+          ...prev,
+          { x: newNotification.xPosition, y: newNotification.yPosition },
+        ]);
+
         setNextNotificationId((prev) => prev + 1);
 
         // Decrease spawn interval for next spawn
@@ -265,12 +308,26 @@ export function TeamsNotificationGame() {
     minSpawnInterval,
     gameData,
     profiles,
+    generateRandomNotification,
   ]);
 
   // Handle notification click - award point and remove notification
   const handleNotificationClick = (notificationId: number) => {
     setScore((prev) => prev + 1);
     setActiveNotifications((prev) => {
+      const notification = prev.get(notificationId);
+
+      // Remove position from tracking
+      if (notification) {
+        setPlacedPositions((positions) =>
+          positions.filter(
+            (pos) =>
+              Math.abs(pos.x - notification.xPosition) > 1 ||
+              Math.abs(pos.y - notification.yPosition) > 1
+          )
+        );
+      }
+
       const newMap = new Map(prev);
       newMap.delete(notificationId);
       return newMap;
@@ -350,6 +407,7 @@ export function TeamsNotificationGame() {
       setSpawnInterval(1000);
       setTimeRemaining(30);
       setActiveNotifications(new Map());
+      setPlacedPositions([]);
       setScoreSaved(false);
     };
 
@@ -382,7 +440,7 @@ export function TeamsNotificationGame() {
         howToPlay={[
           "• Teams-varsler dukker opp på skjermen",
           "• Klikk på varslene for å fjerne dem",
-          "• +1 poeng per varslet du lukker",
+          "• +1 poeng per varsel du lukker",
           "• 30 sekunder spilletid",
           "• Varslene dukker opp raskere og raskere!",
         ]}
@@ -394,7 +452,7 @@ export function TeamsNotificationGame() {
 
   return (
     <ChristmasBackground>
-      <div className="min-h-screen p-4">
+      <div draggable={false} className="min-h-screen p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-red-400/20 mb-6 z-10 max-w-md">
           <h1
             className="text-4xl font-bold text-white mb-4 drop-shadow-lg text-center"
@@ -445,8 +503,6 @@ export function TeamsNotificationGame() {
             contextMenuIcon={contextUrl || ""}
             xPosition={notification.xPosition}
             yPosition={notification.yPosition}
-            animate={true}
-            duration={150}
             displayDuration={0}
             onClick={() => handleNotificationClick(id)}
           />
