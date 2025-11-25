@@ -3,6 +3,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
+import { normalizeGameScore } from "../utils";
 
 interface Question {
   questionText: string;
@@ -37,6 +38,7 @@ export default function QuizGame() {
   );
   const [currentRound, setCurrentRound] = useState(0);
   const [score, setScore] = useState(0);
+  const [totalTimeBonus, setTotalTimeBonus] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -47,6 +49,8 @@ export default function QuizGame() {
   const [scoreSaved, setScoreSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checkingPlayStatus, setCheckingPlayStatus] = useState(true);
+
+  const gameTime = 10;
 
   useEffect(() => {
     const gameDataStr = sessionStorage.getItem("currentGameData");
@@ -119,7 +123,7 @@ export default function QuizGame() {
     setGameEnded(false);
     setCurrentRound(0);
     setScore(0);
-    setTimeLeft(gameData.questions[0].timeLimit);
+    setTimeLeft(gameTime);
     setSelectedAnswer(null);
     setShowResult(false);
     setScoreSaved(false);
@@ -142,10 +146,9 @@ export default function QuizGame() {
     const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
 
     if (isCorrect) {
-      const points =
-        gameData.scoringSettings.correctAnswerPoints +
-        timeLeft * gameData.scoringSettings.timeBonus;
-      setScore(score + points);
+      const timeBonus = (timeLeft / gameTime) / gameData.questions.length
+      setTotalTimeBonus((prev) => prev + timeBonus)
+      setScore((prev) => prev + 1);
     }
 
     setTimeout(() => {
@@ -158,7 +161,7 @@ export default function QuizGame() {
 
     if (currentRound + 1 < gameData.questions.length) {
       setCurrentRound(currentRound + 1);
-      setTimeLeft(gameData.questions[currentRound + 1].timeLimit);
+      setTimeLeft(gameTime);
       setSelectedAnswer(null);
       setShowResult(false);
     } else {
@@ -174,7 +177,7 @@ export default function QuizGame() {
         const result = await saveGameScore({
           day: dayInfo.day,
           gameType: "quizGame",
-          score: score,
+          score: normalizeGameScore(score, gameData.questions.length, totalTimeBonus)
         });
 
         if (result) {
