@@ -15,6 +15,6 @@ export interface GameScorePercentiles {
 
 }
 
-export function normalizeGameScore(score: number, maxScore: number): number {
-    return score / maxScore * 1000
+export function normalizeGameScore(score: number, maxScore: number, timeBonus?: number): number {
+    return timeBonus ? (score / maxScore * 1000) + timeBonus : score / maxScore * 1000
 }
