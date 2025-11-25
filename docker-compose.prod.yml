@@ -34,9 +34,8 @@ services:
       context: ./apps/backend
       dockerfile: Dockerfile
     container_name: julekalender-backend
-    # No external port exposure - only accessible via Caddy internally
-    expose:
-      - "5000"
+    ports:
+      - "5002:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000

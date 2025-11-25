@@ -61,7 +61,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://julekalender.albretsen.no", "http://localhost:3001", "http://localhost:5173")
+        policy.WithOrigins(
+                "https://julekalender.albretsen.no",
+                "https://api.julekalender.albretsen.no",
+                "http://localhost:3001",
+                "http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

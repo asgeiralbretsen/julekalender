@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5002' : '');
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
 
 export class GameScoreAPI {
   private static async getAuthHeaders(getToken: () => Promise<string | null>): Promise<HeadersInit> {
