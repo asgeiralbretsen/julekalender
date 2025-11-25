@@ -328,8 +328,6 @@ const BlurGuessGame: React.FC = () => {
       score: prev.score + points,
     }));
 
-    console.log(gameState.score, gameState.timeBonus)
-
     if (timer) {
       clearInterval(timer);
       setTimer(null);
@@ -337,17 +335,27 @@ const BlurGuessGame: React.FC = () => {
 
     // Show result for 2 seconds, then move to next round
     setTimeout(() => {
-      if (gameState.round >= gameImages.length) {
-        const finalScore = normalizeGameScore(gameState.score, gameImages.length, gameState.timeBonus);
-        setGameState((prev) => ({ ...prev, gameEnded: true }));
-        // Save the score when game ends
-        saveGameScoreWhenEnded(finalScore);
-      } else {
-        const nextRound = gameState.round + 1;
-        setGameState((prev) => ({ ...prev, round: nextRound }));
-        startNewRound(nextRound); // Load next image in sequence
-      }
+      setGameState(prev => {
+        if (prev.round >= gameImages.length) {
+          const finalScore = normalizeGameScore(
+            prev.score, 
+            gameImages.length, 
+            prev.timeBonus
+          );
+
+          console.log(finalScore, prev.score, gameImages.length, prev.timeBonus)
+    
+          saveGameScoreWhenEnded(finalScore);
+    
+          return { ...prev, gameEnded: true };
+        }
+    
+        const nextRound = prev.round + 1;
+        startNewRound(nextRound);
+        return { ...prev, round: nextRound };
+      });
     }, 2000);
+    
   };
 
   useEffect(() => {
