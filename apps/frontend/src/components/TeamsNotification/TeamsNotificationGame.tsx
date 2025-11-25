@@ -7,6 +7,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../../hooks/useGameScore";
 import GameResultsScreen from "../GameResultsScreen";
 import { StartGameScreen } from "../StartGameScreen";
+import { normalizeGameScore} from "../../utils";
 
 const builder = imageUrlBuilder(client);
 
@@ -86,7 +87,6 @@ export function TeamsNotificationGame() {
         const profileDocs: ProfileEntry[] = await client.fetch(
           `*[_type=="profilePicture"]{name,"ref":image.asset._ref}`
         );
-        console.log("Fetched profiles:", profileDocs);
         const filteredProfiles = profileDocs.filter(
           (d) => !!d?.ref && !!(d?.name || "").trim()
         );
@@ -109,7 +109,6 @@ export function TeamsNotificationGame() {
           try {
             const parsed = JSON.parse(raw);
             if (parsed?.teamsNotificationGameData) {
-              console.log("Game data:", parsed.teamsNotificationGameData);
               setGameData(
                 parsed.teamsNotificationGameData as TeamsNotificationGameData
               );
@@ -241,10 +240,14 @@ export function TeamsNotificationGame() {
   // Save score when game ends
   useEffect(() => {
     if (gameOver && !hasPlayedToday && dayInfo && user) {
+      // This is set to be a score that is very hard to get,
+      // but a higher score COULD be achieved, and that's fine
+      const HARDCODED_MAX_SCORE_NOT_ACCURATE = 40;
+      const finalScore = normalizeGameScore(score, HARDCODED_MAX_SCORE_NOT_ACCURATE);
       saveGameScore({
         day: dayInfo.day,
         gameType: "teamsNotificationGame",
-        score: score,
+        score: finalScore,
       })
         .then((result) => {
           if (result) {
