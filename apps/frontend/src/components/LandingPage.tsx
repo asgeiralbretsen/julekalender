@@ -1,5 +1,4 @@
 import { SignInButton } from '@clerk/clerk-react';
-import logoIcon from '../assets/unimicro-logoikon-hvit_RGB.png';
 
 export default function LandingPage() {
   return (
