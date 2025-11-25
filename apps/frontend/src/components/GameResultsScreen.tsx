@@ -32,13 +32,10 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
   error,
   dayInfo,
   gameType,
-  gameName,
   onPlayAgain,
   scoreLabel = "poeng",
   scoreSuffix = ""
 }) => {
-  const displayScore = isFirstAttempt ? currentScore : (previousScore || 0);
-  
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
@@ -67,14 +64,14 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
           {/* Score Section */}
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20">
             <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-              {isFirstAttempt ? 'Spillet er over!' : 'Din poengsum'}
+              Spillet er over!
             </h2>
             
             {isFirstAttempt ? (
               <>
                 <div className="mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
                   <p className="text-red-200 text-sm mb-2">
-                    Din poengsum (innsendt)
+                    Din poengsum
                   </p>
                   <p className="text-3xl text-white font-bold mb-2">
                     {currentScore}{scoreSuffix}
@@ -91,17 +88,31 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
                 )}
               </>
             ) : (
-              <div className="mb-6 p-4 bg-red-500/20 border border-red-400/50 rounded-lg">
-                <p className="text-red-200 text-sm mb-2">
-                  Din innsendte poengsum:
-                </p>
-                <p className="text-white text-4xl font-bold">
-                  {displayScore}{scoreSuffix}
-                </p>
-                <p className="text-red-200 text-xs mt-2">
-                  Dette er din poengsum på topplisten
-                </p>
-              </div>
+              <>
+                <div className="mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
+                  <p className="text-red-200 text-sm mb-2">
+                    Denne rundens poengsum
+                  </p>
+                  <p className="text-3xl text-white font-bold mb-2">
+                    {currentScore}{scoreSuffix}
+                  </p>
+                  <p className="text-red-200 text-sm">{scoreLabel}</p>
+                </div>
+                
+                {previousScore !== null && previousScore !== undefined && (
+                  <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
+                    <p className="text-yellow-200 text-sm mb-2">
+                      Din innsendte poengsum:
+                    </p>
+                    <p className="text-white text-2xl font-bold">
+                      {previousScore}{scoreSuffix}
+                    </p>
+                    <p className="text-yellow-200 text-xs mt-2">
+                      Dette er din poengsum på topplisten
+                    </p>
+                  </div>
+                )}
+              </>
             )}
             
             {error && (
