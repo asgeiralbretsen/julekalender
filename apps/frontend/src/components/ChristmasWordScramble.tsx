@@ -4,10 +4,10 @@ import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
+import { normalizeGameScore } from "../utils";
 
 interface Word {
   word: string;
-  hint?: string;
 }
 
 interface GameData {
@@ -44,6 +44,7 @@ const ChristmasWordScramble = () => {
   const [userInput, setUserInput] = useState("");
   const [timeRemaining, setTimeRemaining] = useState(30);
   const [score, setScore] = useState(0);
+  const [totalTimeBonus, setTotalTimeBonus] = useState(0);
   const [gameEnded, setGameEnded] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [feedback, setFeedback] = useState<
@@ -59,6 +60,8 @@ const ChristmasWordScramble = () => {
 
   // Ref for input field
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const gameTime = 10;
 
   // Load game data
   useEffect(() => {
@@ -140,7 +143,7 @@ const ChristmasWordScramble = () => {
     setCorrectAnswers(0);
     setUserInput("");
     setFeedback(null);
-    setTimeRemaining(gameData.timeLimit);
+    setTimeRemaining(gameTime);
     setScrambledWord(scrambleWord(gameData.words[0].word));
   };
 
@@ -166,12 +169,12 @@ const ChristmasWordScramble = () => {
 
     if (isCorrect) {
       setFeedback("correct");
-      const basePoints = gameData.scoringSettings.correctAnswerPoints;
       const timeBonus =
-        timeRemaining * gameData.scoringSettings.timeBonusPerSecond;
-      const totalPoints = basePoints + timeBonus;
+        (timeRemaining / gameTime) / gameData.words.length;
+      
+      setTotalTimeBonus((prev) => prev + timeBonus);
 
-      setScore((prev) => prev + totalPoints);
+      setScore((prev) => prev + 1);
       setCorrectAnswers((prev) => prev + 1);
 
       setTimeout(() => {
@@ -236,7 +239,7 @@ const ChristmasWordScramble = () => {
         const result = await saveGameScore({
           day: dayInfo.day,
           gameType: "wordScrambleGame",
-          score: score,
+          score: normalizeGameScore(score, gameData.words.length, totalTimeBonus)
         });
 
         if (result && result.score === score) {
@@ -370,11 +373,6 @@ const ChristmasWordScramble = () => {
             <div className="text-5xl font-bold text-white mb-4 tracking-wider">
               {scrambledWord.toUpperCase()}
             </div>
-            {currentWord.hint && (
-              <div className="text-yellow-300 text-sm">
-                Hint: {currentWord.hint}
-              </div>
-            )}
           </div>
 
           {/* Feedback */}
