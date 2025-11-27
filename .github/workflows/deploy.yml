@@ -25,11 +25,11 @@ jobs:
           port: 22
           script: |
             cd /opt/julekalender
-            echo "📥 Pulling latest code..."
+            echo "Pulling latest code..."
             git pull origin main
-            echo "🚀 Running deployment script..."
+            echo "Running Podman deployment script..."
             chmod +x deploy.sh
             ./deploy.sh
 
       - name: Summary
-        run: echo "🎉 Deployed to server!"
+        run: echo "Deployed to server."
