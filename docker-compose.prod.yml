@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: caddy:2-alpine
+    image: docker.io/library/caddy:2-alpine
     container_name: julekalender-caddy
     restart: unless-stopped
     ports:
@@ -21,7 +21,6 @@ services:
       context: ./apps/frontend
       dockerfile: Dockerfile.prod
     container_name: julekalender-frontend
-    # No external port exposure - only accessible via Caddy internally
     expose:
       - "80"
     depends_on:
@@ -48,7 +47,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:15-alpine
+    image: docker.io/library/postgres:15-alpine
     container_name: julekalender-postgres
     restart: unless-stopped
     environment:
@@ -57,8 +56,6 @@ services:
       - POSTGRES_PASSWORD=postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - julekalender-network
     healthcheck:
@@ -81,7 +78,7 @@ services:
     restart: unless-stopped
 
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: docker.io/dpage/pgadmin4:latest
     container_name: julekalender-pgadmin
     restart: unless-stopped
     environment:
@@ -93,7 +90,6 @@ services:
       - postgres
     networks:
       - julekalender-network
-
 
 volumes:
   caddy_data:
