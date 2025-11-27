@@ -5,6 +5,7 @@ import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
 import { client } from "../lib/sanity";
+import { normalizeGameScore } from "../utils";
 
 interface SongData {
   songUrl: string;
@@ -17,6 +18,7 @@ interface GameState {
   currentSong: SongData | null;
   timeRemaining: number;
   score: number;
+  timebonus: number;
   round: number;
   gameStarted: boolean;
   gameEnded: boolean;
@@ -71,10 +73,13 @@ const SongGuessGame: React.FC = () => {
     null
   );
 
+  const gameTime = 20;
+
   const [gameState, setGameState] = useState<GameState>({
     currentSong: null,
-    timeRemaining: 10,
+    timeRemaining: gameTime,
     score: 0,
+    timebonus: 0,
     round: 1,
     gameStarted: false,
     gameEnded: false,
@@ -204,7 +209,7 @@ const SongGuessGame: React.FC = () => {
       setGameState((prev) => ({
         ...prev,
         currentSong: song,
-        timeRemaining: song.clipDuration,
+        timeRemaining: gameTime,
         timeElapsed: 0,
         userAnswer: null,
         showResult: false,
@@ -241,16 +246,10 @@ const SongGuessGame: React.FC = () => {
 
     // Calculate score for this round
     let roundScore = 0;
-    if (isCorrect && gameData && gameData.scoringSettings) {
-      const baseScore = gameData.scoringSettings.correctAnswerPoints || 1000;
-      const timeBonusPerSecond =
-        gameData.scoringSettings.timeBonusPerSecond || 50;
-      const maxTimeBonus = gameData.scoringSettings.maxTimeBonus || 500;
-      const timeBonus = Math.min(
-        Math.floor(gameState.timeRemaining * timeBonusPerSecond),
-        maxTimeBonus
-      );
-      roundScore = baseScore + timeBonus;
+    let roundTimebonus = 0
+    if (isCorrect) {
+      roundScore = 1
+      roundTimebonus = (gameState.timeRemaining / gameTime) / allSongs.length
     }
 
     // Update game state with answer
@@ -258,6 +257,7 @@ const SongGuessGame: React.FC = () => {
       ...prev,
       userAnswer: answer,
       score: prev.score + roundScore,
+      timebonus: prev.timebonus + roundTimebonus,
       showResult: true,
     }));
 
@@ -266,13 +266,14 @@ const SongGuessGame: React.FC = () => {
       if (gameState.round >= allSongs.length) {
         // Game is over - all songs completed
         const finalScore = gameState.score + roundScore;
+        const finalTimeBonus = gameState.timebonus + roundTimebonus;
         
         // Save score if user hasn't played today
         if (dayInfo && user && !gameState.hasPlayedToday) {
           saveGameScore({
             day: dayInfo.day,
             gameType: "songGuessGame",
-            score: finalScore,
+            score: normalizeGameScore(finalScore, allSongs.length, finalTimeBonus),
           })
             .then((result) => {
               if (result) {
@@ -318,8 +319,9 @@ const SongGuessGame: React.FC = () => {
     // Reset game state to start fresh
     setGameState({
       currentSong: null,
-      timeRemaining: 10,
+      timeRemaining: gameTime,
       score: 0,
+      timebonus: 0,
       round: 1,
       gameStarted: false,
       gameEnded: false,
@@ -344,7 +346,7 @@ const SongGuessGame: React.FC = () => {
         {audioElement}
         <GameResultsScreen
           isFirstAttempt={!gameState.hasPlayedToday}
-          currentScore={gameState.score}
+          currentScore={normalizeGameScore(gameState.score, allSongs.length, gameState.timebonus)}
           previousScore={gameState.previousScore}
           scoreSaved={gameState.scoreSaved}
           loading={false}
@@ -446,7 +448,7 @@ const SongGuessGame: React.FC = () => {
                     <div
                       className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-100"
                       style={{
-                        width: `${(gameState.timeRemaining / gameState.currentSong.clipDuration) * 100}%`,
+                        width: `${(gameState.timeRemaining / gameTime) * 100}%`,
                       }}
                     />
                   </div>
