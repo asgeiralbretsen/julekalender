@@ -1,50 +1,57 @@
-import React from "react";
+import React, { useState } from "react";
 
 interface ChristmasBackgroundProps {
   children: React.ReactNode;
   className?: string;
 }
 
+interface Snowflake {
+  id: number;
+  size: number;
+  delay: number;
+  positionX: number;
+  positionY: number;
+}
+
 export const ChristmasBackground: React.FC<ChristmasBackgroundProps> = ({
   children,
   className = "",
 }) => {
+  const [snowflakes, setSnowflakes] = useState<Snowflake[]>(
+    Array.from({ length: Math.random() < 0.01 ? 700 : 40 }, (_, i) => ({
+      id: i,
+      size: Math.floor(Math.random() * 24) + 12, // Random size between 12 and 36
+      delay: Math.random() * 5, // Random delay between 0 and 5 seconds
+      positionX: Math.floor(Math.random() * window.innerWidth) - 10,
+      positionY: Math.floor(Math.random() * window.innerHeight) - 100,
+    }))
+  );
+
   return (
     <div
-      className={`h-[calc(100vh - 65px)] bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden ${className}`}
+      className={`h-[calc(100vh-65px)] bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden ${className}`}
     >
       {/* Background image overlay */}
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
 
       {/* Floating snowflakes */}
       <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse select-none"
-          style={{ animationDelay: "0s" }}
-        >
-          ❄
-        </div>
-        <div
-          className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse select-none"
-          style={{ animationDelay: "1s" }}
-        >
-          ❄
-        </div>
-        <div
-          className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse select-none"
-          style={{ animationDelay: "2s" }}
-        >
-          ❄
-        </div>
-        <div
-          className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse select-none"
-          style={{ animationDelay: "1.5s" }}
-        >
-          ❄
-        </div>
+        {snowflakes.map((flake) => (
+          <div
+            key={flake.id}
+            className={`absolute text-white/20 animate-pulse select-none`}
+            style={{
+              fontSize: `${flake.size}px`,
+              animationDelay: "0s",
+              top: `${flake.positionY}px`,
+              left: `${flake.positionX}px`,
+            }}
+          >
+            ❄
+          </div>
+        ))}
       </div>
 
-      {/* Content */}
       {children}
     </div>
   );
