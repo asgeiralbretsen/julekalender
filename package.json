@@ -17,6 +17,14 @@
     "build:backend": "cd apps/backend && dotnet build",
     "build:studio": "cd apps/studio && npm run build",
 
+    "local:up": "docker-compose up -d",
+    "local:down": "docker-compose down",
+    "local:restart": "docker-compose restart",
+    "local:logs": "docker-compose logs -f",
+    "local:logs:backend": "docker-compose logs -f backend",
+    "local:logs:frontend": "docker-compose logs -f frontend",
+    "local:logs:studio": "docker-compose logs -f studio",
+
     "prod:up": "podman-compose -f docker-compose.prod.yml up -d",
     "prod:down": "podman-compose -f docker-compose.prod.yml down",
     "prod:restart": "podman-compose -f docker-compose.prod.yml restart",
