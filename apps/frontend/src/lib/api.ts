@@ -73,6 +73,21 @@ export class GameScoreAPI {
     return response.json();
   }
 
+  static async getUserPlayedGames(userId: number, getToken: () => Promise<string | null>): Promise<Record<string, boolean>> {
+    const headers = await this.getAuthHeaders(getToken);
+    
+    const response = await fetch(
+      `${API_BASE_URL}/api/gamescore/user/${userId}/played`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get user played games: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
   static async hasUserPlayedGame(userId: number, day: number, gameType: string, getToken: () => Promise<string | null>): Promise<boolean> {
     const headers = await this.getAuthHeaders(getToken);
     

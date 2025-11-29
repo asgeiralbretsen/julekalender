@@ -15,6 +15,7 @@ interface DayCellProps {
   isToday: boolean;
   thumbnail?: string;
   gameType?: string;
+  hasPlayed: boolean;
   onDayClick?: (day: number) => void;
 }
 
@@ -200,25 +201,12 @@ function DayCell({
   isToday,
   thumbnail,
   gameType,
+  hasPlayed,
   onDayClick,
 }: DayCellProps) {
   const cellRef = useRef<HTMLDivElement>(null);
   const doorRef = useRef<HTMLDivElement>(null);
-  const { hasUserPlayedGame } = useGameScore();
-  const [hasPlayed, setHasPlayed] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-
-  // Check if user has played this game
-  useEffect(() => {
-    const checkIfPlayed = async () => {
-      if (gameType && gameType !== "none") {
-        const played = await hasUserPlayedGame(day, gameType);
-        setHasPlayed(played);
-        setIsOpen(played);
-      }
-    };
-    checkIfPlayed();
-  }, [day, gameType, hasUserPlayedGame]);
+  const [isOpen, setIsOpen] = useState(hasPlayed);
 
   // Initial entrance animation
   useEffect(() => {
@@ -234,8 +222,8 @@ function DayCell({
     }
   }, [day]);
 
-  // Open door animation if already played
   useEffect(() => {
+    setIsOpen(hasPlayed);
     if (hasPlayed && doorRef.current) {
       animate(doorRef.current, {
         rotateY: -180,
@@ -421,16 +409,17 @@ function DayCell({
 export default function AdventCalendar() {
   const navigate = useNavigate();
   const today = new Date();
-  const currentDay = today.getMonth() === gameMonth ? today.getDate() : 1; // December only; otherwise start at 1
+  const currentDay = today.getMonth() === gameMonth ? today.getDate() : 1;
   const containerRef = useRef<HTMLDivElement>(null);
+  const { getUserPlayedGames } = useGameScore();
 
   const [sanityDays, setSanityDays] = useState<SanityDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [playedGames, setPlayedGames] = useState<Record<string, boolean>>({});
 
-  // Fetch days from Sanity
   useEffect(() => {
-    const fetchDays = async () => {
+    const fetchData = async () => {
       try {
         const query = `*[_type == "day"] | order(dayNumber asc) {
           _id,
@@ -449,8 +438,12 @@ export default function AdventCalendar() {
           wordScrambleGameData,
           isUnlocked
         }`;
-        const data = await client.fetch(query);
-        setSanityDays(data);
+        const [daysData, playedGamesData] = await Promise.all([
+          client.fetch(query),
+          getUserPlayedGames()
+        ]);
+        setSanityDays(daysData);
+        setPlayedGames(playedGamesData);
       } catch (err) {
         setError("Kunne ikke hente kalenderdager");
         console.error("Error fetching days:", err);
@@ -459,8 +452,8 @@ export default function AdventCalendar() {
       }
     };
 
-    fetchDays();
-  }, []);
+    fetchData();
+  }, [getUserPlayedGames]);
 
   const dayData: DayData[] = useMemo(() => {
     return sanityDays.map((sanityDay) => ({
@@ -837,6 +830,10 @@ export default function AdventCalendar() {
                 const isToday = day === currentDay && today.getMonth() === gameMonth;
                 const dayInfo = dayData.find((d) => d.day === day);
                 const sanityDay = sanityDays.find((d) => d.dayNumber === day);
+                const gameType = sanityDay?.gameType;
+                const hasPlayed = gameType && gameType !== "none" 
+                  ? playedGames[`${day}-${gameType}`] === true 
+                  : false;
                 return (
                   <DayCell
                     key={day}
@@ -844,7 +841,8 @@ export default function AdventCalendar() {
                     isUnlocked={isUnlocked}
                     isToday={isToday}
                     thumbnail={dayInfo?.thumbnail}
-                    gameType={sanityDay?.gameType}
+                    gameType={gameType}
+                    hasPlayed={hasPlayed}
                     onDayClick={handleDayClick}
                   />
                 );
