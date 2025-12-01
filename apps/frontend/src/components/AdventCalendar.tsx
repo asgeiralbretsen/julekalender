@@ -6,9 +6,10 @@ import { animate } from "animejs";
 import logoIcon from "../assets/unimicro-logoikon-hvit_RGB.png";
 import { ChristmasBackground } from "./ChristmasBackground";
 import { DayCell } from "./DayCell";
+import { useGameScore } from "../hooks/useGameScore";
 
 const builder = imageUrlBuilder(client);
-const gameMonth = 10;
+const gameMonth = 11;
 
 interface DayData {
   day: number;
