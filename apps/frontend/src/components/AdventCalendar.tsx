@@ -3,21 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { client } from "../lib/sanity";
 import imageUrlBuilder from "@sanity/image-url";
 import { animate } from "animejs";
-import { useGameScore } from "../hooks/useGameScore";
 import logoIcon from "../assets/unimicro-logoikon-hvit_RGB.png";
+import { ChristmasBackground } from "./ChristmasBackground";
+import { DayCell } from "./DayCell";
+import { useGameScore } from "../hooks/useGameScore";
 
 const builder = imageUrlBuilder(client);
-const gameMonth = 10;
-
-interface DayCellProps {
-  day: number;
-  isUnlocked: boolean;
-  isToday: boolean;
-  thumbnail?: string;
-  gameType?: string;
-  hasPlayed: boolean;
-  onDayClick?: (day: number) => void;
-}
+const gameMonth = 11;
 
 interface DayData {
   day: number;
@@ -195,217 +187,6 @@ interface SanityDay {
   isUnlocked: boolean;
 }
 
-function DayCell({
-  day,
-  isUnlocked,
-  isToday,
-  thumbnail,
-  gameType,
-  hasPlayed,
-  onDayClick,
-}: DayCellProps) {
-  const cellRef = useRef<HTMLDivElement>(null);
-  const doorRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState(hasPlayed);
-
-  // Initial entrance animation
-  useEffect(() => {
-    if (cellRef.current) {
-      animate(cellRef.current, {
-        scale: [0, 1],
-        opacity: [0, 1],
-        rotate: [180, 0],
-        duration: 800,
-        delay: day * 80,
-        easing: "easeOutElastic(1, .6)",
-      });
-    }
-  }, [day]);
-
-  useEffect(() => {
-    setIsOpen(hasPlayed);
-    if (hasPlayed && doorRef.current) {
-      animate(doorRef.current, {
-        rotateY: -180,
-        duration: 0,
-      });
-    }
-  }, [hasPlayed]);
-
-  const handleClick = () => {
-    if (isUnlocked && onDayClick && doorRef.current) {
-      if (!isOpen) {
-        // Door opening animation
-        setIsOpen(true);
-        animate(doorRef.current, {
-          rotateY: [0, -180],
-          duration: 800,
-          easing: "easeInOutQuad",
-          complete: () => {
-            setTimeout(() => {
-              onDayClick(day);
-            }, 800);
-          },
-        });
-      } else {
-        // Already open, navigate immediately
-        onDayClick(day);
-      }
-    }
-  };
-
-  const handleMouseEnter = () => {
-    if (isUnlocked && cellRef.current) {
-      animate(cellRef.current, {
-        scale: isOpen ? 1.03 : 1.05,
-        translateY: isOpen ? -4 : -8,
-        duration: 300,
-        easing: "easeOutQuad",
-      });
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (isUnlocked && cellRef.current) {
-      animate(cellRef.current, {
-        scale: 1,
-        translateY: 0,
-        duration: 300,
-        easing: "easeOutQuad",
-      });
-    }
-  };
-
-  return (
-    <div
-      ref={cellRef}
-      onClick={handleClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className={`relative aspect-square ${isUnlocked ? "cursor-pointer" : "cursor-not-allowed"}`}
-      style={{ perspective: "1000px" }}
-    >
-      {/* Container that rotates */}
-      <div
-        ref={doorRef}
-        className="absolute inset-0"
-        style={{
-          transformStyle: "preserve-3d",
-        }}
-      >
-        {/* Door front */}
-        <div
-          className={`absolute inset-0 rounded-2xl shadow-2xl transition-all duration-300 ${
-            isUnlocked
-              ? "bg-gradient-to-br from-red-600 via-red-700 to-red-800"
-              : "bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600"
-          }`}
-          style={{
-            transformStyle: "preserve-3d",
-            backfaceVisibility: "hidden",
-          }}
-        >
-          {/* Ornamental border */}
-          <div className="absolute inset-2 rounded-xl border-4 border-yellow-400/30">
-            <div className="absolute inset-2 rounded-lg border-2 border-yellow-300/20" />
-          </div>
-
-          {/* Snow effect on top */}
-          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/40 to-transparent rounded-t-2xl" />
-
-          {/* Snowflake decorations */}
-          <div className="absolute top-3 left-3 text-white/30 text-xl">❄</div>
-          <div className="absolute top-3 right-3 text-white/30 text-xl">❄</div>
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/30 text-xl">
-            ❄
-          </div>
-
-          {/* Day number */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div
-              className={`text-5xl font-bold ${
-                isUnlocked ? "text-yellow-300" : "text-gray-300"
-              } drop-shadow-lg`}
-              style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
-            >
-              {day}
-            </div>
-          </div>
-
-          {isUnlocked && (
-            <>
-              {[...Array(5)].map((_, i) => {
-                const seed = day * 1000 + i;
-                const x = Math.sin(seed * 0.1) * 10000;
-                const y = Math.sin(seed * 0.2) * 10000;
-                const randomX = 10 + (x - Math.floor(x)) * 80; // 10-90%
-                const randomY = 10 + (y - Math.floor(y)) * 80; // 10-90%
-                const size =
-                  1 +
-                  (Math.sin(seed * 0.3) * 10000 -
-                    Math.floor(Math.sin(seed * 0.3) * 10000)) *
-                    2; // 1-3
-                const delay =
-                  (Math.sin(seed * 0.4) * 10000 -
-                    Math.floor(Math.sin(seed * 0.4) * 10000)) *
-                  2; // 0-2s
-                const colors = [
-                  "bg-yellow-300",
-                  "bg-yellow-400",
-                  "bg-white",
-                  "bg-amber-300",
-                ];
-                const colorIndex = Math.floor(
-                  (Math.sin(seed * 0.5) * 10000 -
-                    Math.floor(Math.sin(seed * 0.5) * 10000)) *
-                    colors.length
-                );
-
-                return (
-                  <div
-                    key={i}
-                    className={`absolute ${colors[colorIndex]} rounded-full animate-ping`}
-                    style={{
-                      left: `${randomX}%`,
-                      top: `${randomY}%`,
-                      width: `${size * 2}px`,
-                      height: `${size * 2}px`,
-                      animationDelay: `${delay}s`,
-                      animationDuration: `${1 + delay}s`,
-                    }}
-                  />
-                );
-              })}
-            </>
-          )}
-        </div>
-
-        {/* Door back (revealed content) */}
-        <div
-          className="absolute inset-0 rounded-2xl shadow-2xl bg-gradient-to-br from-green-600 via-green-700 to-green-800"
-          style={{
-            transformStyle: "preserve-3d",
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-          }}
-        >
-          <div className="absolute inset-0 flex items-center justify-center p-4">
-            {thumbnail ? (
-              <img
-                src={thumbnail}
-                alt={`Day ${day}`}
-                className="w-full h-full object-cover rounded-xl shadow-lg"
-              />
-            ) : (
-              <span className="text-6xl drop-shadow-xl">🎁</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function AdventCalendar() {
   const navigate = useNavigate();
   const today = new Date();
@@ -440,7 +221,7 @@ export default function AdventCalendar() {
         }`;
         const [daysData, playedGamesData] = await Promise.all([
           client.fetch(query),
-          getUserPlayedGames()
+          getUserPlayedGames(),
         ]);
         setSanityDays(daysData);
         setPlayedGames(playedGamesData);
@@ -724,7 +505,7 @@ export default function AdventCalendar() {
         navigate("/game/wordScrambleGame");
         return;
       } else {
-        console.log("Game type found but no game data available");
+        console.warn("Game type found but no game data available");
       }
     } else {
       console.log("No game type or game type is none");
@@ -740,129 +521,104 @@ export default function AdventCalendar() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden">
-      {/* Animated snow background */}
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-
-      {/* Floating snowflakes */}
-      <div className="absolute inset-0 pointer-events-none">
+      <ChristmasBackground>
         <div
-          className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse"
-          style={{ animationDelay: "0s" }}
+          ref={containerRef}
+          className="max-w-7xl mx-auto px-4 py-10 relative z-10"
         >
-          ❄
-        </div>
-        <div
-          className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        >
-          ❄
-        </div>
-        <div
-          className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        >
-          ❄
-        </div>
-        <div
-          className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse"
-          style={{ animationDelay: "1.5s" }}
-        >
-          ❄
-        </div>
-      </div>
+          <div className="text-center mb-10">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-red-100 drop-shadow flex justify-center items-center space-x-3">
+              <img
+                src={logoIcon}
+                alt="Logo"
+                className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md"
+              />
+              <span>Julekalender</span>
+            </h1>
+            <p className="mt-3 text-red-100">
+              Tell ned til jul med daglige overraskelser
+            </p>
+            {loading && (
+              <div className="mt-4 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                <span className="ml-2 text-red-100">
+                  Laster kalenderdager...
+                </span>
+              </div>
+            )}
+            {error && (
+              <div className="mt-4 text-red-200 bg-red-800/20 rounded-lg p-3 max-w-md mx-auto">
+                <p className="text-sm">{error}</p>
+                <p className="text-xs mt-1">
+                  Vennligst sjekk Sanity-konfigurasjonen din
+                </p>
+              </div>
+            )}
+          </div>
 
-      <div
-        ref={containerRef}
-        className="max-w-7xl mx-auto px-4 py-10 relative z-10"
-      >
-        <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-red-100 drop-shadow flex justify-center items-center space-x-3">
-            <img
-              src={logoIcon}
-              alt="Logo"
-              className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md"
-            />
-            <span>Julekalender</span>
-          </h1>
-          <p className="mt-3 text-red-100">
-            Tell ned til jul med daglige overraskelser
-          </p>
-          {loading && (
-            <div className="mt-4 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              <span className="ml-2 text-red-100">Laster kalenderdager...</span>
-            </div>
-          )}
-          {error && (
-            <div className="mt-4 text-red-200 bg-red-800/20 rounded-lg p-3 max-w-md mx-auto">
-              <p className="text-sm">{error}</p>
-              <p className="text-xs mt-1">
-                Vennligst sjekk Sanity-konfigurasjonen din
-              </p>
-            </div>
-          )}
+          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl border-2 border-white/20">
+            {!loading && !error && sanityDays.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📅</div>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  Ingen kalenderdager funnet
+                </h3>
+                <p className="text-red-100 mb-4">
+                  Opprett din første kalenderdag i Sanity Studio for å komme i
+                  gang!
+                </p>
+                <a
+                  href="/studio/"
+                  className="inline-block bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Åpne Sanity Studio
+                </a>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
+                {days.map((day) => {
+                  const isUnlocked =
+                    today.getMonth() === gameMonth && day <= currentDay;
+                  const isToday =
+                    day === currentDay && today.getMonth() === gameMonth;
+                  const dayInfo = dayData.find((d) => d.day === day);
+                  const sanityDay = sanityDays.find((d) => d.dayNumber === day);
+                  const gameType = sanityDay?.gameType;
+                  const hasPlayed =
+                    gameType && gameType !== "none"
+                      ? playedGames[`${day}-${gameType}`] === true
+                      : false;
+                  return (
+                    <DayCell
+                      key={day}
+                      day={day}
+                      isUnlocked={isUnlocked}
+                      isToday={isToday}
+                      gameType={gameType}
+                      hasPlayed={hasPlayed}
+                      onDayClick={handleDayClick}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {sanityDays.length > 0 && (
+              <div className="mt-8 text-center text-red-100">
+                <p>
+                  {today.getMonth() === 9
+                    ? `I dag er det ${currentDay}. desember. Dag 1-${currentDay} er låst opp! 🎄`
+                    : "Kom tilbake i desember for å låse opp kalenderdager! 🎄"}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl border-2 border-white/20">
-          {!loading && !error && sanityDays.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📅</div>
-              <h3 className="text-xl font-semibold text-white mb-2">
-                Ingen kalenderdager funnet
-              </h3>
-              <p className="text-red-100 mb-4">
-                Opprett din første kalenderdag i Sanity Studio for å komme i
-                gang!
-              </p>
-              <a
-                href="/studio/"
-                className="inline-block bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Åpne Sanity Studio
-              </a>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
-              {days.map((day) => {
-                const isUnlocked = today.getMonth() === gameMonth && day <= currentDay;
-                const isToday = day === currentDay && today.getMonth() === gameMonth;
-                const dayInfo = dayData.find((d) => d.day === day);
-                const sanityDay = sanityDays.find((d) => d.dayNumber === day);
-                const gameType = sanityDay?.gameType;
-                const hasPlayed = gameType && gameType !== "none" 
-                  ? playedGames[`${day}-${gameType}`] === true 
-                  : false;
-                return (
-                  <DayCell
-                    key={day}
-                    day={day}
-                    isUnlocked={isUnlocked}
-                    isToday={isToday}
-                    thumbnail={dayInfo?.thumbnail}
-                    gameType={gameType}
-                    hasPlayed={hasPlayed}
-                    onDayClick={handleDayClick}
-                  />
-                );
-              })}
-            </div>
-          )}
-
-          {sanityDays.length > 0 && (
-            <div className="mt-8 text-center text-red-100">
-              <p>
-                {today.getMonth() === 9
-                  ? `I dag er det ${currentDay}. desember. Dag 1-${currentDay} er låst opp! 🎄`
-                  : "Kom tilbake i desember for å låse opp kalenderdager! 🎄"}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="pointer-events-none select-none fixed inset-x-0 bottom-0 h-24 bg-gradient-to-t from-red-900 to-transparent" />
+        <div className="pointer-events-none select-none fixed inset-x-0 bottom-0 h-24 bg-gradient-to-t from-red-900 to-transparent" />
+      </ChristmasBackground>
     </div>
   );
 }
