@@ -1,11 +1,9 @@
 import Stocking from "./Stocking";
-import { useState, useEffect } from "react";
-import ColorPickerNoEyedropper from "./ColorPicker";
-import { useUser } from "@clerk/clerk-react";
-import { useGameScore } from "../../hooks/useGameScore";
+import { useEffect, useState } from "react";
 import { ChristmasBackground } from "../ChristmasBackground";
-import GameResultsScreen from "../GameResultsScreen";
-import { StartGameScreen } from "../StartGameScreen";
+import chroma from "chroma-js";
+import { shuffleArray } from "../../utils";
+import { GameProgress } from "./GameProgress";
 
 interface Colors {
   topColor: string;
@@ -15,67 +13,66 @@ interface Colors {
   stripesColor: string;
 }
 
-interface ColorScore {
-  section: string;
-  percentage: number;
-}
+const uncoloredSockColors: Colors = {
+  topColor: "gray",
+  topStripesColor: "white",
+  mainColor: "gray",
+  heelColor: "white",
+  stripesColor: "white",
+};
 
-interface GameData {
-  title: string;
-  description: string;
-  stockingColors: Colors;
-  scoringSettings: {
-    perfectMatchBonus: number;
-    closeMatchThreshold: number;
-    timeBonus: number;
-  };
-}
+const GAME_TIME_LIMIT = 60; // seconds
 
 export function ColorMatchGame() {
-  const { user } = useUser();
-  const {
-    saveGameScore,
-    hasUserPlayedGame,
-    getUserScoreForDay,
-    loading: scoreLoading,
-    error: scoreError,
-  } = useGameScore();
-
-  const [colorPickerColor, setColorPickerColor] = useState("gray");
-  const [showResults, setShowResults] = useState(false);
-  const [colorScores, setColorScores] = useState<ColorScore[]>([]);
-  const [overallScore, setOverallScore] = useState(0);
-  const [gameData, setGameData] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [scoreSaved, setScoreSaved] = useState(false);
-  const [hasPlayedToday, setHasPlayedToday] = useState(false);
-  const [previousScore, setPreviousScore] = useState<number | null>(null);
+
+  /**
+   * The color of the sock that the player needs to copy
+   */
+  const [originalColors, setOriginalColors] =
+    useState<Colors>(uncoloredSockColors);
+  /**
+   * The colors of the stocking that the player puts colors onto
+   */
+  const [currentColors, setCurrentColors] =
+    useState<Colors>(uncoloredSockColors);
+
+  /**
+   * An array of each stocking's colors
+   */
+  const [allColors, setAllColors] = useState<Colors[]>();
+
   const [dayInfo, setDayInfo] = useState<{ day: number; title: string } | null>(
     null
   );
-  const [gameStarted, setGameStarted] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(45);
-  const [gameOver, setGameOver] = useState(false);
 
-  // Original colors from Sanity
-  const [originalColors, setOriginalColors] = useState<Colors>({
-    topColor: "blue",
-    topStripesColor: "red",
-    mainColor: "green",
-    heelColor: "yellow",
-    stripesColor: "purple",
-  });
+  /**
+   * Array of available colors to select from
+   */
+  const [colorSelection, setColorSelection] = useState<string[]>([]);
+  const [selectedColor, setSelectedColor] = useState<string>("");
 
-  // Player's current colors
-  const [currentColors, setCurrentColors] = useState<Colors>({
-    topColor: "gray",
-    topStripesColor: "white",
-    mainColor: "gray",
-    heelColor: "white",
-    stripesColor: "white",
-  });
+  /**
+   * Ticks down once for the whole game, is not reset for each stocking
+   */
+  const [timeLeft, setTimeLeft] = useState<number>(GAME_TIME_LIMIT);
+  const [round, setRound] = useState<number>(0);
+  /**
+   * One point is awarded per correctly colored sock
+   */
+  const [score, setScore] = useState<number>(0);
 
-  // Load game data from Sanity
+  const [correctColors, setCorrectColors] = useState<boolean[]>();
+
+  /**
+   * Values retrieved from Sanity
+   */
+  const [gameDescription, setGameDescription] = useState<string>("");
+  const [gameTitle, setGameTitle] = useState<string>("Color Match Game");
+
+  /**
+   * Load game data from Sanity
+   */
   useEffect(() => {
     const loadGameData = async () => {
       try {
@@ -88,27 +85,29 @@ export function ColorMatchGame() {
           if (parsedData.colorMatchGameData) {
             const data = parsedData.colorMatchGameData;
 
-            // Set colors from Sanity (now simple strings)
+            // Now stockingColors is an array of socks
+            const stockingsArray = data.stockings || [];
+
+            setAllColors(stockingsArray);
+
+            const firstSock = stockingsArray[0] || {};
             const stockingColors: Colors = {
-              topColor: data.stockingColors?.topColor || "#ff0000",
-              topStripesColor:
-                data.stockingColors?.topStripesColor || "#800080",
-              mainColor: data.stockingColors?.mainColor || "#008000",
-              heelColor: data.stockingColors?.heelColor || "#ffff00",
-              stripesColor: data.stockingColors?.stripesColor || "#800080",
+              topColor: firstSock.topColor || "#ff0000",
+              topStripesColor: firstSock.topStripesColor || "#800080",
+              mainColor: firstSock.mainColor || "#008000",
+              heelColor: firstSock.heelColor || "#ffff00",
+              stripesColor: firstSock.stripesColor || "#800080",
             };
 
             setOriginalColors(stockingColors);
-            setGameData({
-              title: data.title || "Color Match Game",
-              description: data.description || "",
-              stockingColors: stockingColors,
-              scoringSettings: data.scoringSettings || {
-                perfectMatchBonus: 50,
-                closeMatchThreshold: 80,
-                timeBonus: 1.5,
-              },
-            });
+
+            setGameTitle(parsedData.title || "Color Match Game");
+            setGameDescription(
+              parsedData.description || "Match the colors of the sock!"
+            );
+
+            createColorSelection();
+            checkIsCorrect();
           }
         }
 
@@ -130,42 +129,19 @@ export function ColorMatchGame() {
     loadGameData();
   }, []);
 
-  // Check if user has played today
+  // Game loop
   useEffect(() => {
-    const checkPlayStatus = async () => {
-      if (dayInfo && user) {
-        const hasPlayed = await hasUserPlayedGame(
-          dayInfo.day,
-          "colorMatchGame"
-        );
-        if (hasPlayed) {
-          const userScore = await getUserScoreForDay(
-            dayInfo.day,
-            "colorMatchGame"
-          );
-          setHasPlayedToday(true);
-          setPreviousScore(userScore?.score || null);
-        }
-      }
-    };
-    checkPlayStatus();
-  }, [dayInfo, user, hasUserPlayedGame, getUserScoreForDay]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (gameStarted && !gameOver && timeRemaining > 0) {
-      const timer = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            setGameOver(true);
-            return 0;
-          }
-          return prev - 1;
-        });
+    if (timeLeft <= 0) {
+      const timer = setTimeout(() => {
+        setTimeLeft((prev) => prev - 1);
       }, 1000);
-      return () => clearInterval(timer);
+      return () => clearTimeout(timer);
     }
-  }, [gameStarted, gameOver, timeRemaining]);
+  }, [timeLeft]);
+
+  const nextRound = () => {
+    setRound((prevRound) => prevRound + 1);
+  };
 
   const setSingleColor = (section: keyof Colors, color: string) => {
     setCurrentColors((prev) => ({
@@ -173,346 +149,129 @@ export function ColorMatchGame() {
       [section]: color,
     }));
   };
+  interface ColorShiftOptions {
+    hueShift?: number; // in degrees, ±value
+    saturationShift?: number; // fraction, ±value (0–1)
+    lightnessShift?: number; // fraction, ±value (0–1)
+  }
 
-  const hexToRgb = (hex: string) => {
-    // Handle both hex and named colors
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return { r: 0, g: 0, b: 0 };
+  function generateSimilarColor(
+    baseColor: string,
+    options: ColorShiftOptions = {}
+  ): string {
+    const { hueShift = 0, saturationShift = 0, lightnessShift = 0 } = options;
 
-    ctx.fillStyle = hex;
-    const computedColor = ctx.fillStyle;
+    const hsl = chroma(baseColor).hsl();
 
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
-      computedColor
+    const h = (hsl[0] + (Math.random() * 2 * hueShift - hueShift) + 360) % 360;
+    const s = Math.min(
+      1,
+      Math.max(
+        0,
+        hsl[1] + (Math.random() * 2 * saturationShift - saturationShift)
+      )
     );
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : { r: 0, g: 0, b: 0 };
-  };
-
-  const calculateColorMatch = (color1: string, color2: string): number => {
-    const rgb1 = hexToRgb(color1);
-    const rgb2 = hexToRgb(color2);
-
-    const distance = Math.sqrt(
-      Math.pow(rgb1.r - rgb2.r, 2) +
-        Math.pow(rgb1.g - rgb2.g, 2) +
-        Math.pow(rgb1.b - rgb2.b, 2)
+    const l = Math.min(
+      1,
+      Math.max(
+        0,
+        hsl[2] + (Math.random() * 2 * lightnessShift - lightnessShift)
+      )
     );
 
-    const maxDistance = Math.sqrt(Math.pow(255, 2) * 3);
-    return Math.max(0, 100 - (distance / maxDistance) * 100);
-  };
+    return chroma.hsl(h, s, l).hex();
+  }
 
-  const submitColors = async () => {
-    if (!gameData) return;
-
-    const scores: ColorScore[] = [
-      {
-        section: "Top Color",
-        percentage: calculateColorMatch(
-          currentColors.topColor,
-          originalColors.topColor
-        ),
-      },
-      {
-        section: "Top Stripes",
-        percentage: calculateColorMatch(
-          currentColors.topStripesColor,
-          originalColors.topStripesColor
-        ),
-      },
-      {
-        section: "Main Color",
-        percentage: calculateColorMatch(
-          currentColors.mainColor,
-          originalColors.mainColor
-        ),
-      },
-      {
-        section: "Heel Color",
-        percentage: calculateColorMatch(
-          currentColors.heelColor,
-          originalColors.heelColor
-        ),
-      },
-      {
-        section: "Stripes Color",
-        percentage: calculateColorMatch(
-          currentColors.stripesColor,
-          originalColors.stripesColor
-        ),
-      },
-    ];
-
-    setColorScores(scores);
-
-    const averageScore =
-      scores.reduce((sum, score) => sum + score.percentage, 0) / scores.length;
-
-    let finalScore = Math.round(averageScore * 10);
-
-    // Add time bonus
-    const timeBonus = Math.round(
-      timeRemaining * gameData.scoringSettings.timeBonus
-    );
-    finalScore += timeBonus;
-
-    // Add perfect match bonus
-    const perfectMatches = scores.filter(
-      (s) => s.percentage >= gameData.scoringSettings.closeMatchThreshold
-    ).length;
-    if (perfectMatches === scores.length) {
-      finalScore += gameData.scoringSettings.perfectMatchBonus;
-    }
-
-    setOverallScore(finalScore);
-    setShowResults(true);
-    setGameOver(true);
-
-    // Save score if first attempt
-    if (user && dayInfo && !hasPlayedToday) {
-      try {
-        const result = await saveGameScore({
-          day: dayInfo.day,
-          gameType: "colorMatchGame",
-          score: finalScore,
-        });
-
-        if (result) {
-          setScoreSaved(true);
-          setPreviousScore(result.score);
-        }
-      } catch (err) {
-        console.error("Error saving game score:", err);
+  const createColorSelection = () => {
+    const colors: string[] = [];
+    Object.values(originalColors).forEach((color: string) => {
+      for (let i = 0; i < Math.max(6, round); i++) {
+        colors.push(
+          generateSimilarColor(color, {
+            hueShift: (i / 4) * 10,
+            saturationShift: (i / 4) * 0.1,
+            lightnessShift: (i / 4) * 0.1,
+          })
+        );
       }
-    }
-  };
-
-  const resetGame = () => {
-    setCurrentColors({
-      topColor: "gray",
-      topStripesColor: "white",
-      mainColor: "gray",
-      heelColor: "white",
-      stripesColor: "white",
     });
-    setShowResults(false);
-    setColorScores([]);
-    setOverallScore(0);
-    setGameStarted(false);
-    setTimeRemaining(45);
-    setGameOver(false);
-    setScoreSaved(false);
+
+    setColorSelection(shuffleArray(colors));
   };
 
-  const startGame = () => {
-    setGameStarted(true);
-    setTimeRemaining(45);
-    setGameOver(false);
+  const checkIsCorrect = () => {
+    const corrects = [];
+    Object.entries(currentColors).forEach(([key, value]) => {
+      corrects.push(value === originalColors[key]);
+    });
+
+    setCorrectColors(corrects);
   };
 
-  if (loading) {
-    return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
-            <p className="text-white text-xl">Laster spill...</p>
-          </div>
-        </div>
-      </ChristmasBackground>
-    );
-  }
-
-  if (!gameData) {
-    return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
-            <p className="text-white text-xl">Ingen spilldata funnet.</p>
-          </div>
-        </div>
-      </ChristmasBackground>
-    );
-  }
-
-  // Show results screen after game ends
-  if (gameOver && showResults && dayInfo) {
-    return (
-      <GameResultsScreen
-        isFirstAttempt={!hasPlayedToday || scoreSaved}
-        currentScore={overallScore}
-        previousScore={previousScore}
-        scoreSaved={scoreSaved}
-        loading={false}
-        error={null}
-        dayInfo={dayInfo}
-        gameType="colorMatchGame"
-        gameName="Color Match"
-        onPlayAgain={resetGame}
-        scoreLabel="poeng"
-      />
-    );
-  }
-
-  // Show start screen
-  if (!gameStarted) {
-    return (
-      <StartGameScreen
-        title={
-          dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title
-        }
-        description={
-          gameData.description ||
-          "Match fargene på julestrømpa så nøyaktig som mulig!"
-        }
-        howToPlay={[
-          "• Velg en farge fra fargepaletten",
-          "• Klikk på en del av sokken for å sette fargen",
-          "• Match alle 5 farger så nøyaktig som mulig",
-          "• 45 sekunder til å fullføre",
-          "• Jo nærmere match, desto flere poeng!",
-        ]}
-        previousScore={hasPlayedToday ? previousScore : undefined}
-        onClickStartGame={startGame}
-      />
-    );
-  }
+  useEffect(() => {
+    checkIsCorrect();
+  }, [currentColors]);
 
   return (
     <ChristmasBackground>
-      <div className="min-h-screen p-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              {dayInfo
-                ? `Dag ${dayInfo.day}: ${dayInfo.title}`
-                : gameData.title}
-            </h1>
-            <div className="flex justify-center gap-8 text-white/80">
-              <span>Tid: {timeRemaining}s</span>
-              {showResults && <span>Poeng: {overallScore}</span>}
-            </div>
-          </div>
-
-          {/* Main Game Area */}
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Original Stocking (Target) */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
-              <h2 className="text-xl font-semibold text-white text-center mb-4">
-                Målsokk
-              </h2>
-              <div className="flex justify-center">
-                <Stocking
-                  topColor={originalColors.topColor}
-                  topStripesColor={originalColors.topStripesColor}
-                  mainColor={originalColors.mainColor}
-                  heelColor={originalColors.heelColor}
-                  stripesColor={originalColors.stripesColor}
-                />
-              </div>
-            </div>
-
-            {/* Player Stocking */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
-              <h2 className="text-xl font-semibold text-white text-center mb-4">
-                Din sokk
-              </h2>
-              <div className="flex justify-center">
-                <Stocking
-                  topColor={currentColors.topColor}
-                  topStripesColor={currentColors.topStripesColor}
-                  mainColor={currentColors.mainColor}
-                  heelColor={currentColors.heelColor}
-                  stripesColor={currentColors.stripesColor}
-                  onClickTopColor={() => {
-                    setSingleColor("topColor", colorPickerColor);
-                  }}
-                  onClickTopStripesColor={() => {
-                    setSingleColor("topStripesColor", colorPickerColor);
-                  }}
-                  onClickMainColor={() => {
-                    setSingleColor("mainColor", colorPickerColor);
-                  }}
-                  onClickHeelColor={() => {
-                    setSingleColor("heelColor", colorPickerColor);
-                  }}
-                  onClickStripesColor={() => {
-                    setSingleColor("stripesColor", colorPickerColor);
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Color Picker */}
-          <div className="mt-8 flex justify-center">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6">
-              <h3 className="text-white text-center mb-4 font-semibold">
-                Velg farge
-              </h3>
-              <ColorPickerNoEyedropper
-                value={colorPickerColor}
-                onChange={(color) => setColorPickerColor(color)}
+      <div className="h-screen w-screen flex flex-col items-center justify-center">
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+          <div className=" flex flex-row items-center justify-center">
+            {allColors.map((sockColors, index) => (
+              <Stocking
+                topColor={sockColors.topColor}
+                topStripesColor={sockColors.topStripesColor}
+                mainColor={sockColors.mainColor}
+                heelColor={sockColors.heelColor}
+                stripesColor={sockColors.stripesColor}
+                key={index}
               />
+            ))}
+
+            <div className="flex flex-wrap max-w-[150px] gap-2 justify-center">
+              {colorSelection.map((color, index) => (
+                <button
+                  role="button"
+                  onClick={() => {
+                    setSelectedColor(color);
+                  }}
+                  key={color + index}
+                  className={`h-10 w-10 rounded-full ${selectedColor === color ? "border-4 border-solid" : ""}`}
+                  style={{
+                    backgroundColor: color,
+                  }}
+                ></button>
+              ))}
+            </div>
+            <div className="flex flex-col justify-center items-center">
+              <Stocking
+                topColor={currentColors.topColor}
+                topStripesColor={currentColors.topStripesColor}
+                mainColor={currentColors.mainColor}
+                heelColor={currentColors.heelColor}
+                stripesColor={currentColors.stripesColor}
+                onClickTopColor={() => {
+                  setSingleColor("topColor", selectedColor);
+                }}
+                onClickTopStripesColor={() => {
+                  setSingleColor("topStripesColor", selectedColor);
+                }}
+                onClickMainColor={() => {
+                  setSingleColor("mainColor", selectedColor);
+                }}
+                onClickHeelColor={() => {
+                  setSingleColor("heelColor", selectedColor);
+                }}
+                onClickStripesColor={() => {
+                  setSingleColor("stripesColor", selectedColor);
+                }}
+              />
+              <GameProgress segments={correctColors} />
             </div>
           </div>
-
-          {/* Submit Button */}
-          {!showResults && (
-            <div className="mt-8 flex justify-center">
-              <button
-                onClick={submitColors}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
-              >
-                Send inn farger
-              </button>
-            </div>
-          )}
-
-          {/* Results */}
-          {showResults && (
-            <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8">
-              <h2 className="text-2xl font-bold text-white text-center mb-6">
-                Resultater
-              </h2>
-              <div className="space-y-4">
-                {colorScores.map((score, index) => (
-                  <div
-                    key={index}
-                    className="bg-white/5 rounded-lg p-4 flex justify-between items-center"
-                  >
-                    <span className="text-white font-semibold">
-                      {score.section}
-                    </span>
-                    <span className="text-white">
-                      {score.percentage.toFixed(1)}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 text-center">
-                <p className="text-3xl font-bold text-yellow-300">
-                  Total: {overallScore} poeng
-                </p>
-                {scoreSaved && (
-                  <p className="text-green-300 mt-2">Poengsum lagret!</p>
-                )}
-                {hasPlayedToday && !scoreSaved && (
-                  <p className="text-yellow-300 mt-2">
-                    Øvingsrunde - Poengsum ikke lagret
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </ChristmasBackground>
   );
