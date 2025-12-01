@@ -189,16 +189,17 @@ interface SanityDay {
 export default function AdventCalendar() {
   const navigate = useNavigate();
   const today = new Date();
-  const currentDay = today.getMonth() === gameMonth ? today.getDate() : 1; // December only; otherwise start at 1
+  const currentDay = today.getMonth() === gameMonth ? today.getDate() : 1;
   const containerRef = useRef<HTMLDivElement>(null);
+  const { getUserPlayedGames } = useGameScore();
 
   const [sanityDays, setSanityDays] = useState<SanityDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [playedGames, setPlayedGames] = useState<Record<string, boolean>>({});
 
-  // Fetch days from Sanity
   useEffect(() => {
-    const fetchDays = async () => {
+    const fetchData = async () => {
       try {
         const query = `*[_type == "day"] | order(dayNumber asc) {
           _id,
@@ -217,8 +218,12 @@ export default function AdventCalendar() {
           wordScrambleGameData,
           isUnlocked
         }`;
-        const data = await client.fetch(query);
-        setSanityDays(data);
+        const [daysData, playedGamesData] = await Promise.all([
+          client.fetch(query),
+          getUserPlayedGames(),
+        ]);
+        setSanityDays(daysData);
+        setPlayedGames(playedGamesData);
       } catch (err) {
         setError("Kunne ikke hente kalenderdager");
         console.error("Error fetching days:", err);
@@ -227,8 +232,8 @@ export default function AdventCalendar() {
       }
     };
 
-    fetchDays();
-  }, []);
+    fetchData();
+  }, [getUserPlayedGames]);
 
   const dayData: DayData[] = useMemo(() => {
     return sanityDays.map((sanityDay) => ({
@@ -579,14 +584,19 @@ export default function AdventCalendar() {
                     day === currentDay && today.getMonth() === gameMonth;
                   const dayInfo = dayData.find((d) => d.day === day);
                   const sanityDay = sanityDays.find((d) => d.dayNumber === day);
+                  const gameType = sanityDay?.gameType;
+                  const hasPlayed =
+                    gameType && gameType !== "none"
+                      ? playedGames[`${day}-${gameType}`] === true
+                      : false;
                   return (
                     <DayCell
                       key={day}
                       day={day}
                       isUnlocked={isUnlocked}
                       isToday={isToday}
-                      thumbnail={dayInfo?.thumbnail}
-                      gameType={sanityDay?.gameType}
+                      gameType={gameType}
+                      hasPlayed={hasPlayed}
                       onDayClick={handleDayClick}
                     />
                   );

@@ -1,7 +1,7 @@
 {
   "name": "julekalender-monorepo",
   "version": "1.0.0",
-  "description": "Monorepo containing React frontend, .NET backend, and Sanity Studio",
+  "description": "Monorepo for Julekalender: React frontend, .NET backend, and Sanity Studio",
   "private": true,
   "workspaces": [
     "apps/*"
@@ -11,20 +11,28 @@
     "dev:frontend": "cd apps/frontend && npm run dev",
     "dev:backend": "cd apps/backend && dotnet run",
     "dev:studio": "cd apps/studio && npm run dev",
+
     "build": "npm run build:frontend && npm run build:backend && npm run build:studio",
     "build:frontend": "cd apps/frontend && npm run build",
     "build:backend": "cd apps/backend && dotnet build",
     "build:studio": "cd apps/studio && npm run build",
-    "start": "docker-compose up -d --build",
-    "stop": "docker-compose down",
-    "restart": "docker-compose restart",
-    "rebuild": "docker-compose down --volumes --remove-orphans && docker builder prune -f && docker image prune -f && docker images | grep julekalender | awk '{print $3}' | xargs -r docker rmi -f || true && docker-compose build --no-cache --pull && docker-compose up -d",
-    "logs": "docker-compose logs -f",
-    "logs:backend": "docker-compose logs -f backend",
-    "logs:frontend": "docker-compose logs -f frontend",
-    "logs:studio": "docker-compose logs -f studio",
-    "clean": "docker-compose down --volumes --remove-orphans && docker builder prune -af && docker image prune -af",
-    "deploy": "chmod +x deploy.sh && ./deploy.sh",
+
+    "local:up": "docker-compose up -d",
+    "local:down": "docker-compose down",
+    "local:restart": "docker-compose restart",
+    "local:logs": "docker-compose logs -f",
+    "local:logs:backend": "docker-compose logs -f backend",
+    "local:logs:frontend": "docker-compose logs -f frontend",
+    "local:logs:studio": "docker-compose logs -f studio",
+
+    "prod:up": "podman-compose -f docker-compose.prod.yml up -d",
+    "prod:down": "podman-compose -f docker-compose.prod.yml down",
+    "prod:restart": "podman-compose -f docker-compose.prod.yml restart",
+    "prod:logs": "podman-compose -f docker-compose.prod.yml logs -f",
+    "prod:logs:backend": "podman-compose -f docker-compose.prod.yml logs -f backend",
+    "prod:logs:frontend": "podman-compose -f docker-compose.prod.yml logs -f frontend",
+    "prod:logs:studio": "podman-compose -f docker-compose.prod.yml logs -f studio",
+
     "install:all": "npm install && cd apps/frontend && npm install && cd ../studio && npm install"
   },
   "devDependencies": {

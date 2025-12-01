@@ -206,6 +206,55 @@ public class GameScoreController : ControllerBase
     }
 
     /// <summary>
+    /// Gets all played games for a user (consolidated endpoint)
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <returns>A dictionary mapping "day-gameType" to true for all played games</returns>
+    /// <remarks>
+    /// Returns all games the user has played in a single request.
+    /// The dictionary keys are in the format "{day}-{gameType}", e.g., "1-blurGuessGame"
+    /// </remarks>
+    /// <response code="200">Returns the dictionary of played games</response>
+    /// <response code="401">If the user is not authenticated</response>
+    /// <response code="403">If trying to access another user's played games</response>
+    /// <response code="404">If the user is not found</response>
+    [HttpGet("user/{userId}/played")]
+    [Authorize]
+    [ProducesResponseType(typeof(Dictionary<string, bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<Dictionary<string, bool>>> GetUserPlayedGames(int userId)
+    {
+        try
+        {
+            var clerkId = GetCurrentUserId();
+            if (clerkId == null)
+            {
+                return Unauthorized("Bruker ikke funnet");
+            }
+
+            var user = await _userService.GetUserByClerkIdAsync(clerkId);
+            if (user == null)
+            {
+                return NotFound("Bruker ikke funnet");
+            }
+
+            if (user.Id != userId)
+            {
+                return Forbid("Du kan bare se dine egne spill");
+            }
+
+            var playedGames = await _gameScoreService.GetUserPlayedGamesAsync(userId);
+            return Ok(playedGames);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Feil ved henting av spilte spill: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Checks if a user has played a specific game on a specific day
     /// </summary>
     /// <param name="userId">The user ID</param>
@@ -238,7 +287,6 @@ public class GameScoreController : ControllerBase
                 return NotFound("Bruker ikke funnet");
             }
 
-            // Ensure the user can only check their own game status
             if (user.Id != userId)
             {
                 return Forbid("Du kan bare sjekke din egen spillstatus");

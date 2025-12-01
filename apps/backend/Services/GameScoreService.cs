@@ -68,6 +68,22 @@ public class GameScoreService : IGameScoreService
             .AnyAsync(gs => gs.UserId == userId && gs.Day == day && gs.GameType == gameType);
     }
 
+    public async Task<Dictionary<string, bool>> GetUserPlayedGamesAsync(int userId)
+    {
+        var playedGames = await _context.GameScores
+            .Where(gs => gs.UserId == userId)
+            .Select(gs => new { gs.Day, gs.GameType })
+            .ToListAsync();
+
+        var result = new Dictionary<string, bool>();
+        foreach (var game in playedGames)
+        {
+            result[$"{game.Day}-{game.GameType}"] = true;
+        }
+
+        return result;
+    }
+
     public async Task<List<GameScore>> GetLeaderboardAsync(int day, string gameType)
     {
         return await _context.GameScores

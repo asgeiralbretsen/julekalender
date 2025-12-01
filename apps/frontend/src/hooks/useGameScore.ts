@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { GameScoreAPI } from '../lib/api';
 
@@ -35,6 +35,8 @@ export const useGameScore = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [playedGamesCache, setPlayedGamesCache] = useState<Record<string, boolean> | null>(null);
+  const playedGamesPromiseRef = useRef<Promise<Record<string, boolean>> | null>(null);
 
   const getCurrentUser = useCallback(async (): Promise<CurrentUser | null> => {
     if (currentUser) return currentUser;
@@ -65,6 +67,7 @@ export const useGameScore = () => {
     
     try {
       const result = await GameScoreAPI.saveGameScore(request, getToken);
+      setPlayedGamesCache(null);
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save game score';
@@ -96,25 +99,49 @@ export const useGameScore = () => {
     }
   }, [getToken, getCurrentUser]);
 
-  const hasUserPlayedGame = useCallback(async (day: number, gameType: string): Promise<boolean> => {
-    const user = await getCurrentUser();
-    if (!user) return false;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const result = await GameScoreAPI.hasUserPlayedGame(user.id, day, gameType, getToken);
-      return result;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to check if user has played game';
-      setError(errorMessage);
-      console.error('Error checking if user has played game:', err);
-      return false;
-    } finally {
-      setLoading(false);
+  const getUserPlayedGames = useCallback(async (): Promise<Record<string, boolean>> => {
+    if (playedGamesCache) return playedGamesCache;
+
+    if (playedGamesPromiseRef.current) {
+      return playedGamesPromiseRef.current;
     }
-  }, [getToken, getCurrentUser]);
+
+    const promise = (async () => {
+      const user = await getCurrentUser();
+      if (!user) return {};
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const result = await GameScoreAPI.getUserPlayedGames(user.id, getToken);
+        setPlayedGamesCache(result);
+        return result;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to get user played games';
+        setError(errorMessage);
+        console.error('Error getting user played games:', err);
+        return {};
+      } finally {
+        setLoading(false);
+        playedGamesPromiseRef.current = null;
+      }
+    })();
+
+    playedGamesPromiseRef.current = promise;
+    return promise;
+  }, [getToken, getCurrentUser, playedGamesCache]);
+
+  const hasUserPlayedGame = useCallback(async (day: number, gameType: string): Promise<boolean> => {
+    const playedGames = await getUserPlayedGames();
+    const key = `${day}-${gameType}`;
+    return playedGames[key] === true;
+  }, [getUserPlayedGames]);
+
+  const invalidatePlayedGamesCache = useCallback(() => {
+    setPlayedGamesCache(null);
+    playedGamesPromiseRef.current = null;
+  }, []);
 
   const getUserScores = useCallback(async (): Promise<GameScore[]> => {
     const user = await getCurrentUser();
@@ -174,6 +201,8 @@ export const useGameScore = () => {
     saveGameScore,
     getUserScoreForDay,
     hasUserPlayedGame,
+    getUserPlayedGames,
+    invalidatePlayedGamesCache,
     getUserScores,
     getScoresForDay,
     getLeaderboard,
