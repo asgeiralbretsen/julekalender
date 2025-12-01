@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { client } from "../lib/sanity";
 import imageUrlBuilder from "@sanity/image-url";
 import { animate } from "animejs";
+import { useGameScore } from "../hooks/useGameScore";
 import logoIcon from "../assets/unimicro-logoikon-hvit_RGB.png";
 import { ChristmasBackground } from "./ChristmasBackground";
 import { DayCell } from "./DayCell";
-import { useGameScore } from "../hooks/useGameScore";
 
 const builder = imageUrlBuilder(client);
 const gameMonth = 11;
@@ -596,6 +596,7 @@ export default function AdventCalendar() {
                       day={day}
                       isUnlocked={isUnlocked}
                       isToday={isToday}
+                      thumbnail={dayInfo?.thumbnail}
                       gameType={gameType}
                       hasPlayed={hasPlayed}
                       onDayClick={handleDayClick}

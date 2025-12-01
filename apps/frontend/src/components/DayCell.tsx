@@ -8,34 +8,21 @@ interface DayCellProps {
   isToday: boolean;
   thumbnail?: string;
   gameType?: string;
+  hasPlayed: boolean;
   onDayClick?: (day: number) => void;
 }
-
 export function DayCell({
   day,
   isUnlocked,
   isToday,
   thumbnail,
   gameType,
+  hasPlayed,
   onDayClick,
 }: DayCellProps) {
   const cellRef = useRef<HTMLDivElement>(null);
   const doorRef = useRef<HTMLDivElement>(null);
-  const { hasUserPlayedGame } = useGameScore();
-  const [hasPlayed, setHasPlayed] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-
-  // Check if user has played this game
-  useEffect(() => {
-    const checkIfPlayed = async () => {
-      if (gameType && gameType !== "none") {
-        const played = await hasUserPlayedGame(day, gameType);
-        setHasPlayed(played);
-        setIsOpen(played);
-      }
-    };
-    checkIfPlayed();
-  }, [day, gameType, hasUserPlayedGame]);
+  const [isOpen, setIsOpen] = useState(hasPlayed);
 
   // Initial entrance animation
   useEffect(() => {
@@ -51,8 +38,8 @@ export function DayCell({
     }
   }, [day]);
 
-  // Open door animation if already played
   useEffect(() => {
+    setIsOpen(hasPlayed);
     if (hasPlayed && doorRef.current) {
       animate(doorRef.current, {
         rotateY: -180,
