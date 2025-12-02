@@ -451,8 +451,8 @@ export function ColorMatchGame() {
             </div>
           </div>
 
-          {/* Color Picker */}
-          <div className="mt-8 flex justify-center">
+          {/* Color Picker and  Submit Button*/}
+          <div className="mt-8 flex justify-center items-center gap-4">
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6">
               <h3 className="text-white text-center mb-4 font-semibold">
                 Velg farge
@@ -462,19 +462,17 @@ export function ColorMatchGame() {
                 onChange={(color) => setColorPickerColor(color)}
               />
             </div>
+            {!showResults && (
+              <div className=" flex justify-center max-h-10">
+                <button
+                  onClick={submitColors}
+                  className="bg-green-600 hover:bg-green-700 px-4 text-white rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
+                >
+                  Send inn farger
+                </button>
+              </div>
+            )}
           </div>
-
-          {/* Submit Button */}
-          {!showResults && (
-            <div className="mt-8 flex justify-center">
-              <button
-                onClick={submitColors}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
-              >
-                Send inn farger
-              </button>
-            </div>
-          )}
 
           {/* Results */}
           {showResults && (
