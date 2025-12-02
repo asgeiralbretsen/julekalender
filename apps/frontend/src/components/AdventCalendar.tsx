@@ -609,7 +609,7 @@ export default function AdventCalendar() {
             {sanityDays.length > 0 && (
               <div className="mt-8 text-center text-red-100">
                 <p>
-                  {today.getMonth() === 9
+                  {today.getMonth() === gameMonth
                     ? `I dag er det ${currentDay}. desember. Dag 1-${currentDay} er låst opp! 🎄`
                     : "Kom tilbake i desember for å låse opp kalenderdager! 🎄"}
                 </p>
