@@ -1,6 +1,6 @@
 import { ChristmasBackground } from "./ChristmasBackground";
 
-interface StartGameScreenProps {
+export interface StartGameScreenProps {
   title: string;
   description: string;
   // bullet points
@@ -18,7 +18,7 @@ export function StartGameScreen({
 }: StartGameScreenProps) {
   return (
     <ChristmasBackground>
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-[calc(100vh-130px)] flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
           <h1 className="text-4xl font-bold text-white mb-4">{title}</h1>
           <p className="text-white/80 mb-6">{description}</p>

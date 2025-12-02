@@ -6,6 +6,8 @@ import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
 import { client } from "../lib/sanity";
 import { normalizeGameScore } from "../utils";
+import { ChristmasBackground } from "./ChristmasBackground";
+import { LoadingScreen } from "./LoadingScreen";
 
 interface SongData {
   songUrl: string;
@@ -222,7 +224,12 @@ const SongGuessGame: React.FC = () => {
 
   // Auto-play audio when game starts
   useEffect(() => {
-    if (gameState.gameStarted && gameState.isPlaying && audioRef.current && gameState.currentSong) {
+    if (
+      gameState.gameStarted &&
+      gameState.isPlaying &&
+      audioRef.current &&
+      gameState.currentSong
+    ) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch((error) => {
         console.error("Error playing audio:", error);
@@ -239,17 +246,18 @@ const SongGuessGame: React.FC = () => {
   };
 
   const handleAnswer = async (answer: string) => {
-    if (gameState.gameEnded || gameState.userAnswer || !gameState.currentSong) return;
+    if (gameState.gameEnded || gameState.userAnswer || !gameState.currentSong)
+      return;
 
     stopAudio();
     const isCorrect = answer === gameState.currentSong.correctAnswer;
 
     // Calculate score for this round
     let roundScore = 0;
-    let roundTimebonus = 0
+    let roundTimebonus = 0;
     if (isCorrect) {
-      roundScore = 1
-      roundTimebonus = (gameState.timeRemaining / gameTime) / allSongs.length
+      roundScore = 1;
+      roundTimebonus = gameState.timeRemaining / gameTime / allSongs.length;
     }
 
     // Update game state with answer
@@ -267,13 +275,17 @@ const SongGuessGame: React.FC = () => {
         // Game is over - all songs completed
         const finalScore = gameState.score + roundScore;
         const finalTimeBonus = gameState.timebonus + roundTimebonus;
-        
+
         // Save score if user hasn't played today
         if (dayInfo && user && !gameState.hasPlayedToday) {
           saveGameScore({
             day: dayInfo.day,
             gameType: "songGuessGame",
-            score: normalizeGameScore(finalScore, allSongs.length, finalTimeBonus),
+            score: normalizeGameScore(
+              finalScore,
+              allSongs.length,
+              finalTimeBonus
+            ),
           })
             .then((result) => {
               if (result) {
@@ -346,7 +358,11 @@ const SongGuessGame: React.FC = () => {
         {audioElement}
         <GameResultsScreen
           isFirstAttempt={!gameState.hasPlayedToday}
-          currentScore={normalizeGameScore(gameState.score, allSongs.length, gameState.timebonus)}
+          currentScore={normalizeGameScore(
+            gameState.score,
+            allSongs.length,
+            gameState.timebonus
+          )}
           previousScore={gameState.previousScore}
           scoreSaved={gameState.scoreSaved}
           loading={false}
@@ -365,12 +381,7 @@ const SongGuessGame: React.FC = () => {
     return (
       <>
         {audioElement}
-        <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20">
-            <div className="text-6xl mb-4">🎵</div>
-            <p className="text-red-100">Laster sanger...</p>
-          </div>
-        </div>
+        <LoadingScreen />
       </>
     );
   }
@@ -409,9 +420,7 @@ const SongGuessGame: React.FC = () => {
   return (
     <>
       {audioElement}
-      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden p-4">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-
+      <ChristmasBackground>
         <div className="max-w-4xl mx-auto relative z-10">
           {/* Header */}
           <div className="text-center mb-8">
@@ -496,7 +505,7 @@ const SongGuessGame: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </ChristmasBackground>
     </>
   );
 };

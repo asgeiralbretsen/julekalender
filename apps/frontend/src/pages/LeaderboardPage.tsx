@@ -48,7 +48,6 @@ export default function LeaderboardPage() {
         setLoading(true);
         const scores = await GameScoreAPI.getTotalLeaderboard(getToken);
         setTotalScores(removeCheatersTemporaryFix(scores));
-        console.log(removeCheatersTemporaryFix(scores));
       } catch (err) {
         console.error("Error fetching total leaderboard:", err);
         setError("Kunne ikke hente topplisten");
