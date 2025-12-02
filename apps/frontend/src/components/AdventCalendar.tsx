@@ -520,106 +520,102 @@ export default function AdventCalendar() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden">
-      <ChristmasBackground>
-        <div
-          ref={containerRef}
-          className="max-w-7xl mx-auto px-4 py-10 relative z-10"
-        >
-          <div className="text-center mb-10">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-red-100 drop-shadow flex justify-center items-center space-x-3">
-              <img
-                src={logoIcon}
-                alt="Logo"
-                className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md"
-              />
-              <span>Julekalender</span>
-            </h1>
-            <p className="mt-3 text-red-100">
-              Tell ned til jul med daglige overraskelser
-            </p>
-            {loading && (
-              <div className="mt-4 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                <span className="ml-2 text-red-100">
-                  Laster kalenderdager...
-                </span>
-              </div>
-            )}
-            {error && (
-              <div className="mt-4 text-red-200 bg-red-800/20 rounded-lg p-3 max-w-md mx-auto">
-                <p className="text-sm">{error}</p>
-                <p className="text-xs mt-1">
-                  Vennligst sjekk Sanity-konfigurasjonen din
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl border-2 border-white/20">
-            {!loading && !error && sanityDays.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📅</div>
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  Ingen kalenderdager funnet
-                </h3>
-                <p className="text-red-100 mb-4">
-                  Opprett din første kalenderdag i Sanity Studio for å komme i
-                  gang!
-                </p>
-                <a
-                  href="/studio/"
-                  className="inline-block bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Åpne Sanity Studio
-                </a>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
-                {days.map((day) => {
-                  const isUnlocked =
-                    today.getMonth() === gameMonth && day <= currentDay;
-                  const isToday =
-                    day === currentDay && today.getMonth() === gameMonth;
-                  const dayInfo = dayData.find((d) => d.day === day);
-                  const sanityDay = sanityDays.find((d) => d.dayNumber === day);
-                  const gameType = sanityDay?.gameType;
-                  const hasPlayed =
-                    gameType && gameType !== "none"
-                      ? playedGames[`${day}-${gameType}`] === true
-                      : false;
-                  return (
-                    <DayCell
-                      key={day}
-                      day={day}
-                      isUnlocked={isUnlocked}
-                      isToday={isToday}
-                      thumbnail={dayInfo?.thumbnail}
-                      gameType={gameType}
-                      hasPlayed={hasPlayed}
-                      onDayClick={handleDayClick}
-                    />
-                  );
-                })}
-              </div>
-            )}
-
-            {sanityDays.length > 0 && (
-              <div className="mt-8 text-center text-red-100">
-                <p>
-                  {today.getMonth() === 9
-                    ? `I dag er det ${currentDay}. desember. Dag 1-${currentDay} er låst opp! 🎄`
-                    : "Kom tilbake i desember for å låse opp kalenderdager! 🎄"}
-                </p>
-              </div>
-            )}
-          </div>
+    <ChristmasBackground>
+      <div
+        ref={containerRef}
+        className="max-w-7xl mx-auto px-4 py-10 relative z-10"
+      >
+        <div className="text-center mb-10">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-red-100 drop-shadow flex justify-center items-center space-x-3">
+            <img
+              src={logoIcon}
+              alt="Logo"
+              className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md"
+            />
+            <span>Julekalender</span>
+          </h1>
+          <p className="mt-3 text-red-100">
+            Tell ned til jul med daglige overraskelser
+          </p>
+          {loading && (
+            <div className="mt-4 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              <span className="ml-2 text-red-100">Laster kalenderdager...</span>
+            </div>
+          )}
+          {error && (
+            <div className="mt-4 text-red-200 bg-red-800/20 rounded-lg p-3 max-w-md mx-auto">
+              <p className="text-sm">{error}</p>
+              <p className="text-xs mt-1">
+                Vennligst sjekk Sanity-konfigurasjonen din
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="pointer-events-none select-none fixed inset-x-0 bottom-0 h-24 bg-gradient-to-t from-red-900 to-transparent" />
-      </ChristmasBackground>
-    </div>
+        <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl border-2 border-white/20">
+          {!loading && !error && sanityDays.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📅</div>
+              <h3 className="text-xl font-semibold text-white mb-2">
+                Ingen kalenderdager funnet
+              </h3>
+              <p className="text-red-100 mb-4">
+                Opprett din første kalenderdag i Sanity Studio for å komme i
+                gang!
+              </p>
+              <a
+                href="/studio/"
+                className="inline-block bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Åpne Sanity Studio
+              </a>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 md:gap-8">
+              {days.map((day) => {
+                const isUnlocked =
+                  today.getMonth() === gameMonth && day <= currentDay;
+                const isToday =
+                  day === currentDay && today.getMonth() === gameMonth;
+                const dayInfo = dayData.find((d) => d.day === day);
+                const sanityDay = sanityDays.find((d) => d.dayNumber === day);
+                const gameType = sanityDay?.gameType;
+                const hasPlayed =
+                  gameType && gameType !== "none"
+                    ? playedGames[`${day}-${gameType}`] === true
+                    : false;
+                return (
+                  <DayCell
+                    key={day}
+                    day={day}
+                    isUnlocked={isUnlocked}
+                    isToday={isToday}
+                    thumbnail={dayInfo?.thumbnail}
+                    gameType={gameType}
+                    hasPlayed={hasPlayed}
+                    onDayClick={handleDayClick}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {sanityDays.length > 0 && (
+            <div className="mt-8 text-center text-red-100">
+              <p>
+                {today.getMonth() === 9
+                  ? `I dag er det ${currentDay}. desember. Dag 1-${currentDay} er låst opp! 🎄`
+                  : "Kom tilbake i desember for å låse opp kalenderdager! 🎄"}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="pointer-events-none select-none fixed inset-x-0 bottom-0 h-24 bg-gradient-to-t from-red-900 to-transparent" />
+    </ChristmasBackground>
   );
 }
