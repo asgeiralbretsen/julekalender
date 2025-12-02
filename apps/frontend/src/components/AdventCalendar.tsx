@@ -190,7 +190,7 @@ interface SanityDay {
 export default function AdventCalendar() {
   const navigate = useNavigate();
   const today = new Date();
-  const currentDay = today.getMonth() === gameMonth ? today.getDate() : 1;
+  const currentDay = 24;
   const containerRef = useRef<HTMLDivElement>(null);
   const { getUserPlayedGames } = useGameScore();
 
