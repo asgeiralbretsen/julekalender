@@ -29,7 +29,7 @@ export const ChristmasBackground: React.FC<ChristmasBackgroundProps> = ({
 
   return (
     <div
-      className={`h-[calc(100vh-65px)] bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-y-auto ${className}`}
+      className={`min-h-[calc(100vh-65px)] mt-[65px] bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden ${className}`}
     >
       {/* Background image overlay */}
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />

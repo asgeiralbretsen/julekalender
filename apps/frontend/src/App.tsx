@@ -37,96 +37,94 @@ function App() {
 
   return (
     <Router>
-      <div style={{ marginTop: "65px" }}>
-        <Header />
+      <Header />
 
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route
-            path="/calendar"
-            element={
-              <ProtectedRoute>
-                <CalendarPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/leaderboard"
-            element={
-              <ProtectedRoute>
-                <LeaderboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/game/blurGuessGame"
-            element={
-              <ProtectedRoute>
-                <BlurGuessGame />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/game/colorMatchGame"
-            element={
-              <ProtectedRoute>
-                <ColorMatchGame />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/game/songGuessGame"
-            element={
-              <ProtectedRoute>
-                <SongGuessGame />
-              </ProtectedRoute>
-            }
-          />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <CalendarPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <LeaderboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/blurGuessGame"
+          element={
+            <ProtectedRoute>
+              <BlurGuessGame />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/colorMatchGame"
+          element={
+            <ProtectedRoute>
+              <ColorMatchGame />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/songGuessGame"
+          element={
+            <ProtectedRoute>
+              <SongGuessGame />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/game/quizGame"
-            element={
-              <ProtectedRoute>
-                <QuizGame />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/game/quizGame"
+          element={
+            <ProtectedRoute>
+              <QuizGame />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/game/teamsNotificationGame"
-            element={
-              <ProtectedRoute>
-                <TeamsNotificationGame />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/game/interviewGame"
-            element={
-              <ProtectedRoute>
-                <InterviewGame />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/game/snowflakeCatchGame"
-            element={
-              <ProtectedRoute>
-                <SnowflakeCatchGame />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/game/wordScrambleGame"
-            element={
-              <ProtectedRoute>
-                <ChristmasWordScramble />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </div>
+        <Route
+          path="/game/teamsNotificationGame"
+          element={
+            <ProtectedRoute>
+              <TeamsNotificationGame />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/interviewGame"
+          element={
+            <ProtectedRoute>
+              <InterviewGame />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/snowflakeCatchGame"
+          element={
+            <ProtectedRoute>
+              <SnowflakeCatchGame />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/wordScrambleGame"
+          element={
+            <ProtectedRoute>
+              <ChristmasWordScramble />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
     </Router>
   );
 }
