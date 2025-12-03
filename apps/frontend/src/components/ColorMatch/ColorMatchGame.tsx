@@ -91,13 +91,15 @@ export function ColorMatchGame() {
             const data = parsedData.colorMatchGameData;
 
             // Set colors from Sanity (now simple strings)
+            // Sanity schema has been changed so this doesn't work anymore
+            // Fallback colors will be used.
             const stockingColors: Colors = {
-              topColor: data.stockingColors?.topColor || "#ff0000",
+              topColor: data.stockingColors?.topColor || "#e3e3e1",
               topStripesColor:
-                data.stockingColors?.topStripesColor || "#800080",
-              mainColor: data.stockingColors?.mainColor || "#008000",
-              heelColor: data.stockingColors?.heelColor || "#ffff00",
-              stripesColor: data.stockingColors?.stripesColor || "#800080",
+                data.stockingColors?.topStripesColor || "#7ea82d",
+              mainColor: data.stockingColors?.mainColor || "#dd4a43",
+              heelColor: data.stockingColors?.heelColor || "#f5d140",
+              stripesColor: data.stockingColors?.stripesColor || "#FF69B4",
             };
 
             setOriginalColors(stockingColors);
