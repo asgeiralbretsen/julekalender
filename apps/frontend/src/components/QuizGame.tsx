@@ -4,6 +4,9 @@ import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
 import { normalizeGameScore } from "../utils";
+import { ChristmasBackground } from "./ChristmasBackground";
+import { LoadingScreen } from "./LoadingScreen";
+import { NoDataScreen } from "./NoDataScreen";
 
 interface Question {
   questionText: string;
@@ -38,6 +41,7 @@ export default function QuizGame() {
   );
   const [currentRound, setCurrentRound] = useState(0);
   const [score, setScore] = useState(0);
+  const [finalScore, setFinalScore] = useState(0);
   const [totalTimeBonus, setTotalTimeBonus] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -123,6 +127,7 @@ export default function QuizGame() {
     setGameEnded(false);
     setCurrentRound(0);
     setScore(0);
+    setFinalScore(0);
     setTimeLeft(gameTime);
     setSelectedAnswer(null);
     setShowResult(false);
@@ -146,8 +151,8 @@ export default function QuizGame() {
     const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
 
     if (isCorrect) {
-      const timeBonus = (timeLeft / gameTime) / gameData.questions.length
-      setTotalTimeBonus((prev) => prev + timeBonus)
+      const timeBonus = timeLeft / gameTime / gameData.questions.length;
+      setTotalTimeBonus((prev) => prev + timeBonus);
       setScore((prev) => prev + 1);
     }
 
@@ -177,13 +182,18 @@ export default function QuizGame() {
         const result = await saveGameScore({
           day: dayInfo.day,
           gameType: "quizGame",
-          score: normalizeGameScore(score, gameData.questions.length, totalTimeBonus)
+          score: normalizeGameScore(
+            score,
+            gameData.questions.length,
+            totalTimeBonus
+          ),
         });
 
         if (result) {
           setScoreSaved(true);
           setHasPlayedToday(true);
           setPreviousScore(score);
+          setFinalScore(result.score);
         }
       } catch (err) {
         console.error("Error saving game score:", err);
@@ -192,31 +202,22 @@ export default function QuizGame() {
   };
 
   if (loading || checkingPlayStatus) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-300 mx-auto mb-4"></div>
-          <p className="text-red-100">Laster quiz...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!gameData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center shadow-christmas-lg border-2 border-yellow-400/20">
-          <p className="text-red-100">Ingen quiz-data tilgjengelig</p>
-        </div>
-      </div>
-    );
+    return <NoDataScreen />;
   }
 
   if (gameEnded) {
     return (
       <GameResultsScreen
         isFirstAttempt={!hasPlayedToday || scoreSaved}
-        currentScore={score}
+        currentScore={normalizeGameScore(
+          score,
+          gameData.questions.length,
+          totalTimeBonus
+        )}
         previousScore={previousScore}
         scoreSaved={scoreSaved}
         loading={scoreLoading}
@@ -253,85 +254,80 @@ export default function QuizGame() {
   const isCorrect = selectedAnswer === currentQuestion.correctAnswerIndex;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden p-4">
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-
-      <div className="max-w-4xl mx-auto relative z-10">
-        <div className="text-center mb-8">
-          <h1
-            className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
-            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
-          >
-            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
-          </h1>
-          <div className="flex justify-center gap-8 text-red-100">
-            <span>
-              Spørsmål {currentRound + 1} / {gameData.questions.length}
-            </span>
-            <span>Poeng: {score}</span>
-            <span
-              className={
-                timeLeft <= 5 ? "text-red-300 font-bold animate-pulse" : ""
-              }
+    <ChristmasBackground>
+      <div className="min-h-[calc(100vh-130px)]">
+        <div className="max-w-4xl mx-auto relative z-10">
+          <div className="text-center mb-8">
+            <h1
+              className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
+              style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
             >
-              Tid: {timeLeft}s
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-yellow-400/20">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">
-            {currentQuestion.questionText}
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {currentQuestion.answers.map((answer, index) => {
-              let buttonStyle = "bg-white/20 hover:bg-white/30 border-white/30";
-
-              if (showResult) {
-                if (index === currentQuestion.correctAnswerIndex) {
-                  buttonStyle = "bg-green-600 border-green-500";
-                } else if (index === selectedAnswer) {
-                  buttonStyle = "bg-red-600 border-red-500";
-                } else {
-                  buttonStyle = "bg-gray-600 border-gray-500";
+              {dayInfo
+                ? `Dag ${dayInfo.day}: ${dayInfo.title}`
+                : gameData.title}
+            </h1>
+            <div className="flex justify-center gap-8 text-red-100">
+              <span>
+                Spørsmål {currentRound + 1} / {gameData.questions.length}
+              </span>
+              <span>Riktige svar: {score}</span>
+              <span
+                className={
+                  timeLeft <= 5 ? "text-red-300 font-bold animate-pulse" : ""
                 }
-              } else if (selectedAnswer === index) {
-                buttonStyle = "bg-yellow-500 border-yellow-400";
-              }
-
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleAnswerClick(index)}
-                  disabled={selectedAnswer !== null || showResult}
-                  className={`p-6 rounded-lg font-semibold text-white border-2 transition-all duration-200 ${buttonStyle} disabled:cursor-not-allowed`}
-                >
-                  {answer}
-                </button>
-              );
-            })}
+              >
+                Tid: {timeLeft}s
+              </span>
+            </div>
           </div>
 
-          {showResult && (
-            <div className="mt-6 text-center">
-              <p
-                className={`text-2xl font-bold ${isCorrect ? "text-green-300" : "text-red-300"}`}
-              >
-                {isCorrect ? "✅ Riktig!" : "❌ Feil!"}
-              </p>
-              {isCorrect && (
-                <p className="text-yellow-300 mt-2">
-                  +
-                  {gameData.scoringSettings.correctAnswerPoints +
-                    timeLeft * gameData.scoringSettings.timeBonus}{" "}
-                  poeng
-                </p>
-              )}
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-yellow-400/20">
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">
+              {currentQuestion.questionText}
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {currentQuestion.answers.map((answer, index) => {
+                let buttonStyle =
+                  "bg-white/20 hover:bg-white/30 border-white/30";
+
+                if (showResult) {
+                  if (index === currentQuestion.correctAnswerIndex) {
+                    buttonStyle = "bg-green-600 border-green-500";
+                  } else if (index === selectedAnswer) {
+                    buttonStyle = "bg-red-600 border-red-500";
+                  } else {
+                    buttonStyle = "bg-gray-600 border-gray-500";
+                  }
+                } else if (selectedAnswer === index) {
+                  buttonStyle = "bg-yellow-500 border-yellow-400";
+                }
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswerClick(index)}
+                    disabled={selectedAnswer !== null || showResult}
+                    className={`p-6 rounded-lg font-semibold text-white border-2 transition-all duration-200 ${buttonStyle} disabled:cursor-not-allowed`}
+                  >
+                    {answer}
+                  </button>
+                );
+              })}
             </div>
-          )}
+
+            {showResult && (
+              <div className="mt-6 text-center">
+                <p
+                  className={`text-2xl font-bold ${isCorrect ? "text-green-300" : "text-red-300"}`}
+                >
+                  {isCorrect ? "✅ Riktig!" : "❌ Feil!"}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </ChristmasBackground>
   );
 }

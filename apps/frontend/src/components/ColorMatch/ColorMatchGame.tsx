@@ -6,6 +6,8 @@ import { useGameScore } from "../../hooks/useGameScore";
 import { ChristmasBackground } from "../ChristmasBackground";
 import GameResultsScreen from "../GameResultsScreen";
 import { StartGameScreen } from "../StartGameScreen";
+import { LoadingScreen } from "../LoadingScreen";
+import { NoDataScreen } from "../NoDataScreen";
 
 interface Colors {
   topColor: string;
@@ -89,13 +91,15 @@ export function ColorMatchGame() {
             const data = parsedData.colorMatchGameData;
 
             // Set colors from Sanity (now simple strings)
+            // Sanity schema has been changed so this doesn't work anymore
+            // Fallback colors will be used.
             const stockingColors: Colors = {
-              topColor: data.stockingColors?.topColor || "#ff0000",
+              topColor: data.stockingColors?.topColor || "#e3e3e1",
               topStripesColor:
-                data.stockingColors?.topStripesColor || "#800080",
-              mainColor: data.stockingColors?.mainColor || "#008000",
-              heelColor: data.stockingColors?.heelColor || "#ffff00",
-              stripesColor: data.stockingColors?.stripesColor || "#800080",
+                data.stockingColors?.topStripesColor || "#7ea82d",
+              mainColor: data.stockingColors?.mainColor || "#dd4a43",
+              heelColor: data.stockingColors?.heelColor || "#f5d140",
+              stripesColor: data.stockingColors?.stripesColor || "#FF69B4",
             };
 
             setOriginalColors(stockingColors);
@@ -318,27 +322,11 @@ export function ColorMatchGame() {
   };
 
   if (loading) {
-    return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
-            <p className="text-white text-xl">Laster spill...</p>
-          </div>
-        </div>
-      </ChristmasBackground>
-    );
+    return <LoadingScreen />;
   }
 
   if (!gameData) {
-    return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
-            <p className="text-white text-xl">Ingen spilldata funnet.</p>
-          </div>
-        </div>
-      </ChristmasBackground>
-    );
+    return <NoDataScreen />;
   }
 
   // Show results screen after game ends
@@ -386,131 +374,127 @@ export function ColorMatchGame() {
 
   return (
     <ChristmasBackground>
-      <div className="min-h-screen p-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              {dayInfo
-                ? `Dag ${dayInfo.day}: ${dayInfo.title}`
-                : gameData.title}
-            </h1>
-            <div className="flex justify-center gap-8 text-white/80">
-              <span>Tid: {timeRemaining}s</span>
-              {showResults && <span>Poeng: {overallScore}</span>}
-            </div>
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">
+            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : gameData.title}
+          </h1>
+          <div className="flex justify-center gap-8 text-white/80">
+            <span>Tid: {timeRemaining}s</span>
+            {showResults && <span>Poeng: {overallScore}</span>}
           </div>
+        </div>
 
-          {/* Main Game Area */}
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Original Stocking (Target) */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
-              <h2 className="text-xl font-semibold text-white text-center mb-4">
-                Målsokk
-              </h2>
-              <div className="flex justify-center">
-                <Stocking
-                  topColor={originalColors.topColor}
-                  topStripesColor={originalColors.topStripesColor}
-                  mainColor={originalColors.mainColor}
-                  heelColor={originalColors.heelColor}
-                  stripesColor={originalColors.stripesColor}
-                />
-              </div>
-            </div>
-
-            {/* Player Stocking */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
-              <h2 className="text-xl font-semibold text-white text-center mb-4">
-                Din sokk
-              </h2>
-              <div className="flex justify-center">
-                <Stocking
-                  topColor={currentColors.topColor}
-                  topStripesColor={currentColors.topStripesColor}
-                  mainColor={currentColors.mainColor}
-                  heelColor={currentColors.heelColor}
-                  stripesColor={currentColors.stripesColor}
-                  onClickTopColor={() => {
-                    setSingleColor("topColor", colorPickerColor);
-                  }}
-                  onClickTopStripesColor={() => {
-                    setSingleColor("topStripesColor", colorPickerColor);
-                  }}
-                  onClickMainColor={() => {
-                    setSingleColor("mainColor", colorPickerColor);
-                  }}
-                  onClickHeelColor={() => {
-                    setSingleColor("heelColor", colorPickerColor);
-                  }}
-                  onClickStripesColor={() => {
-                    setSingleColor("stripesColor", colorPickerColor);
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Color Picker and  Submit Button*/}
-          <div className="mt-8 flex justify-center items-center gap-4">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6">
-              <h3 className="text-white text-center mb-4 font-semibold">
-                Velg farge
-              </h3>
-              <ColorPickerNoEyedropper
-                value={colorPickerColor}
-                onChange={(color) => setColorPickerColor(color)}
+        {/* Main Game Area */}
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Original Stocking (Target) */}
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+            <h2 className="text-xl font-semibold text-white text-center mb-4">
+              Målsokk
+            </h2>
+            <div className="flex justify-center">
+              <Stocking
+                topColor={originalColors.topColor}
+                topStripesColor={originalColors.topStripesColor}
+                mainColor={originalColors.mainColor}
+                heelColor={originalColors.heelColor}
+                stripesColor={originalColors.stripesColor}
               />
             </div>
-            {!showResults && (
-              <div className=" flex justify-center max-h-10">
-                <button
-                  onClick={submitColors}
-                  className="bg-green-600 hover:bg-green-700 px-4 text-white rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
-                >
-                  Send inn farger
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Results */}
-          {showResults && (
-            <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8">
-              <h2 className="text-2xl font-bold text-white text-center mb-6">
-                Resultater
-              </h2>
-              <div className="space-y-4">
-                {colorScores.map((score, index) => (
-                  <div
-                    key={index}
-                    className="bg-white/5 rounded-lg p-4 flex justify-between items-center"
-                  >
-                    <span className="text-white font-semibold">
-                      {score.section}
-                    </span>
-                    <span className="text-white">
-                      {score.percentage.toFixed(1)}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 text-center">
-                <p className="text-3xl font-bold text-yellow-300">
-                  Total: {overallScore} poeng
-                </p>
-                {scoreSaved && (
-                  <p className="text-green-300 mt-2">Poengsum lagret!</p>
-                )}
-                {hasPlayedToday && !scoreSaved && (
-                  <p className="text-yellow-300 mt-2">
-                    Øvingsrunde - Poengsum ikke lagret
-                  </p>
-                )}
-              </div>
+          {/* Player Stocking */}
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+            <h2 className="text-xl font-semibold text-white text-center mb-4">
+              Din sokk
+            </h2>
+            <div className="flex justify-center">
+              <Stocking
+                topColor={currentColors.topColor}
+                topStripesColor={currentColors.topStripesColor}
+                mainColor={currentColors.mainColor}
+                heelColor={currentColors.heelColor}
+                stripesColor={currentColors.stripesColor}
+                onClickTopColor={() => {
+                  setSingleColor("topColor", colorPickerColor);
+                }}
+                onClickTopStripesColor={() => {
+                  setSingleColor("topStripesColor", colorPickerColor);
+                }}
+                onClickMainColor={() => {
+                  setSingleColor("mainColor", colorPickerColor);
+                }}
+                onClickHeelColor={() => {
+                  setSingleColor("heelColor", colorPickerColor);
+                }}
+                onClickStripesColor={() => {
+                  setSingleColor("stripesColor", colorPickerColor);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Color Picker and  Submit Button*/}
+        <div className="mt-8 flex justify-center items-center gap-4">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6">
+            <h3 className="text-white text-center mb-4 font-semibold">
+              Velg farge
+            </h3>
+            <ColorPickerNoEyedropper
+              value={colorPickerColor}
+              onChange={(color) => setColorPickerColor(color)}
+            />
+          </div>
+          {!showResults && (
+            <div className=" flex justify-center max-h-10">
+              <button
+                onClick={submitColors}
+                className="bg-green-600 hover:bg-green-700 px-4 text-white rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-green-500"
+              >
+                Send inn farger
+              </button>
             </div>
           )}
         </div>
+
+        {/* Results */}
+        {showResults && (
+          <div className="mt-8 bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+            <h2 className="text-2xl font-bold text-white text-center mb-6">
+              Resultater
+            </h2>
+            <div className="space-y-4">
+              {colorScores.map((score, index) => (
+                <div
+                  key={index}
+                  className="bg-white/5 rounded-lg p-4 flex justify-between items-center"
+                >
+                  <span className="text-white font-semibold">
+                    {score.section}
+                  </span>
+                  <span className="text-white">
+                    {score.percentage.toFixed(1)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <p className="text-3xl font-bold text-yellow-300">
+                Total: {overallScore} poeng
+              </p>
+              {scoreSaved && (
+                <p className="text-green-300 mt-2">Poengsum lagret!</p>
+              )}
+              {hasPlayedToday && !scoreSaved && (
+                <p className="text-yellow-300 mt-2">
+                  Øvingsrunde - Poengsum ikke lagret
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </ChristmasBackground>
   );
