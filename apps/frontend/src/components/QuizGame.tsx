@@ -7,6 +7,7 @@ import { normalizeGameScore } from "../utils";
 import { ChristmasBackground } from "./ChristmasBackground";
 import { LoadingScreen } from "./LoadingScreen";
 import { NoDataScreen } from "./NoDataScreen";
+import { useGameUnloadHandler } from '../hooks/useGameUnloadHandler';
 
 interface Question {
   questionText: string;
@@ -120,6 +121,16 @@ export default function QuizGame() {
       handleTimeout();
     }
   }, [gameStarted, timeLeft, showResult, gameEnded]);
+
+  // Register unload handler
+  useGameUnloadHandler(
+    () => {
+      if (gameStarted && !gameEnded) {
+        endGame();
+      }
+    },
+    gameStarted && !gameEnded
+  );
 
   const startGame = () => {
     if (!gameData) return;

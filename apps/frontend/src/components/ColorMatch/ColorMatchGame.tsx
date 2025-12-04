@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import ColorPickerNoEyedropper from "./ColorPicker";
 import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../../hooks/useGameScore";
+import { useGameUnloadHandler } from "../../hooks/useGameUnloadHandler";
 import { ChristmasBackground } from "../ChristmasBackground";
 import GameResultsScreen from "../GameResultsScreen";
 import { StartGameScreen } from "../StartGameScreen";
@@ -170,6 +171,15 @@ export function ColorMatchGame() {
       return () => clearInterval(timer);
     }
   }, [gameStarted, gameOver, timeRemaining]);
+
+  useGameUnloadHandler(
+    () => {
+      if (gameStarted && !gameOver && !showResults) {
+        submitColors();
+      }
+    },
+    gameStarted && !gameOver && !showResults
+  );
 
   const setSingleColor = (section: keyof Colors, color: string) => {
     setCurrentColors((prev) => ({

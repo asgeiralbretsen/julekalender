@@ -5,6 +5,7 @@ import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
 import { normalizeGameScore } from "../utils";
 import { ChristmasBackground } from "./ChristmasBackground";
+import { useGameUnloadHandler } from "../hooks/useGameUnloadHandler";
 
 interface GameImage {
   id: string;
@@ -434,6 +435,21 @@ const BlurGuessGame: React.FC = () => {
     saveGameScoreWhenEnded,
     startNewRound,
   ]);
+
+  // Register unload for in-progress games
+  useGameUnloadHandler(
+    () => {
+      if (gameState.gameStarted && !gameState.gameEnded) {
+        const normalizedScore = normalizeGameScore(
+          gameState.score,
+          gameImages.length,
+          gameState.timeBonus
+        );
+        saveGameScoreWhenEnded(normalizedScore);
+      }
+    },
+    gameState.gameStarted && !gameState.gameEnded
+  );
 
   if (gameState.gameEnded) {
     return (

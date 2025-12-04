@@ -4,6 +4,7 @@ import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
 import { ChristmasBackground } from "./ChristmasBackground";
 import { StartGameScreen } from "./StartGameScreen";
+import { useGameUnloadHandler } from "../hooks/useGameUnloadHandler";
 
 interface Interviewer {
   name: string;
@@ -138,6 +139,15 @@ export default function InterviewGame() {
 
     checkIfPlayedToday();
   }, [user, dayInfo, hasUserPlayedGame, getUserScoreForDay]);
+
+  useGameUnloadHandler(
+    () => {
+      if (gameStarted && !gameEnded) {
+        endGame();
+      }
+    },
+    gameStarted && !gameEnded
+  );
 
   // Cleanup camera stream
   useEffect(() => {

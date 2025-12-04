@@ -7,6 +7,7 @@ import { StartGameScreen } from "./StartGameScreen";
 import { normalizeGameScore } from "../utils";
 import { LoadingScreen } from "./LoadingScreen";
 import { NoDataScreen } from "./NoDataScreen";
+import { useGameUnloadHandler } from "../hooks/useGameUnloadHandler";
 
 interface Word {
   word: string;
@@ -257,6 +258,15 @@ const ChristmasWordScramble = () => {
       }
     }
   };
+
+  useGameUnloadHandler(
+    () => {
+      if (gameStarted && !gameEnded) {
+        endGame();
+      }
+    },
+    gameStarted && !gameEnded
+  );
 
   // Show results screen if already played
   if (showResultsScreen) {

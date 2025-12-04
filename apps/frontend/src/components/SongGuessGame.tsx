@@ -8,6 +8,7 @@ import { client } from "../lib/sanity";
 import { normalizeGameScore } from "../utils";
 import { ChristmasBackground } from "./ChristmasBackground";
 import { LoadingScreen } from "./LoadingScreen";
+import { useGameUnloadHandler } from "../hooks/useGameUnloadHandler";
 
 interface SongData {
   songUrl: string;
@@ -416,6 +417,23 @@ const SongGuessGame: React.FC = () => {
       </>
     );
   }
+
+  useGameUnloadHandler(
+    () => {
+      if (gameState.gameStarted && !gameState.gameEnded && dayInfo && user) {
+        saveGameScore({
+          day: dayInfo.day,
+          gameType: "songGuessGame",
+          score: normalizeGameScore(
+            gameState.score,
+            allSongs.length,
+            gameState.timebonus
+          ),
+        });
+      }
+    },
+    gameState.gameStarted && !gameState.gameEnded
+  );
 
   return (
     <>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ChristmasBackground } from "./ChristmasBackground";
 import { StartGameScreen } from "./StartGameScreen";
+import { useGameUnloadHandler } from "../hooks/useGameUnloadHandler";
 
 interface FallingObject {
   id: string;
@@ -226,6 +227,14 @@ const SnowflakeCatchGame: React.FC = () => {
       };
     }
   }, [handleMouseMove, gameState.gameStarted, gameState.gameEnded]);
+
+  useGameUnloadHandler(
+    () => {
+      // TODO: Integrate score saving here in future (if required)
+      // if (gameState.gameStarted && !gameState.gameEnded) { /* submit score logic */ }
+    },
+    gameState.gameStarted && !gameState.gameEnded
+  );
 
   if (!gameState.gameStarted) {
     return (
