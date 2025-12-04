@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { GameScoreAPI } from '../lib/api';
-import { ChristmasBackground } from '../components/ChristmasBackground';
+import { useEffect, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
+import { GameScoreAPI } from "../lib/api";
+import { ChristmasBackground } from "../components/ChristmasBackground";
 
 interface TotalScoreEntry {
   userId: number;
@@ -25,9 +25,21 @@ export default function LeaderboardPage() {
 
   const getDisplayName = (entry: TotalScoreEntry): string => {
     if (entry.user.firstName || entry.user.lastName) {
-      return `${entry.user.firstName || ''} ${entry.user.lastName || ''}`.trim();
+      return `${entry.user.firstName || ""} ${entry.user.lastName || ""}`.trim();
     }
-    return entry.user.email.split('@')[0];
+    return entry.user.email.split("@")[0];
+  };
+
+  // Temporarily removes developers who have attained unreasonable scores due to testing before December
+  // Commit can be reverted as soon as the DB is updated
+  const removeCheatersTemporaryFix = (scores) => {
+    const cheaterIDs = [
+      "user_34N0c2RVVSeoJnAYvnCOCaZuV1u",
+      "user_34MfhBsuKLoMhbyjCYVxO6ekafF",
+    ];
+    return scores.filter(
+      (score) => !cheaterIDs.includes(score.user.unimicroId)
+    );
   };
 
   useEffect(() => {
@@ -35,10 +47,10 @@ export default function LeaderboardPage() {
       try {
         setLoading(true);
         const scores = await GameScoreAPI.getTotalLeaderboard(getToken);
-        setTotalScores(scores);
+        setTotalScores(removeCheatersTemporaryFix(scores));
       } catch (err) {
-        console.error('Error fetching total leaderboard:', err);
-        setError('Kunne ikke hente topplisten');
+        console.error("Error fetching total leaderboard:", err);
+        setError("Kunne ikke hente topplisten");
       } finally {
         setLoading(false);
       }
@@ -67,8 +79,8 @@ export default function LeaderboardPage() {
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <p className="text-red-300 text-xl mb-4">❌ {error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors"
             >
               Prøv igjen
@@ -85,7 +97,10 @@ export default function LeaderboardPage() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+            <h1
+              className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg"
+              style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+            >
               Total Toppliste
             </h1>
             <p className="text-red-200 text-lg">
@@ -97,26 +112,31 @@ export default function LeaderboardPage() {
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
             {totalScores.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-red-200 text-lg">Ingen spillere har spilt ennå</p>
+                <p className="text-red-200 text-lg">
+                  Ingen spillere har spilt ennå
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
                 {totalScores.map((entry, index) => {
                   const rank = index + 1;
-                  let rankStyle = '';
-                  let rankIcon = '';
+                  let rankStyle = "";
+                  let rankIcon = "";
 
                   if (rank === 1) {
-                    rankStyle = 'bg-yellow-500/40 text-white border border-yellow-400/50';
-                    rankIcon = '🥇';
+                    rankStyle =
+                      "bg-yellow-500/40 text-white border border-yellow-400/50";
+                    rankIcon = "🥇";
                   } else if (rank === 2) {
-                    rankStyle = 'bg-gray-400/40 text-white border border-gray-400/50';
-                    rankIcon = '🥈';
+                    rankStyle =
+                      "bg-gray-400/40 text-white border border-gray-400/50";
+                    rankIcon = "🥈";
                   } else if (rank === 3) {
-                    rankStyle = 'bg-orange-500/40 text-white border border-orange-400/50';
-                    rankIcon = '🥉';
+                    rankStyle =
+                      "bg-orange-500/40 text-white border border-orange-400/50";
+                    rankIcon = "🥉";
                   } else {
-                    rankStyle = 'bg-red-500/20 border border-red-400/30';
+                    rankStyle = "bg-red-500/20 border border-red-400/30";
                     rankIcon = `#${rank}`;
                   }
 
@@ -127,9 +147,7 @@ export default function LeaderboardPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          <div className="text-2xl font-bold">
-                            {rankIcon}
-                          </div>
+                          <div className="text-2xl font-bold">{rankIcon}</div>
                           <div>
                             <h3 className="text-white font-bold text-lg">
                               {getDisplayName(entry)}
@@ -143,9 +161,7 @@ export default function LeaderboardPage() {
                           <div className="text-2xl font-bold text-white">
                             {entry.totalScore.toLocaleString()}
                           </div>
-                          <div className="text-red-200 text-sm">
-                            poeng
-                          </div>
+                          <div className="text-red-200 text-sm">poeng</div>
                         </div>
                       </div>
                     </div>
@@ -162,25 +178,24 @@ export default function LeaderboardPage() {
                 <div className="text-2xl font-bold text-white">
                   {totalScores.length}
                 </div>
-                <div className="text-red-200 text-sm">
-                  Spillere
-                </div>
+                <div className="text-red-200 text-sm">Spillere</div>
               </div>
               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 text-center border border-red-400/20">
                 <div className="text-2xl font-bold text-white">
-                  {totalScores.reduce((sum, entry) => sum + entry.gamesPlayed, 0)}
+                  {totalScores.reduce(
+                    (sum, entry) => sum + entry.gamesPlayed,
+                    0
+                  )}
                 </div>
-                <div className="text-red-200 text-sm">
-                  Totalt spill
-                </div>
+                <div className="text-red-200 text-sm">Totalt spill</div>
               </div>
               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 text-center border border-red-400/20">
                 <div className="text-2xl font-bold text-white">
-                  {totalScores.reduce((sum, entry) => sum + entry.totalScore, 0).toLocaleString()}
+                  {totalScores
+                    .reduce((sum, entry) => sum + entry.totalScore, 0)
+                    .toLocaleString()}
                 </div>
-                <div className="text-red-200 text-sm">
-                  Totale poeng
-                </div>
+                <div className="text-red-200 text-sm">Totale poeng</div>
               </div>
             </div>
           )}

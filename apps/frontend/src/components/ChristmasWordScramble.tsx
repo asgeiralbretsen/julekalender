@@ -5,6 +5,8 @@ import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
 import { normalizeGameScore } from "../utils";
+import { LoadingScreen } from "./LoadingScreen";
+import { NoDataScreen } from "./NoDataScreen";
 
 interface Word {
   word: string;
@@ -169,9 +171,8 @@ const ChristmasWordScramble = () => {
 
     if (isCorrect) {
       setFeedback("correct");
-      const timeBonus =
-        (timeRemaining / gameTime) / gameData.words.length;
-      
+      const timeBonus = timeRemaining / gameTime / gameData.words.length;
+
       setTotalTimeBonus((prev) => prev + timeBonus);
 
       setScore((prev) => prev + 1);
@@ -239,7 +240,11 @@ const ChristmasWordScramble = () => {
         const result = await saveGameScore({
           day: dayInfo.day,
           gameType: "wordScrambleGame",
-          score: normalizeGameScore(score, gameData.words.length, totalTimeBonus)
+          score: normalizeGameScore(
+            score,
+            gameData.words.length,
+            totalTimeBonus
+          ),
         });
 
         if (result && result.score === score) {
@@ -258,7 +263,7 @@ const ChristmasWordScramble = () => {
     return (
       <GameResultsScreen
         isFirstAttempt={false}
-        currentScore={0}
+        currentScore={score}
         previousScore={previousScore}
         scoreSaved={true}
         loading={false}
@@ -275,37 +280,12 @@ const ChristmasWordScramble = () => {
 
   // Loading state
   if (loading) {
-    return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="p-8 max-w-md w-full text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Laster spill...
-            </h1>
-            <p className="text-white/80">Forbereder juleordene dine!</p>
-          </div>
-        </div>
-      </ChristmasBackground>
-    );
+    return <LoadingScreen />;
   }
 
   // No game data
   if (!gameData || !gameData.words.length) {
-    return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-            <h1 className="text-2xl font-bold text-white mb-4">
-              Ingen spill funnet
-            </h1>
-            <p className="text-white/80">
-              Beklager, ingen juleord er konfigurert for denne dagen.
-            </p>
-          </div>
-        </div>
-      </ChristmasBackground>
-    );
+    return <NoDataScreen />;
   }
 
   // Game ended - show results
@@ -338,9 +318,9 @@ const ChristmasWordScramble = () => {
         title="Juleord Scramble"
         description=""
         howToPlay={[
-          "Stokkede juleord vises",
-          "Gjett det riktige ordet",
-          "10 sekunder per ord",
+          "• Stokkede juleord vises",
+          "• Gjett det riktige ordet",
+          "• 10 sekunder per ord",
         ]}
         previousScore={previousScore}
         onClickStartGame={startGame}
@@ -353,7 +333,7 @@ const ChristmasWordScramble = () => {
 
   return (
     <ChristmasBackground>
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="flex justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-2xl w-full">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">

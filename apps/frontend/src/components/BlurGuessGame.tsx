@@ -4,6 +4,7 @@ import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
 import { StartGameScreen } from "./StartGameScreen";
 import { normalizeGameScore } from "../utils";
+import { ChristmasBackground } from "./ChristmasBackground";
 
 interface GameImage {
   id: string;
@@ -314,8 +315,11 @@ const BlurGuessGame: React.FC = () => {
     if (gameState.userAnswer || gameState.showResult) return;
 
     const isCorrect = answer === gameState.currentImage?.answer;
-    const timeBonus = isCorrect ?
-      Math.max(0, (MAX_TIME_PER_ROUND - gameState.timeElapsed) / MAX_TIME_PER_ROUND) / gameImages.length
+    const timeBonus = isCorrect
+      ? Math.max(
+          0,
+          (MAX_TIME_PER_ROUND - gameState.timeElapsed) / MAX_TIME_PER_ROUND
+        ) / gameImages.length
       : 0;
     const points = isCorrect ? 1 : 0;
 
@@ -335,27 +339,24 @@ const BlurGuessGame: React.FC = () => {
 
     // Show result for 2 seconds, then move to next round
     setTimeout(() => {
-      setGameState(prev => {
+      setGameState((prev) => {
         if (prev.round >= gameImages.length) {
           const finalScore = normalizeGameScore(
-            prev.score, 
-            gameImages.length, 
+            prev.score,
+            gameImages.length,
             prev.timeBonus
           );
 
-          console.log(finalScore, prev.score, gameImages.length, prev.timeBonus)
-    
           saveGameScoreWhenEnded(finalScore);
-    
+
           return { ...prev, gameEnded: true };
         }
-    
+
         const nextRound = prev.round + 1;
         startNewRound(nextRound);
         return { ...prev, round: nextRound };
       });
     }, 2000);
-    
   };
 
   useEffect(() => {
@@ -475,124 +476,101 @@ const BlurGuessGame: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-900 via-red-800 to-red-900 relative overflow-hidden p-4">
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center" />
-
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-20 left-10 text-white/20 text-2xl animate-pulse"
-          style={{ animationDelay: "0s" }}
-        >
-          ❄
-        </div>
-        <div
-          className="absolute top-40 right-20 text-white/20 text-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        >
-          ❄
-        </div>
-        <div
-          className="absolute top-60 left-1/3 text-white/20 text-xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        >
-          ❄
-        </div>
-        <div
-          className="absolute top-80 right-1/4 text-white/20 text-2xl animate-pulse"
-          style={{ animationDelay: "1.5s" }}
-        >
-          ❄
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1
-            className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
-            style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
-          >
-            {dayInfo ? `Dag ${dayInfo.day}: ${dayInfo.title}` : "Gjett bildet"}
-          </h1>
-          <div className="flex justify-center gap-8 text-red-100">
-            <span>
-              Runde: {gameState.round}/{gameImages.length}
-            </span>
-            <span>Poeng: {gameState.score}</span>
-            <span>
-              Tid:{" "}
-              {Math.max(
-                0,
-                (MAX_TIME_PER_ROUND - gameState.timeElapsed) / 1000
-              ).toFixed(1)}
-              s
-            </span>
+    <ChristmasBackground>
+      <div className="min-h-[calc(100vh-130px)]">
+        <div className="max-w-4xl mx-auto relative z-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1
+              className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
+              style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+            >
+              {dayInfo
+                ? `Dag ${dayInfo.day}: ${dayInfo.title}`
+                : "Gjett bildet"}
+            </h1>
+            <div className="flex justify-center gap-8 text-red-100">
+              <span>
+                Runde: {gameState.round}/{gameImages.length}
+              </span>
+              <span>Poeng: {gameState.score}</span>
+              <span>
+                Tid:{" "}
+                {Math.max(
+                  0,
+                  (MAX_TIME_PER_ROUND - gameState.timeElapsed) / 1000
+                ).toFixed(1)}
+                s
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Game Area */}
-        <div className="grid md:grid-cols-2 gap-8 items-center">
-          {/* Image */}
-          <div className="relative">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-yellow-400/20">
-              <div className="relative overflow-hidden rounded-xl">
-                <img
-                  src={gameState.currentImage?.src}
-                  alt="Guess the image"
-                  className="w-full h-64 object-cover"
-                  style={{
-                    filter: `blur(${gameState.blurLevel}px)`,
-                    transition: "filter 0.1s ease-out",
-                  }}
-                />
-                {gameState.showResult && (
-                  <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                    <div className="text-center text-white">
-                      <p className="text-2xl font-bold mb-2">
-                        {gameState.userAnswer === gameState.correctAnswer
-                          ? "Riktig! 🎄"
-                          : "Feil! ❄️"}
-                      </p>
-                      <p className="text-lg">Svar: {gameState.correctAnswer}</p>
+          {/* Game Area */}
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Image */}
+            <div className="relative">
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-yellow-400/20">
+                <div className="relative overflow-hidden rounded-xl">
+                  <img
+                    src={gameState.currentImage?.src}
+                    alt="Guess the image"
+                    className="w-full h-64 object-cover"
+                    style={{
+                      filter: `blur(${gameState.blurLevel}px)`,
+                      transition: "filter 0.1s ease-out",
+                    }}
+                  />
+                  {gameState.showResult && (
+                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <p className="text-2xl font-bold mb-2">
+                          {gameState.userAnswer === gameState.correctAnswer
+                            ? "Riktig! 🎄"
+                            : "Feil! ❄️"}
+                        </p>
+                        <p className="text-lg">
+                          Svar: {gameState.correctAnswer}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Options */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-white mb-4">
+                {gameState.currentImage?.question || "Hva ser du?"}
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {gameState.currentImage?.options.map((option, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswer(option)}
+                    disabled={!!gameState.userAnswer || gameState.showResult}
+                    className={`p-4 rounded-lg font-semibold transition-all duration-200 ${
+                      gameState.showResult
+                        ? option === gameState.correctAnswer
+                          ? "bg-green-600 text-white border-2 border-green-500"
+                          : option === gameState.userAnswer &&
+                              option !== gameState.correctAnswer
+                            ? "bg-red-600 text-white border-2 border-red-500"
+                            : "bg-gray-600 text-white"
+                        : gameState.userAnswer === option
+                          ? "bg-yellow-500 text-white"
+                          : "bg-white/20 text-white hover:bg-white/30 border border-white/30"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
-
-          {/* Options */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-white mb-4">
-              {gameState.currentImage?.question || "Hva ser du?"}
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {gameState.currentImage?.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleAnswer(option)}
-                  disabled={!!gameState.userAnswer || gameState.showResult}
-                  className={`p-4 rounded-lg font-semibold transition-all duration-200 ${
-                    gameState.showResult
-                      ? option === gameState.correctAnswer
-                        ? "bg-green-600 text-white border-2 border-green-500"
-                        : option === gameState.userAnswer &&
-                            option !== gameState.correctAnswer
-                          ? "bg-red-600 text-white border-2 border-red-500"
-                          : "bg-gray-600 text-white"
-                      : gameState.userAnswer === option
-                        ? "bg-yellow-500 text-white"
-                        : "bg-white/20 text-white hover:bg-white/30 border border-white/30"
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
-    </div>
+    </ChristmasBackground>
   );
 };
 
