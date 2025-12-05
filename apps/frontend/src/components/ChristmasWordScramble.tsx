@@ -151,19 +151,27 @@ const ChristmasWordScramble = () => {
 
   // Timer countdown
   useEffect(() => {
-    if (gameStarted && !gameEnded && timeRemaining > 0) {
-      const timer = setTimeout(() => {
-        setTimeRemaining((prev) => prev - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (gameStarted && timeRemaining === 0) {
-      handleSkip();
-    }
-  }, [gameStarted, gameEnded, timeRemaining]);
+  if (!gameStarted || gameEnded) return;
+
+  if (feedback !== null) return;
+
+  if (timeRemaining > 0) {
+    const timer = setTimeout(() => {
+      setTimeRemaining((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }
+
+  if (timeRemaining === 0) {
+    handleSkip();
+  }
+}, [gameStarted, gameEnded, timeRemaining, feedback]);
 
   // Check answer
   const handleSubmit = () => {
     if (!gameData) return;
+    if (feedback !== null) return;
 
     const currentWord = gameData.words[currentWordIndex];
     const isCorrect =
@@ -193,10 +201,9 @@ const ChristmasWordScramble = () => {
     }
   };
 
-  // Skip to next word
   const handleSkip = () => {
     if (!gameData) return;
-
+    if (feedback !== null) return;
     const currentWord = gameData.words[currentWordIndex];
     setFeedback("skipped");
     setRevealedWord(currentWord.word);
@@ -263,7 +270,11 @@ const ChristmasWordScramble = () => {
     return (
       <GameResultsScreen
         isFirstAttempt={false}
-        currentScore={score}
+        currentScore={normalizeGameScore(
+            score,
+            gameData.words.length,
+            totalTimeBonus
+          )}
         previousScore={previousScore}
         scoreSaved={true}
         loading={false}
