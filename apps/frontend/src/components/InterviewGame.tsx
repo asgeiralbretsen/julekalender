@@ -4,36 +4,10 @@ import { useGameScore } from "../hooks/useGameScore";
 import GameResultsScreen from "./GameResultsScreen";
 import { ChristmasBackground } from "./ChristmasBackground";
 import { StartGameScreen } from "./StartGameScreen";
-
-interface Interviewer {
-  name: string;
-  image: {
-    asset: {
-      _ref: string;
-    };
-    alt?: string;
-  };
-  role?: string;
-}
-
-interface Question {
-  questionText: string;
-  answers: string[];
-  correctAnswerIndex: number;
-  timeLimit: number;
-}
-
-interface InterviewGameData {
-  title: string;
-  description: string;
-  interviewers: Interviewer[];
-  questions: Question[];
-  scoringSettings: {
-    correctAnswerPoints: number;
-    timeBonus: number;
-    perfectScoreBonus: number;
-  };
-}
+import type {
+  InterviewGameData,
+  InterviewGameInterviewer as Interviewer,
+} from "../models/GameDataModels";
 
 export default function InterviewGame() {
   const { user } = useUser();
