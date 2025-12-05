@@ -1,10 +1,10 @@
 import {defineField} from 'sanity'
 
 export const emojiQuizFields = defineField({
-  name: 'emojiQuizData',
+  name: 'emojiQuizGameData',
   title: 'Emoji-rebus spilldata',
   type: 'object',
-  hidden: ({parent}) => parent?.gameType !== 'emojiQuiz',
+  hidden: ({parent}) => parent?.gameType !== 'emojiQuizGame',
   fields: [
     defineField({
       name: 'words',
