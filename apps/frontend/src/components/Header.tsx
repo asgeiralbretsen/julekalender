@@ -22,7 +22,7 @@ export default function Header() {
 
   return (
     <header
-      style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000 }}
+      style={{ position: "sticky", top: 0, left: 0, right: 0, zIndex: 1000 }}
       className="bg-gradient-to-r from-red-900 via-red-800 to-red-900 shadow-christmas-lg border-b-2 border-yellow-400/30 relative overflow-hidden"
     >
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1482517967863-00e15c9b44be?q=80&w=2070&auto=format&fit=crop')] opacity-5 bg-cover bg-center" />
