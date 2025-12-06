@@ -349,7 +349,7 @@ const SongGuessGame: React.FC = () => {
 
   // Render audio element at component level so it's always available
   const audioElement = (
-    <audio ref={audioRef} src={gameState.currentSong?.songUrl || ""} />
+    <audio ref={audioRef} src={gameState.currentSong?.songUrl || null} />
   );
 
   if (gameState.gameEnded) {

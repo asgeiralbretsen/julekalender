@@ -16,6 +16,7 @@ import { TeamsNotificationGame } from "./components/TeamsNotification/TeamsNotif
 import InterviewGame from "./components/InterviewGame";
 import SnowflakeCatchGame from "./components/SnowflakeCatchGame";
 import ChristmasWordScramble from "./components/ChristmasWordScramble";
+import { EmojiQuizGame } from "./components/EmojiQuizGame/EmojiQuizGame";
 
 function App() {
   // This will automatically sync users when they log in
@@ -120,6 +121,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ChristmasWordScramble />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game/emojiQuizGame"
+          element={
+            <ProtectedRoute>
+              <EmojiQuizGame />
             </ProtectedRoute>
           }
         />
