@@ -7,6 +7,7 @@ import { useGameScore } from "../hooks/useGameScore";
 import logoIcon from "../assets/unimicro-logoikon-hvit_RGB.png";
 import { ChristmasBackground } from "./ChristmasBackground";
 import { DayCell } from "./DayCell";
+import type { SanityDay } from "../models/SanityDayModel";
 
 const builder = imageUrlBuilder(client);
 const gameMonth = 11;
@@ -16,175 +17,6 @@ interface DayData {
   thumbnail?: string;
   title?: string;
   description?: string;
-}
-
-interface SanityDay {
-  _id: string;
-  dayNumber: number;
-  date: string;
-  title: string;
-  image?: {
-    asset: {
-      _ref: string;
-    };
-    alt?: string;
-  };
-  gameType?:
-    | "none"
-    | "blurGuessGame"
-    | "colorMatchGame"
-    | "quizGame"
-    | "teamsNotificationGame"
-    | "interviewGame"
-    | "songGuessGame"
-    | "snowflakeCatchGame"
-    | "wordScrambleGame";
-  blurGuessGameData?: {
-    images: Array<{
-      image: {
-        asset: {
-          _ref: string;
-        };
-      };
-      answer: string;
-    }>;
-  };
-  colorMatchGameData?: {
-    title: string;
-    description: string;
-    stockingColors: {
-      topColor: { hex: string };
-      topStripesColor: { hex: string };
-      mainColor: { hex: string };
-      heelColor: { hex: string };
-      stripesColor: { hex: string };
-    };
-    scoringSettings: {
-      perfectMatchBonus: number;
-      closeMatchThreshold: number;
-      timeBonus: number;
-    };
-  };
-  songGuessGameData?: {
-    title: string;
-    description: string;
-    songs: Array<{
-      songFile: {
-        asset: {
-          _ref: string;
-          url?: string;
-        };
-      };
-      answers: string[];
-      correctAnswerIndex: number;
-      clipDuration: number;
-    }>;
-    scoringSettings?: {
-      correctAnswerPoints?: number;
-      timeBonusPerSecond?: number;
-      maxTimeBonus?: number;
-    };
-  };
-  quizGameData?: {
-    title: string;
-    description: string;
-    questions: Array<{
-      questionText: string;
-      answers: string[];
-      correctAnswerIndex: number;
-      timeLimit: number;
-    }>;
-    scoringSettings: {
-      correctAnswerPoints: number;
-      timeBonus: number;
-    };
-  };
-  teamsNotificationGameData?: {
-    title: string;
-    description: string;
-    firstMessage: string;
-    teamsMessages: Array<{
-      message: string;
-      sender?: string;
-      timestamp?: string;
-      profilePicture?: {
-        _ref: string;
-        _type: "reference";
-      };
-    }>;
-    lastMessage: string;
-    logo?: {
-      asset: {
-        _ref: string;
-      };
-    };
-    defaultProfilePicture?: {
-      _ref: string;
-      _type: "reference";
-    };
-    contextMenuIcon?: {
-      asset: {
-        _ref: string;
-      };
-    };
-    addEmojiIcon?: {
-      asset: {
-        _ref: string;
-      };
-    };
-    closeMessageIcon?: {
-      asset: {
-        _ref: string;
-      };
-    };
-    sendMessageIcon?: {
-      asset: {
-        _ref: string;
-      };
-    };
-  };
-  interviewGameData?: {
-    title: string;
-    description: string;
-    interviewers: Array<{
-      name: string;
-      image: {
-        asset: {
-          _ref: string;
-        };
-        alt?: string;
-      };
-      role?: string;
-    }>;
-    questions: Array<{
-      questionText: string;
-      answers: string[];
-      correctAnswerIndex: number;
-      timeLimit: number;
-    }>;
-    scoringSettings: {
-      correctAnswerPoints: number;
-      timeBonus: number;
-      perfectScoreBonus: number;
-    };
-  };
-  snowflakeCatchGameData?: {
-    title: string;
-  };
-  wordScrambleGameData?: {
-    title: string;
-    description?: string;
-    words: Array<{
-      word: string;
-      hint?: string;
-    }>;
-    timeLimit: number;
-    scoringSettings: {
-      correctAnswerPoints: number;
-      timeBonusPerSecond: number;
-    };
-  };
-  isUnlocked: boolean;
 }
 
 export default function AdventCalendar() {
@@ -217,6 +49,7 @@ export default function AdventCalendar() {
           interviewGameData,
           snowflakeCatchGameData,
           wordScrambleGameData,
+          emojiQuizGameData,
           isUnlocked
         }`;
         const [daysData, playedGamesData] = await Promise.all([
@@ -280,26 +113,14 @@ export default function AdventCalendar() {
     const dayInfo = dayData.find((d) => d.day === day);
     const sanityDay = sanityDays.find((d) => d.dayNumber === day);
 
-    // Debug logging
-    console.log("Day clicked:", day);
-    console.log("Sanity day data:", sanityDay);
-    console.log("Game type:", sanityDay?.gameType);
-    console.log("Game data:", sanityDay?.blurGuessGameData);
-
     // Check if this day has a game and navigate to it
     if (sanityDay?.gameType && sanityDay.gameType !== "none") {
       console.log("Game type found:", sanityDay.gameType);
 
-      // Handle Blur Guess Game
       if (
         sanityDay.gameType === "blurGuessGame" &&
         sanityDay.blurGuessGameData
       ) {
-        console.log(
-          "Navigating to BlurGuessGame with data:",
-          sanityDay.blurGuessGameData
-        );
-
         sessionStorage.setItem(
           "currentGameData",
           JSON.stringify({
@@ -314,18 +135,12 @@ export default function AdventCalendar() {
             title: sanityDay.title,
           })
         );
-
-        // Navigate to the appropriate game route
         navigate("/game/blurGuessGame");
         return;
       } else if (
         sanityDay.gameType === "colorMatchGame" &&
         sanityDay.colorMatchGameData
       ) {
-        console.log(
-          "Navigating to StockingColorMatchGame with data:",
-          sanityDay.colorMatchGameData
-        );
         sessionStorage.setItem(
           "currentGameData",
           JSON.stringify({
@@ -346,10 +161,6 @@ export default function AdventCalendar() {
         sanityDay.gameType === "songGuessGame" &&
         sanityDay.songGuessGameData
       ) {
-        console.log(
-          "Navigating to SongGuessGame with data:",
-          sanityDay.songGuessGameData
-        );
         sessionStorage.setItem(
           "currentGameData",
           JSON.stringify({
@@ -367,10 +178,6 @@ export default function AdventCalendar() {
         navigate("/game/songGuessGame");
         return;
       } else if (sanityDay.gameType === "quizGame" && sanityDay.quizGameData) {
-        console.log(
-          "Navigating to QuizGame with data:",
-          sanityDay.quizGameData
-        );
         sessionStorage.setItem(
           "currentGameData",
           JSON.stringify({
@@ -391,10 +198,6 @@ export default function AdventCalendar() {
         sanityDay.gameType === "teamsNotificationGame" &&
         sanityDay.teamsNotificationGameData
       ) {
-        console.log(
-          "Navigating to TeamsNotificationGame with data:",
-          sanityDay.teamsNotificationGameData
-        );
         sessionStorage.setItem(
           "currentGameData",
           JSON.stringify({
@@ -415,10 +218,6 @@ export default function AdventCalendar() {
         sanityDay.gameType === "interviewGame" &&
         sanityDay.interviewGameData
       ) {
-        console.log(
-          "Navigating to InterviewGame with data:",
-          sanityDay.interviewGameData
-        );
         sessionStorage.setItem(
           "currentGameData",
           JSON.stringify({
@@ -436,10 +235,6 @@ export default function AdventCalendar() {
         navigate("/game/interviewGame");
         return;
       } else if (sanityDay.gameType === "snowflakeCatchGame") {
-        console.log(
-          "Navigating to SnowflakeCatchGame with data:",
-          sanityDay.snowflakeCatchGameData
-        );
         sessionStorage.setItem(
           "currentGameData",
           JSON.stringify({
@@ -457,37 +252,9 @@ export default function AdventCalendar() {
         navigate("/game/snowflakeCatchGame");
         return;
       } else if (
-        sanityDay.gameType === "songGuessGame" &&
-        sanityDay.songGuessGameData
-      ) {
-        console.log(
-          "Navigating to SongGuessGame with data:",
-          sanityDay.songGuessGameData
-        );
-        sessionStorage.setItem(
-          "currentGameData",
-          JSON.stringify({
-            songGuessGameData: sanityDay.songGuessGameData,
-          })
-        );
-        sessionStorage.setItem("currentGameType", sanityDay.gameType);
-        sessionStorage.setItem(
-          "currentDayInfo",
-          JSON.stringify({
-            day: sanityDay.dayNumber,
-            title: sanityDay.title,
-          })
-        );
-        navigate("/game/songGuessGame");
-        return;
-      } else if (
         sanityDay.gameType === "wordScrambleGame" &&
         sanityDay.wordScrambleGameData
       ) {
-        console.log(
-          "Navigating to WordScrambleGame with data:",
-          sanityDay.wordScrambleGameData
-        );
         sessionStorage.setItem(
           "currentGameData",
           JSON.stringify({
@@ -504,8 +271,25 @@ export default function AdventCalendar() {
         );
         navigate("/game/wordScrambleGame");
         return;
+      } else if (sanityDay.gameType === "emojiQuizGame") {
+        sessionStorage.setItem(
+          "currentGameData",
+          JSON.stringify({
+            emojiQuizGameData: sanityDay.emojiQuizGameData,
+          })
+        );
+        sessionStorage.setItem("currentGameType", sanityDay.gameType);
+        sessionStorage.setItem(
+          "currentDayInfo",
+          JSON.stringify({
+            day: sanityDay.dayNumber,
+            title: sanityDay.title,
+          })
+        );
+        navigate("/game/emojiQuizGame");
       } else {
         console.warn("Game type found but no game data available");
+        console.log(sanityDay.gameType);
       }
     } else {
       console.log("No game type or game type is none");
@@ -515,7 +299,7 @@ export default function AdventCalendar() {
     if (dayInfo) {
       const message = `${dayInfo.title}\n\n${dayInfo.description}`;
 
-      console.log(message);
+      console.warn(message);
     }
   };
 

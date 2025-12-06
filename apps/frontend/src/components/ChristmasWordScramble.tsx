@@ -7,21 +7,7 @@ import { StartGameScreen } from "./StartGameScreen";
 import { normalizeGameScore } from "../utils";
 import { LoadingScreen } from "./LoadingScreen";
 import { NoDataScreen } from "./NoDataScreen";
-
-interface Word {
-  word: string;
-}
-
-interface GameData {
-  title: string;
-  description?: string;
-  words: Word[];
-  timeLimit: number;
-  scoringSettings: {
-    correctAnswerPoints: number;
-    timeBonusPerSecond: number;
-  };
-}
+import type { WordScrambleGameData as GameData } from "../models/GameDataModels";
 
 const ChristmasWordScramble = () => {
   const { user } = useUser();

@@ -11,6 +11,7 @@ interface ChristmasBackgroundProps {
 
 interface Snowflake {
   id: number;
+  icon: string;
   size: number;
   delay: number;
   positionX: number;
@@ -22,10 +23,20 @@ export const ChristmasBackground: React.FC<ChristmasBackgroundProps> = ({
   className = "",
   backgroundColor,
 }) => {
+  const backgroundEmojiList = ["🎁", "🌟", "🔔", "🎄"];
+  // 10% chance of background emoji not being snowflake :P
+  const [backgroundIcon, setBackgroundIcon] = useState(
+    Math.random() >= 0.1
+      ? "❄️"
+      : backgroundEmojiList[
+          Math.round(Math.random() * backgroundEmojiList.length)
+        ]
+  );
   const [snowflakes, setSnowflakes] = useState<Snowflake[]>(
-    Array.from({ length: Math.random() < 0.01 ? 700 : 40 }, (_, i) => ({
+    Array.from({ length: 40 }, (_, i) => ({
       id: i,
-      size: Math.floor(Math.random() * 24) + 12, // Random size between 12 and 36
+      icon: backgroundIcon,
+      size: Math.floor(Math.random() * 24) + 12, // Random size
       delay: Math.random() * 5, // Random delay between 0 and 5 seconds
       positionX: Math.floor(Math.random() * window.innerWidth) - 10,
       positionY: Math.floor(Math.random() * window.innerHeight) - 100,
@@ -58,7 +69,7 @@ export const ChristmasBackground: React.FC<ChristmasBackgroundProps> = ({
               left: `${flake.positionX}px`,
             }}
           >
-            ❄
+            {flake.icon}
           </div>
         ))}
       </div>
