@@ -22,7 +22,7 @@ interface DayData {
 export default function AdventCalendar() {
   const navigate = useNavigate();
   const today = new Date();
-  const currentDay = 24;
+  const currentDay = today.getMonth() === gameMonth ? today.getDate() : 1;
   const containerRef = useRef<HTMLDivElement>(null);
   const { getUserPlayedGames } = useGameScore();
 
