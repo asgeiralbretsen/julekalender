@@ -1,0 +1,67 @@
+.piece {
+  padding: 0.25rem 1rem;
+  background-color: white;
+  border-radius: 1rem;
+  min-width: 6rem;
+  text-align: center;
+  border: 2px solid transparent;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.piece.selected {
+  border-color: black;
+  outline: 4px solid #facc15; /* yellow-400 */
+}
+
+/* Wrong: shake + red flash */
+.piece.wrong {
+  animation: shake-red 0.5s ease-in-out;
+}
+
+@keyframes shake-red {
+  0%,
+  100% {
+    transform: translateX(0);
+    background-color: white;
+  }
+  20%,
+  60% {
+    transform: translateX(-4px);
+    background-color: #f87171; /* red-400 */
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+    background-color: #f87171; /* red-400 */
+  }
+}
+
+/* Correct: green flash + happy bounce */
+.piece.correct {
+  animation: correct-bounce 0.5s ease-in-out;
+}
+
+@keyframes correct-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    background-color: white;
+  }
+  20%,
+  60% {
+    transform: translateY(-5px) scale(1.05);
+    background-color: #34d399; /* green-400 */
+  }
+  40%,
+  80% {
+    transform: translateY(-2px) scale(1.02);
+    background-color: #34d399; /* green-400 */
+  }
+}
+
+.piece p {
+  font-size: 2rem;
+  margin: 0;
+}

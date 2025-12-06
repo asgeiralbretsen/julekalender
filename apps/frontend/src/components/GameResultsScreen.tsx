@@ -1,6 +1,7 @@
 import React from "react";
 import Leaderboard from "./Leaderboard";
 import { ChristmasBackground } from "./ChristmasBackground";
+import type { GameType } from "../models/SanityDayModel";
 
 interface GameResultsScreenProps {
   // Game state
@@ -13,7 +14,7 @@ interface GameResultsScreenProps {
 
   // Game info
   dayInfo: { day: number; title: string } | null;
-  gameType: string;
+  gameType: GameType;
   gameName?: string;
 
   // Actions

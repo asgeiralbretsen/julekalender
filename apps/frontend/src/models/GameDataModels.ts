@@ -150,12 +150,12 @@ export interface WordScrambleGameData {
   };
 }
 
+export interface EmojiGameWord {
+  emojis: string;
+  word: string;
+}
+
 export interface EmojiQuizGameData {
-  emojiQuizGameData?: {
-    title: string;
-    words: Array<{
-      emojis: string;
-      word: string;
-    }>;
-  };
+  title: string;
+  words: Array<EmojiGameWord>;
 }
