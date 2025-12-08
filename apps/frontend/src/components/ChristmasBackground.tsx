@@ -50,7 +50,7 @@ export const ChristmasBackground: React.FC<ChristmasBackgroundProps> = ({
 
   return (
     <div
-      className={`min-h-[calc(100vh-65px)] pt-[65px] ${backgroundColor ? backgroundColor : defaultBackgroundColor} relative overflow-hidden ${className}`}
+      className={`min-h-[calc(100vh-66px)] pt-[40px] ${backgroundColor ? backgroundColor : defaultBackgroundColor} relative overflow-hidden ${className}`}
     >
       {/* Background image overlay */}
       <div

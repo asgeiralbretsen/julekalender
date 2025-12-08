@@ -26,6 +26,8 @@ export interface SelectedPieceResult {
   correct: boolean;
 }
 
+const INITIAL_TIME = 45;
+
 export function EmojiQuizGame() {
   const { user } = useUser();
   const {
@@ -44,12 +46,12 @@ export function EmojiQuizGame() {
 
   const [gameStarted, setGameStarted] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(30);
+  const [timeRemaining, setTimeRemaining] = useState(INITIAL_TIME);
   /**
    * How much time the player has to play the game
    * Used in calculating time bonus
    */
-  const [initialTime, setInitialTime] = useState(30);
+  const [initialTime, setInitialTime] = useState(INITIAL_TIME);
   const [score, setScore] = useState(0);
 
   const [emojiPieces, setEmojiPieces] = useState<GamePiece[]>([]);
@@ -76,8 +78,12 @@ export function EmojiQuizGame() {
           const parsedData = JSON.parse(gameDataStr);
           if (parsedData.emojiQuizGameData) {
             setGameData(parsedData.emojiQuizGameData);
-            setTimeRemaining(parsedData.emojiQuizGameData.timeLimit || 30);
-            setInitialTime(parsedData.emojiQuizGameData.timeLimit || 30);
+            setTimeRemaining(
+              parsedData.emojiQuizGameData.timeLimit || INITIAL_TIME
+            );
+            setInitialTime(
+              parsedData.emojiQuizGameData.timeLimit || INITIAL_TIME
+            );
           }
         }
 
@@ -323,7 +329,7 @@ export function EmojiQuizGame() {
         howToPlay={[
           "• Brikker med juleemoji og juleord vises",
           "• Trykk på en emoji-brikke og deretter på den matchende juleord-brikken ",
-          "• Match så mange du klarer på 30 sekunder",
+          `• Match så mange du klarer på ${initialTime} sekunder`,
         ]}
         previousScore={previousScore}
         onClickStartGame={startGame}
@@ -333,7 +339,7 @@ export function EmojiQuizGame() {
 
   return (
     <ChristmasBackground>
-      <div className="relative z-10 flex flex-col gap-14 flex-wrap">
+      <div className="relative z-10 flex flex-col gap-14 flex-wrap items-center pb-10">
         <div className="text-center">
           <h1
             className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
@@ -357,7 +363,7 @@ export function EmojiQuizGame() {
             </span>
           </div>
         </div>
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-4 justify-center flex-wrap max-w-[calc(80vw)] ">
           {emojiPieces.map((value) => (
             <Piece
               key={value.id}
@@ -375,7 +381,7 @@ export function EmojiQuizGame() {
             />
           ))}
         </div>
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-4 justify-center flex-wrap max-w-[calc(80vw)] ">
           {wordPieces.map((value) => (
             <Piece
               key={value.id}
@@ -390,14 +396,6 @@ export function EmojiQuizGame() {
                   : null
               }
               onClick={() => selectPiece(value, "word")}
-            />
-          ))}
-        </div>
-        <div className="flex gap-4 justify-center">
-          {correctAnswers.map((value) => (
-            <Piece
-              key={value.id}
-              text={value.word + " = " + value.emojis + " ✅"}
             />
           ))}
         </div>
