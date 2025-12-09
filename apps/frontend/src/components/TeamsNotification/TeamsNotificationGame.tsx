@@ -1,13 +1,19 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import imageUrlBuilder from "@sanity/image-url";
 import { client } from "../../lib/sanity";
-import { TeamsNotification } from "./TeamsNotification";
+import {
+  TeamsNotification,
+  MAX_NOTIFICATION_HEIGHT,
+  MAX_NOTIFICATION_WIDTH,
+} from "./TeamsNotification";
 import { ChristmasBackground } from "../ChristmasBackground";
 import { useUser } from "@clerk/clerk-react";
 import { useGameScore } from "../../hooks/useGameScore";
 import GameResultsScreen from "../GameResultsScreen";
 import { StartGameScreen } from "../StartGameScreen";
-import { normalizeGameScore} from "../../utils";
+import { normalizeGameScore } from "../../utils";
+import { LoadingScreen } from "../LoadingScreen";
+import { NoDataScreen } from "../NoDataScreen";
 
 const builder = imageUrlBuilder(client);
 
@@ -16,11 +22,7 @@ function urlFromRef(
 ): string | undefined {
   if (!imageLike?.asset?._ref) return undefined;
   try {
-    return builder
-      .image(imageLike.asset._ref)
-      .auto("format")
-      .fit("max")
-      .url();
+    return builder.image(imageLike.asset._ref).auto("format").fit("max").url();
   } catch {
     return undefined;
   }
@@ -52,6 +54,11 @@ interface TeamsNotificationGameData {
   sendMessageIcon?: { asset?: { _ref?: string } };
 }
 
+const INITIAL_SPAWN_INTERVAL = 1100;
+const INITIAL_TIME = 30;
+const MIN_SPAWN_INTERVAL = 600;
+const SPAWN_INTERVAL_DECREASE = 70;
+
 export function TeamsNotificationGame() {
   const { user } = useUser();
   const { saveGameScore, hasUserPlayedGame, getUserScoreForDay } =
@@ -66,19 +73,24 @@ export function TeamsNotificationGame() {
   );
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
-  const [activeNotifications, setActiveNotifications] = useState<
-    Map<number, NotificationData>
-  >(new Map());
-  const [nextNotificationId, setNextNotificationId] = useState(0);
-  const [spawnInterval, setSpawnInterval] = useState(1250); // Start at x seconds
+  const [normalizedScore, setNormalizedScore] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(30); // 30 seconds
+  const [timeRemaining, setTimeRemaining] = useState(INITIAL_TIME);
   const [gameOver, setGameOver] = useState(false);
   const [scoreSaved, setScoreSaved] = useState(false);
   const [hasPlayedToday, setHasPlayedToday] = useState(false);
   const [previousScore, setPreviousScore] = useState<number | null>(null);
-  const minSpawnInterval = 550; // Minimum 0.x seconds between spawns
-  const [placedPositions, setPlacedPositions] = useState<Array<{ x: number; y: number }>>([]);
+  const [showResultsScreen, setShowResultsScreen] = useState(false);
+
+  const [activeNotifications, setActiveNotifications] = useState<
+    Map<number, NotificationData>
+  >(new Map());
+  const [totalNotificationsSpawned, setTotalNotificationsSpawned] = useState(0);
+  const [nextNotificationId, setNextNotificationId] = useState(0);
+  const [placedPositions, setPlacedPositions] = useState<
+    Array<{ x: number; y: number }>
+  >([]);
+  const [spawnInterval, setSpawnInterval] = useState(INITIAL_SPAWN_INTERVAL);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,7 +155,7 @@ export function TeamsNotificationGame() {
           );
           setHasPlayedToday(true);
           setPreviousScore(userScore?.score || null);
-          setGameOver(true); // Show results screen immediately if already played
+          setShowResultsScreen(true);
         }
       }
     };
@@ -151,42 +163,46 @@ export function TeamsNotificationGame() {
   }, [dayInfo, user, hasUserPlayedGame, getUserScoreForDay]);
 
   // Poisson disc sampling for placement
-  const findValidPosition = useCallback((existingPositions: Array<{ x: number; y: number }>, minDistance: number): { x: number; y: number } | null => {
-    const notificationWidth = 500;
-    const notificationHeight = 310;
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
+  const findValidPosition = useCallback(
+    (
+      existingPositions: Array<{ x: number; y: number }>,
+      minDistance: number
+    ): { x: number; y: number } | null => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
 
-    const minX = 10;
-    const maxX = Math.max(10, screenWidth - notificationWidth - 10);
-    const minY = 200;
-    const maxY = Math.max(10, screenHeight - notificationHeight - 10);
+      const minX = 10;
+      const maxX = Math.max(10, screenWidth - MAX_NOTIFICATION_WIDTH - 10);
+      const minY = 250;
+      const maxY = Math.max(10, screenHeight - MAX_NOTIFICATION_HEIGHT);
 
-    const maxAttempts = 30;
+      const maxAttempts = 30;
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const candidateX = Math.random() * (maxX - minX) + minX;
-      const candidateY = Math.random() * (maxY - minY) + minY;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const candidateX = Math.random() * (maxX - minX) + minX;
+        const candidateY = Math.random() * (maxY - minY) + minY;
 
-      // Check if candidate is far enough from all existing positions
-      const isValid = existingPositions.every(pos => {
-        const dx = candidateX - pos.x;
-        const dy = candidateY - pos.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        return distance >= minDistance;
-      });
+        // Check if candidate is far enough from all existing positions
+        const isValid = existingPositions.every((pos) => {
+          const dx = candidateX - pos.x;
+          const dy = candidateY - pos.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          return distance >= minDistance;
+        });
 
-      if (isValid) {
-        return { x: candidateX, y: candidateY };
+        if (isValid) {
+          return { x: candidateX, y: candidateY };
+        }
       }
-    }
 
-    // If we couldn't find a valid position after maxAttempts, return any position
-    return {
-      x: Math.random() * (maxX - minX) + minX,
-      y: Math.random() * (maxY - minY) + minY,
-    };
-  }, []);
+      // If we couldn't find a valid position after maxAttempts, return any position
+      return {
+        x: Math.random() * (maxX - minX) + minX,
+        y: Math.random() * (maxY - minY) + minY,
+      };
+    },
+    []
+  );
 
   // Function to generate a random notification on-the-fly
   const generateRandomNotification = useCallback((): NotificationData => {
@@ -219,15 +235,13 @@ export function TeamsNotificationGame() {
     };
   }, [gameData?.teamsMessages, profiles, findValidPosition, placedPositions]);
 
-  // Game timer - counts down from 30 seconds
+  // Game timer
   useEffect(() => {
     if (gameStarted && !gameOver && timeRemaining > 0) {
       const timer = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
-            setGameOver(true);
-            setActiveNotifications(new Map()); // Clear all notifications
-            setPlacedPositions([]); // Clear all tracked positions
+            endGame();
             return 0;
           }
           return prev - 1;
@@ -237,30 +251,45 @@ export function TeamsNotificationGame() {
     }
   }, [gameStarted, gameOver, timeRemaining]);
 
-  // Save score when game ends
-  useEffect(() => {
-    if (gameOver && !hasPlayedToday && dayInfo && user) {
-      // This is set to be a score that is very hard to get,
-      // but a higher score COULD be achieved, and that's fine
-      const HARDCODED_MAX_SCORE_NOT_ACCURATE = 40;
-      const finalScore = normalizeGameScore(score, HARDCODED_MAX_SCORE_NOT_ACCURATE);
-      saveGameScore({
-        day: dayInfo.day,
-        gameType: "teamsNotificationGame",
-        score: finalScore,
-      })
-        .then((result) => {
-          if (result) {
-            setScoreSaved(true);
-            setHasPlayedToday(true);
-            setPreviousScore(result.score);
-          }
-        })
-        .catch((error) => {
-          console.error("Error saving score:", error);
+  const endGame = async () => {
+    setGameOver(true);
+    setGameStarted(false);
+    setActiveNotifications(new Map()); // Clear all notifications
+    setPlacedPositions([]); // Clear all tracked positions
+
+    const normalizedScore = normalizeGameScore(
+      score,
+      // Subtract 15% from total notifications as the ones spawned toward the end can be almost
+      // Still, disallow the max from being lower than the score
+      Math.max(
+        score,
+        totalNotificationsSpawned - Math.round(totalNotificationsSpawned * 0.15)
+      ),
+      // Time bonus is the percentage of spawned notifications you managed to dismiss
+      score / totalNotificationsSpawned
+    );
+
+    setNormalizedScore(normalizedScore);
+
+    // Save score
+    if (user && dayInfo && !hasPlayedToday) {
+      try {
+        const result = await saveGameScore({
+          day: dayInfo.day,
+          gameType: "teamsNotificationGame",
+          score: normalizedScore,
         });
+
+        if (result && result.score === normalizedScore) {
+          setScoreSaved(true);
+          setHasPlayedToday(true);
+          setPreviousScore(normalizedScore);
+        }
+      } catch (err) {
+        console.error("Error saving game score:", err);
+      }
     }
-  }, [gameOver, hasPlayedToday, dayInfo, user, score, saveGameScore]);
+  };
 
   // Auto-spawn notifications with decreasing interval
   useEffect(() => {
@@ -294,7 +323,11 @@ export function TeamsNotificationGame() {
         setNextNotificationId((prev) => prev + 1);
 
         // Decrease spawn interval for next spawn
-        setSpawnInterval((prev) => Math.max(prev - 100, minSpawnInterval));
+        setSpawnInterval((prev) =>
+          Math.max(prev - SPAWN_INTERVAL_DECREASE, MIN_SPAWN_INTERVAL)
+        );
+
+        setTotalNotificationsSpawned((prev) => prev + 1);
       } catch (error) {
         console.error("Error generating notification:", error);
       }
@@ -308,10 +341,8 @@ export function TeamsNotificationGame() {
     gameOver,
     spawnInterval,
     nextNotificationId,
-    minSpawnInterval,
     gameData,
     profiles,
-    generateRandomNotification,
   ]);
 
   // Handle notification click - award point and remove notification
@@ -357,67 +388,34 @@ export function TeamsNotificationGame() {
   );
 
   if (loading) {
-    return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20 z-10">
-            <p className="text-white text-xl">Laster data...</p>
-          </div>
-        </div>
-      </ChristmasBackground>
-    );
+    return <LoadingScreen />;
   }
 
-  if (profiles.length === 0) {
-    return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20 max-w-md">
-            <p className="text-white text-xl">
-              Ingen profiler funnet i Sanity.
-            </p>
-          </div>
-        </div>
-      </ChristmasBackground>
-    );
+  if (!gameData || profiles.length === 0) {
+    return <NoDataScreen />;
   }
 
-  if (!gameData) {
-    return (
-      <ChristmasBackground>
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-christmas-lg border-2 border-yellow-400/20 max-w-md">
-            <h1 className="text-2xl font-bold mb-4 text-yellow-300 drop-shadow-lg">
-              Teams Varsel Spill
-            </h1>
-            <p className="text-red-300">
-              Ingen spilldata funnet. Vennligst åpne dette spillet fra en
-              kalenderdag.
-            </p>
-          </div>
-        </div>
-      </ChristmasBackground>
-    );
-  }
+  const startGame = () => {
+    setGameStarted(true);
+  };
 
-  // Show results screen when game is over
-  if (gameOver && dayInfo) {
-    const handlePlayAgain = () => {
-      setGameStarted(false);
-      setGameOver(false);
-      setScore(0);
-      setNextNotificationId(0);
-      setSpawnInterval(1000);
-      setTimeRemaining(30);
-      setActiveNotifications(new Map());
-      setPlacedPositions([]);
-      setScoreSaved(false);
-    };
+  const resetGame = () => {
+    setGameOver(false);
+    setScore(0);
+    setNextNotificationId(0);
+    setSpawnInterval(INITIAL_SPAWN_INTERVAL);
+    setTimeRemaining(INITIAL_TIME);
+    setActiveNotifications(new Map());
+    setPlacedPositions([]);
+    setScoreSaved(false);
+    setTotalNotificationsSpawned(0);
+  };
 
+  if (showResultsScreen || gameOver) {
     return (
       <GameResultsScreen
         isFirstAttempt={!hasPlayedToday || scoreSaved}
-        currentScore={score}
+        currentScore={normalizedScore}
         previousScore={previousScore}
         scoreSaved={scoreSaved}
         loading={false}
@@ -425,7 +423,10 @@ export function TeamsNotificationGame() {
         dayInfo={dayInfo}
         gameType="teamsNotificationGame"
         gameName="Teams Varsel Spill"
-        onPlayAgain={handlePlayAgain}
+        onPlayAgain={() => {
+          resetGame();
+          startGame();
+        }}
         scoreLabel="poeng"
       />
     );
@@ -444,7 +445,7 @@ export function TeamsNotificationGame() {
           "• Teams-varsler dukker opp på skjermen",
           "• Klikk på varslene for å fjerne dem",
           "• +1 poeng per varsel du lukker",
-          "• 30 sekunder spilletid",
+          `• ${timeRemaining} sekunder spilletid`,
           "• Varslene dukker opp raskere og raskere!",
         ]}
         previousScore={hasPlayedToday ? previousScore : undefined}
@@ -455,40 +456,25 @@ export function TeamsNotificationGame() {
 
   return (
     <ChristmasBackground>
-      <div draggable={false} className="min-h-screen p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-christmas-lg border-2 border-red-400/20 mb-6 z-10 max-w-md">
+      <div draggable={false}>
+        <div className="text-center">
           <h1
-            className="text-4xl font-bold text-white mb-4 drop-shadow-lg text-center"
+            className="text-3xl font-bold text-yellow-300 mb-2 drop-shadow-lg"
             style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
           >
-            {gameData.title || dayInfo?.title || "Teams Varsel Spill"}
+            {dayInfo
+              ? `Dag ${dayInfo.day}: ${dayInfo.title}`
+              : gameData.title || "Whack-a-notification"}
           </h1>
-          {gameData.description && (
-            <p className="text-white/90 text-center mb-4">
-              {gameData.description}
-            </p>
-          )}
-
-          <div className="grid grid-cols-2 gap-4 text-center mb-4">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-red-400/20">
-              <p className="text-red-200 text-sm mb-1">Poeng</p>
-              <p className="text-white text-4xl font-bold">{score}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 shadow-christmas-lg border-2 border-red-400/20">
-              <p className="text-red-200 text-sm mb-1">Tid Igjen</p>
-              <p
-                className={`text-3xl font-bold ${timeRemaining <= 10 ? "text-red-400" : "text-white"}`}
-              >
-                {timeRemaining}s
-              </p>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <p className="text-red-200 text-sm mb-2">Spillet pågår...</p>
-            <p className="text-white/80 text-xs">
-              Klikk på varslene for å fjerne dem!
-            </p>
+          <div className="flex justify-center gap-8 text-red-100">
+            <span
+              className={`text-2xl font-bold ${timeRemaining <= 10 ? "text-red-400" : "text-white"}`}
+            >
+              Tid: {timeRemaining}s
+            </span>
+            <span className="text-2xl font-bold text-white">
+              Varslinger lukket: {score}
+            </span>
           </div>
         </div>
 

@@ -21,8 +21,11 @@ interface TeamsNotificationProps {
   onClick?: () => void; // Callback when notification is clicked
 }
 
-const TeamsColor = "#444791";
-const sendColor = "#383966";
+const TEAMS_COLOR = "#444791";
+const SEND_COLOR = "#383966";
+
+export const MAX_NOTIFICATION_HEIGHT = 210;
+export const MAX_NOTIFICATION_WIDTH = 450;
 
 const builder = imageUrlBuilder(client);
 
@@ -30,11 +33,7 @@ const builder = imageUrlBuilder(client);
 function buildImageUrl(ref: string): string {
   if (!ref) return "";
   try {
-    return builder
-      .image(ref)
-      .width(400)
-      .auto("format")
-      .url();
+    return builder.image(ref).width(400).auto("format").url();
   } catch {
     return "";
   }
@@ -107,22 +106,28 @@ export function TeamsNotification(props: TeamsNotificationProps) {
     <div
       draggable={false}
       style={{
-        backgroundColor: TeamsColor,
+        backgroundColor: TEAMS_COLOR,
         position: "fixed",
         left: xPosition,
         top: yPosition,
         color: "white",
-        maxWidth: "500px",
-        minWidth: "500px",
+        maxWidth: MAX_NOTIFICATION_WIDTH,
+        minWidth: MAX_NOTIFICATION_WIDTH,
+        maxHeight: MAX_NOTIFICATION_HEIGHT,
         cursor: onClick ? "pointer" : "default",
         zIndex: 1,
       }}
-      className={`p-4 rounded-lg gap-4 flex flex-col teams-notification ${isClosing ? 'disintegrate' : ''}`}
+      className={`p-4 rounded-lg gap-4 flex flex-col teams-notification ${isClosing ? "disintegrate" : ""}`}
     >
       <div className="flex flex-row justify-between">
         <div className="flex flex-row justify-between gap-3">
           {logoUrl && (
-            <img draggable={false} src={logoUrl} alt="Logo" className="h-6 w-6 object-contain select-none" />
+            <img
+              draggable={false}
+              src={logoUrl}
+              alt="Logo"
+              className="h-6 w-6 object-contain select-none"
+            />
           )}
           <p className="select-none">Microsoft Teams</p>
         </div>
@@ -173,7 +178,7 @@ export function TeamsNotification(props: TeamsNotificationProps) {
         </div>
       </div>
       <div
-        style={{ backgroundColor: sendColor }}
+        style={{ backgroundColor: SEND_COLOR }}
         className="flex flex-row justify-between gap-2 rounded-md p-2 px-4"
       >
         <p className="select-none">Send et raskt svar</p>

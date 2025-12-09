@@ -274,24 +274,6 @@ export function EmojiQuizGame() {
     setTimeRemaining(initialTime);
   };
 
-  if (showResultsScreen) {
-    return (
-      <GameResultsScreen
-        isFirstAttempt={false}
-        currentScore={score}
-        previousScore={previousScore}
-        scoreSaved={true}
-        loading={false}
-        error={null}
-        dayInfo={dayInfo}
-        gameType="emojiQuizGame"
-        gameName="Juleemoji"
-        onPlayAgain={() => setShowResultsScreen(false)}
-        scoreLabel="poeng"
-      />
-    );
-  }
-
   if (loading) {
     return <LoadingScreen />;
   }
@@ -300,7 +282,7 @@ export function EmojiQuizGame() {
     return <NoDataScreen />;
   }
 
-  if (gameEnded) {
+  if (gameEnded || showResultsScreen) {
     return (
       <GameResultsScreen
         isFirstAttempt={!hasPlayedToday}
