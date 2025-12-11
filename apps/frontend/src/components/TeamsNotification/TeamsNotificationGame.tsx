@@ -409,6 +409,7 @@ export function TeamsNotificationGame() {
     setPlacedPositions([]);
     setScoreSaved(false);
     setTotalNotificationsSpawned(0);
+    setShowResultsScreen(false);
   };
 
   if (showResultsScreen || gameOver) {
