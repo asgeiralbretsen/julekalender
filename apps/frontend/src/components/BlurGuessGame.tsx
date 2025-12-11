@@ -167,7 +167,11 @@ const BlurGuessGame: React.FC = () => {
           const images: GameImage[] = gameData.blurGuessGame.images.map(
             (img: any, index: number) => ({
               id: index.toString(),
-              src: `https://cdn.sanity.io/images/54fixmwv/production/${img.image.asset._ref.replace("image-", "").replace("-jpg", ".jpg").replace("-png", ".png").replace("-webp", ".webp")}`,
+              src: `https://cdn.sanity.io/images/54fixmwv/production/${img.image.asset._ref
+                .replace("image-", "")
+                .replace("-jpg", ".jpg")
+                .replace("-png", ".png")
+                .replace("-webp", ".webp")}`,
               answer: img.answer,
               question: img.question,
               // Use options from Sanity if available, otherwise generate them
@@ -192,6 +196,17 @@ const BlurGuessGame: React.FC = () => {
       }
     }
   }, []);
+
+  // Prefetch all game images when the list changes
+  useEffect(() => {
+    if (!gameImages || gameImages.length === 0) return;
+
+    gameImages.forEach((img) => {
+      if (!img.src) return;
+      const image = new Image();
+      image.src = img.src;
+    });
+  }, [gameImages]);
 
   // Check if user has already played today
   useEffect(() => {
@@ -277,6 +292,11 @@ const BlurGuessGame: React.FC = () => {
   );
 
   const startGame = () => {
+    if (!gameImages.length) {
+      console.error("Cannot start game: no images available");
+      return;
+    }
+
     setGameState((prev) => ({
       ...prev,
       gameStarted: true,
@@ -366,7 +386,7 @@ const BlurGuessGame: React.FC = () => {
       !gameState.showResult &&
       gameState.currentImage
     ) {
-      const interval = setInterval(() => {
+      const interval = window.setInterval(() => {
         setGameState((prev) => {
           const newTimeElapsed = prev.timeElapsed + 100;
           const newBlurLevel = Math.max(0, prev.blurLevel - BLUR_DECREASE_RATE);
@@ -391,7 +411,8 @@ const BlurGuessGame: React.FC = () => {
         });
       }, 100);
 
-      setTimer(interval);
+      setTimer(interval as unknown as number);
+
       return () => clearInterval(interval);
     }
   }, [
@@ -439,7 +460,11 @@ const BlurGuessGame: React.FC = () => {
     return (
       <GameResultsScreen
         isFirstAttempt={!gameState.hasPlayedToday}
-        currentScore={gameState.score}
+        currentScore={normalizeGameScore(
+            gameState.score,
+            gameImages.length,
+            gameState.timeBonus
+          )}
         previousScore={gameState.previousScore}
         scoreSaved={gameState.scoreSaved}
         loading={loading}
@@ -468,7 +493,11 @@ const BlurGuessGame: React.FC = () => {
           "• Jo raskere du gjetter, desto mer poeng!",
         ]}
         previousScore={
-          gameState.hasPlayedToday ? gameState.previousScore : undefined
+          gameState.hasPlayedToday ? normalizeGameScore(
+            gameState.previousScore || 0,
+            gameImages.length,
+            gameState.timeBonus
+          ) : undefined
         }
         onClickStartGame={startGame}
       />
@@ -543,29 +572,31 @@ const BlurGuessGame: React.FC = () => {
               <h2 className="text-xl font-semibold text-white mb-4">
                 {gameState.currentImage?.question || "Hva ser du?"}
               </h2>
-              <div className="grid grid-cols-2 gap-3">
-                {gameState.currentImage?.options.map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleAnswer(option)}
-                    disabled={!!gameState.userAnswer || gameState.showResult}
-                    className={`p-4 rounded-lg font-semibold transition-all duration-200 ${
-                      gameState.showResult
-                        ? option === gameState.correctAnswer
-                          ? "bg-green-600 text-white border-2 border-green-500"
-                          : option === gameState.userAnswer &&
-                              option !== gameState.correctAnswer
-                            ? "bg-red-600 text-white border-2 border-red-500"
-                            : "bg-gray-600 text-white"
-                        : gameState.userAnswer === option
-                          ? "bg-yellow-500 text-white"
-                          : "bg-white/20 text-white hover:bg-white/30 border border-white/30"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
+              {gameState.currentImage?.options && (
+                <div className="grid grid-cols-2 gap-3">
+                  {gameState.currentImage.options.map((option, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleAnswer(option)}
+                      disabled={!!gameState.userAnswer || gameState.showResult}
+                      className={`p-4 rounded-lg font-semibold transition-all duration-200 ${
+                        gameState.showResult
+                          ? option === gameState.correctAnswer
+                            ? "bg-green-600 text-white border-2 border-green-500"
+                            : option === gameState.userAnswer &&
+                                option !== gameState.correctAnswer
+                              ? "bg-red-600 text-white border-2 border-red-500"
+                              : "bg-gray-600 text-white"
+                          : gameState.userAnswer === option
+                            ? "bg-yellow-500 text-white"
+                            : "bg-white/20 text-white hover:bg-white/30 border border-white/30"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
