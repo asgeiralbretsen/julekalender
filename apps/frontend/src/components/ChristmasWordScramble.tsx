@@ -312,7 +312,7 @@ const ChristmasWordScramble = () => {
   if (!gameStarted) {
     return (
       <StartGameScreen
-        title="Juleord Scramble"
+        title={dayInfo ? dayInfo.title : "Juleord Scramble"}
         description=""
         howToPlay={[
           "• Stokkede juleord vises",
