@@ -270,7 +270,6 @@ const ChristmasWordScramble = () => {
         gameName="Juleord Scramble"
         onPlayAgain={() => setShowResultsScreen(false)}
         scoreLabel="poeng"
-        scoreSuffix=" poeng"
       />
     );
   }
@@ -303,7 +302,8 @@ const ChristmasWordScramble = () => {
           setShowResultsScreen(false);
           startGame();
         }}
-        scoreLabel="poeng"
+        scoreLabel=""
+        showRightAnswers={true}
       />
     );
   }

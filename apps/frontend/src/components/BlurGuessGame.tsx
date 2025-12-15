@@ -460,11 +460,7 @@ const BlurGuessGame: React.FC = () => {
     return (
       <GameResultsScreen
         isFirstAttempt={!gameState.hasPlayedToday}
-        currentScore={normalizeGameScore(
-            gameState.score,
-            gameImages.length,
-            gameState.timeBonus
-          )}
+        currentScore={gameState.score}
         previousScore={gameState.previousScore}
         scoreSaved={gameState.scoreSaved}
         loading={loading}
@@ -473,7 +469,8 @@ const BlurGuessGame: React.FC = () => {
         gameType="blurGuessGame"
         gameName="Gjett bildet"
         onPlayAgain={resetGame}
-        scoreLabel="poeng"
+        scoreLabel=""
+        showRightAnswers={true}
       />
     );
   }

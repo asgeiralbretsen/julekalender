@@ -213,11 +213,7 @@ export default function QuizGame() {
     return (
       <GameResultsScreen
         isFirstAttempt={!hasPlayedToday || scoreSaved}
-        currentScore={normalizeGameScore(
-          score,
-          gameData.questions.length,
-          totalTimeBonus
-        )}
+        currentScore={score}
         previousScore={previousScore}
         scoreSaved={scoreSaved}
         loading={scoreLoading}
@@ -226,7 +222,8 @@ export default function QuizGame() {
         gameType="quizGame"
         gameName="Quiz"
         onPlayAgain={startGame}
-        scoreLabel="poeng"
+        scoreLabel=""
+        showRightAnswers={true}
       />
     );
   }

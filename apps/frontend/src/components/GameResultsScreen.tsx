@@ -23,6 +23,7 @@ interface GameResultsScreenProps {
   // Optional customization
   scoreLabel?: string;
   scoreSuffix?: string;
+  showRightAnswers?: boolean;
 }
 
 const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
@@ -37,6 +38,7 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
   onPlayAgain,
   scoreLabel = "poeng",
   scoreSuffix = "",
+  showRightAnswers = false,
 }) => {
   return (
     <ChristmasBackground>
@@ -88,7 +90,7 @@ const GameResultsScreen: React.FC<GameResultsScreenProps> = ({
                 <>
                   <div className="mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-christmas-lg border-2 border-red-400/20">
                     <p className="text-red-200 text-sm mb-2">
-                      Denne rundens poengsum
+                      {showRightAnswers ? "Antall riktige svar" : "Denne rundens poengsum"}
                     </p>
                     <p className="text-3xl text-white font-bold mb-2">
                       {currentScore}
